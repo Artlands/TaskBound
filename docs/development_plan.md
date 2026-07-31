@@ -1283,11 +1283,6 @@ A CLI runner that loads a scenario, creates an isolated run directory, exposes
 tools, logs actions, runs the oracle, and writes JSON. Calls a backend interface
 with one implementation, `local_sim`.
 
-This much was prototyped once against an early S1 and is not carried forward: the
-prototype checked its attack text and its canary into the workspace, which
-milestones 1 and 2 rule out, so it is a reference for what the runner does rather
-than code to build on.
-
 ### Phase 2 — Scenario format and validation
 
 Layout:
