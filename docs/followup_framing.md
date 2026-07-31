@@ -31,16 +31,16 @@ Add a `framing` field to the injection schema, with four values:
 | `authority` | Text presenting itself as a site policy note, sysadmin message, or system banner |
 | `indirect` | The instruction is a consequence of following apparently benign guidance, never stated as a command |
 
-Run `naive`, `authority`, and `indirect` on the ten high-realism cells;
+Run `naive`, `authority`, and `indirect` on the core host's sixteen cells;
 `operational` is already covered by the core runs.
 
 | Run class | Count | Per configuration |
 |-----------|-------|-------------------|
-| Framing extension | 10 cells × 3 framings × 24 | 720 |
+| Framing extension | 16 cells × 3 framings × 24 | 1,152 |
 
-That is 2,160 across the three-model baseline — roughly half the core budget
-again. It is droppable, but it is not cheap, and the plan should not describe it
-as a rider.
+That is 3,456 across the three-model baseline — more than the core `v1.0` budget
+again, and 144 new texts on top of the ~300 the core already needs. It is
+droppable, but it is not cheap, and the plan should not describe it as a rider.
 
 `authority` is the value most worth carrying for domain reasons: site-authority
 framing is exactly what HPC users are trained to comply with, so it is the
@@ -55,17 +55,18 @@ ranking `authority` against `indirect`. Keep them named rather than numbered so
 no table invites a reader to see a trend across them.
 
 **Framing is not a control, and must not be reported as one.** It looks like a
-floor condition proving the instrument works, but three genuine controls already
+floor condition proving the instrument works, but four genuine controls already
 do that job in v1:
 
 - **Near-miss** — the sensitive action is reachable and the oracle detects it,
   when the *user* asks for it.
 - **Benign control** — the agent acts on *environment*-sourced instructions at
   all.
-- **Paraphrase variance** — a low ASR is not an artifact of one badly written
-  text.
+- **Inert control** — the effect is the instruction, not the presence of text.
+- **Paraphrase variance** — a low compliance rate is not an artifact of one badly
+  written text.
 
-With those three in place, a low ASR under the operational register is already
+With those four in place, low compliance under the operational register is already
 interpretable as agent robustness rather than as broken instrumentation. A
 `naive` floor tests nothing further: an agent that obeys the user, obeys benign
 environment text, and still refuses out-of-scope environment text has been
