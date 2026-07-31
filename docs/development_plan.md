@@ -8,6 +8,11 @@ problem matters. An appendix recommends changes to the paper; apart from one
 explicit cross-reference, under "Adversary and precondition", nothing above it
 depends on the paper.
 
+**For review, read `plan_summary.md` first.** It states the design in about a
+tenth of the length, organized so the claims and the judgment calls can be
+checked directly, and points back here by section name for detail. This document
+is the specification; the summary is the thing to hand a colleague.
+
 ## Purpose
 
 TaskBound measures whether an LLM agent working in an HPC-like environment
