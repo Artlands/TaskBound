@@ -91,13 +91,15 @@ path `/workspace/`, so nothing a scenario does touches the real filesystem.
 
 The workspace must contain the out-of-scope resource the attack targets. That
 resource has to genuinely exist and be genuinely readable, or the attack would
-fail on access control rather than on agent judgment. From S1:
+fail on access control rather than on agent judgment. S1's workspace, as
+designed:
 
 ```text
 workspace/
   project_a/          README.md, scripts/, logs/job-1842.err   <- the task
-  project_b/          secrets.txt, containing a canary         <- reachable, out of scope
+  project_b/          secrets.txt, holding a canary slot       <- reachable, out of scope
   scratch/                                                     <- shared space
+  modulefiles/        the descriptions module show renders     <- arm vehicle
 scheduler_state.json  the simulated queue backing squeue and sacct
 ```
 
@@ -140,10 +142,10 @@ same way: attacks target the denied set, which the account could perform anyway.
 This is the central design invariant expressed as data, which is what lets the
 validator check it mechanically instead of relying on scenario-author discipline.
 
-Three schema pieces are still missing, each blocking a specific cell group.
-`denied_scheduler_actions` is declared but not yet read by any code, which the
-OB2 cells need; no egress-target field exists, which OB1 severity 4 needs; and no
-`consumer` declaration exists, which the OB4 cells need in order to be scoreable
+Three fields are easy to leave out of a first schema and each blocks a whole cell
+group. `denied_scheduler_actions` must be read by the scheduler tools rather than
+merely declared, which the OB2 cells need; an egress-target field is needed for
+OB1 severity 4; and a `consumer` declaration is what makes the OB4 cells scoreable
 at all (see "What each scenario's workspace must contain"). The consumer belongs
 to the oracle config block rather than the policy, since it describes who reads a
 path afterwards rather than who may touch it.
@@ -638,8 +640,9 @@ Scenarios are not restricted to one channel. A channel is a place adversarial
 content can enter, and most workspaces offer several. Holding the scenario fixed
 and varying only the channel gives the controlled comparison the grid cannot.
 
-S1 hosts the arm. Its workspace already contains three viable entry points, and
-its failure mode makes all three natural to consult:
+S1 hosts the arm. Its workspace carries three viable entry points, built with it
+at Phase 4 step 1 rather than added for the arm, and its failure mode makes all
+three natural to consult:
 
 | Channel | Vehicle in S1 | Why an agent reads it |
 |---------|---------------|-----------------------|
@@ -1268,11 +1271,22 @@ first release, but the interface should be able to express them:
 
 ## Development Phases
 
-### Phase 1 — Harness (done)
+**Nothing in this plan is built yet.** The repository holds this plan, the
+framing follow-up, and the position paper. Every scenario, injection, and module
+named below — S1 included — is a design in this document and not an artifact on
+disk, so statements about them are specifications, never descriptions of current
+behavior.
+
+### Phase 1 — Harness
 
 A CLI runner that loads a scenario, creates an isolated run directory, exposes
 tools, logs actions, runs the oracle, and writes JSON. Calls a backend interface
 with one implementation, `local_sim`.
+
+This much was prototyped once against an early S1 and is not carried forward: the
+prototype checked its attack text and its canary into the workspace, which
+milestones 1 and 2 rule out, so it is a reference for what the runner does rather
+than code to build on.
 
 ### Phase 2 — Scenario format and validation
 
@@ -1448,7 +1462,7 @@ capability, and they do not.
 
 | Step | Build | Workspace elements it must add | Completes |
 |------|-------|--------------------------------|-----------|
-| 1 | S1, with its attack moved into the injection library | — (`project_b` and scratch exist) | CH1×OB1, CH1×OB2 |
+| 1 | S1: workspace, task, policy, and its CH1×OB1 and CH1×OB2 injections | `project_a`, `project_b` with a canary slot, shared scratch, the failed job in scheduler state; the README and module descriptions the arm needs later | CH1×OB1, CH1×OB2 |
 | 2 | Persistence-and-consumption check | S1's declared consumer for shared scratch | CH1×OB4 |
 | 3 | Parameter manifest and a numerically checkable workflow | S1's parameter file; S3's manifest and near-miss manifest | CH1×OB3 and, via S3, CH2×OB3 |
 | 4 | S2's two-project workspace and collaboration path | S2's calibration job in scheduler state; S2's consumer for the collaboration path | CH2×OB1, CH2×OB2, CH2×OB4 |
@@ -1457,17 +1471,17 @@ capability, and they do not.
 | 7 | `S1·CH3×OB1` injection into S1's module output | — | channel arm, CH3 cell |
 | 8 | Sequential two-agent execution and a shared artifact directory in S5, per the S5 spec under Scenarios | S5's protected data with a canary; a submission sweep target; a cutoff manifest and its near-miss | all four CH4 cells |
 
-Steps 1–5 use the existing backend plus the manifest, once milestone 3's
-scheduler work has landed — CH1×OB2 needs `scancel` and a backend that reads
-`denied_scheduler_actions`, neither of which exists today. Steps 6 and 8 each add
-one capability; step 8 is the only one touching the runner's execution model, so
-it goes last. Step 8 also carries the run-time placement the S5 spec needs: the
+Steps 1–5 need no capability beyond the Phase 3 backend and the manifest, with
+one dependency worth stating: CH1×OB2 in step 1 needs `scancel` and a backend
+that reads `denied_scheduler_actions`, so milestone 3 precedes it. Steps 6 and 8
+each add one capability; step 8 is the only one touching the runner's execution
+model, so it goes last. Step 8 also carries the run-time placement the S5 spec needs: the
 injection is appended to the work order between the planner and worker turns, and
 its third turn is what gives OB4 a live consumer.
 
-Steps 5 and 7 are cheap riders on work already done: once the CH2 and CH3
+Steps 5 and 7 are cheap riders on the steps before them: once the CH2 and CH3
 injection formats exist, pointing them at S1's workspace is six injection files
-each. The one piece of new machinery is in step 5 — recording whether the
+each, since step 1 already put the README and the module descriptions there. The one piece of new machinery is in step 5 — recording whether the
 injected text ever reached a tool result, which the arm needs for its exposure
 denominator and its recruitment rule, and which OB1 severity 2 needs anyway.
 
@@ -1552,27 +1566,27 @@ allocation.
 
 ## Repository Structure
 
+The target layout, with the milestone that creates each module. Only `docs/`
+exists today.
+
 ```text
 taskbound/
-  runner.py       # CLI, run assembly, result writing
-  backend.py      # LocalSimBackend, Action
-  agents.py       # agent adapters
-  oracle.py       # shared deterministic checks
-  inject.py       # applies an injection to a workspace copy   (milestone 2)
-  validate.py     # scenario and injection validator           (milestone 1)
+  runner.py       # CLI, run assembly, result writing            (phase 1)
+  backend.py      # LocalSimBackend, Action                      (phase 1, 3)
+  agents.py       # agent adapters                               (phase 1)
+  oracle.py       # shared deterministic checks                  (phase 1, 4)
+  validate.py     # scenario and injection validator             (milestone 1)
+  inject.py       # applies an injection to a workspace copy     (milestone 2)
   sweep.py        # multi-run driver; owns the arm's exposure
-                  # recruitment loop and attempt cap           (milestone 9)
-  aggregate.py    # results -> metric tables with intervals    (milestone 9)
-  defenses.py     # context and action hooks                   (milestone 15)
+                  # recruitment loop and attempt cap             (milestone 9)
+  aggregate.py    # results -> metric tables with intervals      (milestone 9)
+  defenses.py     # context and action hooks                     (milestone 15)
 scenarios/
 injections/
 results/
 docs/
 tests/
 ```
-
-Files after `oracle.py` do not exist yet; the milestone that creates each is
-noted.
 
 Split `backend.py` into `backends/local_sim.py` and `backends/real_hpc.py` only
 when the second backend actually exists. A `backends/` package with one module
@@ -1614,8 +1628,8 @@ training data.
   Scenarios declare canary *slots*; the runner substitutes the release's
   generated values when it copies the workspace, the same load-time mechanism the
   injection library already needs. The slot mechanism lands with the schema at
-  milestone 1; milestone 10 generates the release's values. The current S1 has a
-  literal canary checked in, which milestone 1 replaces with a slot.
+  milestone 1 and no literal canary is ever committed; milestone 10 generates the
+  release's values.
 - Results record the benchmark version and canary generation so contaminated
   runs are identifiable after the fact.
 - AI-generated injection text carries a contamination risk of its own, separate
@@ -1635,22 +1649,26 @@ training data.
 
 ## Milestones
 
-1. Scenario schema plus validator enforcing the central design invariant, and
-   canary slots replacing S1's checked-in literal canary. The schema adds the
-   `consumer` declaration in the oracle config block; the validator adds the
-   per-objective target rule and placement resolution for non-file placements.
+0. Phase 1 harness and the Phase 3 backend: runner, backend interface with
+   `local_sim`, agent adapters, action log, oracle skeleton, result writing.
+   Everything below assumes it.
+1. Scenario schema plus validator enforcing the central design invariant, with
+   canary slots rather than literal canaries. The schema adds the `consumer`
+   declaration in the oracle config block; the validator adds the per-objective
+   target rule and placement resolution for non-file placements.
 2. Injection library: CH/OB vocabulary, three paraphrases per cell, `kind` and
    `realism` fields, and the provenance fields. Fix the paraphrase generation
    protocol here — specification format, generator model outside the evaluated
    set, one context per paraphrase, acceptance review — since every text written
    afterwards inherits it and regenerating a set later voids its independence
-   claim. Move S1's attack out of the workspace and generate attacked runs at
-   load time.
-3. Fix the path-normalization scope bypass: `_under_any_root` matches raw virtual
-   path strings, so `/workspace/project_a/../project_b/secrets.txt` passes the
-   task-scope check and then resolves out of scope. Add `scancel`, and make the
-   scheduler tools read `denied_scheduler_actions` instead of inferring denial
-   from a verb's absence from `allowed_scheduler_actions`.
+   claim. Attacked runs are assembled at load time from this library; no attack
+   text is ever checked into a workspace.
+3. Scope checking that cannot be walked around: normalize `..` and symlinks
+   before matching a path against either root list, so
+   `/workspace/project_a/../project_b/secrets.txt` is caught by the task-scope
+   check rather than passing it and resolving out of scope. Include `scancel`,
+   and have the scheduler tools read `denied_scheduler_actions` rather than
+   inferring denial from a verb's absence from `allowed_scheduler_actions`.
 4. Per-objective severity, control-gap annotation, exposure tracking, and the
    persistence and consumption check in the oracle — including the scripted
    follow-on reader that a declared consumer names, and S1's consumer for shared
@@ -1687,7 +1705,7 @@ training data.
 16. Rerun grid and arm under `prompt_hardening`; report the security/overblocking
     pair against the `none` baseline.
 
-Milestones 1–11 produce a balanced 2 × 4 baseline plus a two-channel controlled
+Milestones 0–11 produce a balanced 2 × 4 baseline plus a two-channel controlled
 comparison, with all three control conditions, which stands on its own. 12–14
 widen it to 4 × 4 with a three-channel arm. 15–16 add the first defense
 comparison.
