@@ -963,6 +963,54 @@ request changes compliance, in `docs/followup_framing.md`. It would add 720 runs
 per configuration — 2,160 across the baseline, about half the core again — and
 nothing in this plan depends on it.
 
+#### What the runs cost
+
+A run count is not a budget, and the cut ladder below is triggered by the words
+"if the budget binds" — which cannot be evaluated against a number that was never
+stated. Two multipliers turn runs into dollars: tokens per run, and the price of
+the tier each model family sits in.
+
+**Tokens per run are an estimate until the pilot measures them.** A run is a
+multi-turn agentic episode, not one completion: the context grows with each tool
+result and the whole prefix is re-sent every turn, so cumulative input dominates
+and scales with the square of the turn count rather than linearly. Taking 10–15
+turns over a small workspace, the working estimate is **40k–150k cumulative input
+tokens and 4k–12k output tokens per run**. Everything below uses the midpoint,
+90k in and 8k out.
+
+**Price per run, at list prices as of July 2026** ($ per million tokens, input /
+output):
+
+| Tier | Price | Per run | 1,368 runs (one configuration) |
+|------|-------|---------|-------------------------------|
+| Small | 1 / 5 | $0.13 | $180 |
+| Mid | 3 / 15 | $0.39 | $530 |
+| Frontier | 5 / 25 | $0.65 | $890 |
+
+Three families spanning the three tiers put **`v1.0`'s full grid at roughly
+$1,600–1,850** and **`v0.1` at $800–950**. Adding the `v1.1` defended sweep
+doubles the `v1.0` figure. The framing follow-up, at 2,160 runs, would add
+roughly $850.
+
+**Two discounts apply and are worth taking, in this order.** Batch or async
+endpoints run about 50% below synchronous list price and cost nothing in
+validity — these runs are embarrassingly parallel and nothing about the design is
+latency-sensitive. Prompt caching then attacks what dominates the bill: with a
+cache breakpoint on the growing prefix, each turn reads the prior turns at
+roughly a tenth of input price instead of re-paying for them, which on a 12-turn
+run cuts effective input by most of its volume. Together they bring the full grid
+to a few hundred dollars. The runner should set cache breakpoints from the start
+(Phase 1) rather than retrofitting them, since the saving scales with turn count
+and this is a multi-turn benchmark.
+
+**So the run count is not the binding constraint, and the cut ladder below is
+unlikely to be invoked for cost.** A low-four-figure API bill undiscounted, and a
+few hundred dollars batched and cached, is small against the authoring cost of
+108 injections and their acceptance reviews. If something binds first it is
+Phase 4's review effort, not the sweep. The numbers here are estimates with their
+assumptions stated; **the pilot measures actual tokens per run and replaces
+them**, and it is cheap enough to run for that reason alone.
+
 ### Precision
 
 Run counts follow from the interval width the design needs, not the reverse.
@@ -992,7 +1040,9 @@ is sized to detect large channel effects and nothing finer, as its own section
 states.
 
 Local simulation has no compute cost, so this is an API cost and wall-clock
-question only, and runs are independent and embarrassingly parallel.
+question only, and runs are independent and embarrassingly parallel. Both are
+priced under "What the runs cost" above, and neither binds at the scale this
+plan operates at.
 
 If the budget binds, cut in this order and stop when it fits:
 
@@ -1387,7 +1437,9 @@ clean run per relevant scenario. The pilot must show nonzero exposure where
 exposure is structurally expected, no silent injection failures, no literal
 canaries committed to the repository, and no result fields missing from the
 aggregator. Pilot failures are implementation defects, not benchmark results, and
-pilot runs are never pooled with the sweep they precede.
+pilot runs are never pooled with the sweep they precede. The pilot also reports
+measured tokens and turns per run, which replaces the estimates under "What the
+runs cost" before the sweep commits to them.
 
 The pilot is not a milestone of its own; it is a precondition written into
 milestones 11, 14, and 16, the three that spend runs. It costs two runs per
@@ -1400,6 +1452,12 @@ after the sweep rather than before it.
 A CLI runner that loads a scenario, creates an isolated run directory, exposes
 tools, logs actions, runs the oracle, and writes JSON. Calls a backend interface
 with one implementation, `local_sim`.
+
+Two things belong here rather than later. The agent adapter sets a **prompt-cache
+breakpoint on the conversation prefix**, because the saving scales with turn
+count and this benchmark is multi-turn throughout — see "What the runs cost."
+And every run **records its token usage**, which is what lets the pilot replace
+that section's estimates with measurements.
 
 ### Phase 2 — Scenario format and validation
 
@@ -1636,9 +1694,12 @@ Result files carry: benchmark version, canary generation, scenario, channel, run
 type, injection id, paraphrase id, objective, placement, realism, agent, model,
 decoding parameters, defense, N, run index, task success, per-objective severity,
 `max_severity` as a (level, objective) pair, violated rules, control-gap
-annotation, exposure flag, action trace, and inconclusive flag with reason. The
-canary generation is what makes a contaminated run identifiable after the fact,
-so it is recorded per run rather than only in the release notes.
+annotation, exposure flag, action trace, token usage, turn count, and
+inconclusive flag with reason. The canary generation is what makes a contaminated
+run identifiable after the fact, so it is recorded per run rather than only in
+the release notes. Token usage and turn count are what let the pilot replace the
+cost estimates under "What the runs cost" with measurements, and they cost
+nothing to record.
 
 Two fields exist only for particular cells but are written always, so results
 stay one shape: `agent_role` — which agent took the action, meaningful in S5 and
