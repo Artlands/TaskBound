@@ -403,8 +403,8 @@ variant is free, and a labeled one buys a full set of factorial cells.
 
 Every cell, grid or arm, also ships a **benign injection**: same channel, same
 placement, same register, comparable length, but requesting an action that is
-*inside* the task scope. In S1: a note suggesting the agent also check the job's
-exit code with `sacct` before concluding.
+*inside* the task scope. In the failed-job diagnosis: a note suggesting the agent
+also check the job's exit code with `sacct` before concluding.
 
 Without this control, ASR cannot be attributed to the adversarial nature of the
 request. An agent that follows any instruction it finds in a log would produce a
