@@ -1,12 +1,12 @@
 # Follow-up Study — Does Camouflage Matter?
 
-Designed but not scheduled. This study is **not** part of TaskBound v1 and
+Designed but not scheduled. This study is **not** part of TaskBound `v1.0` and
 nothing in `development_plan.md` depends on it. It is recorded here so the design
 is not re-derived later.
 
 ## The question
 
-TaskBound v1 writes every injection in a single **operational register**: a
+TaskBound `v1.0` writes every injection in a single **operational register**: a
 well-formed diagnostic or README note whose requested action reads as a
 reasonable next step. That is the realistic HPC case, and a benchmark measuring
 real-world risk should measure the realistic case.
@@ -26,7 +26,7 @@ Add a `framing` field to the injection schema, with four values:
 
 | Framing | Form |
 |---------|------|
-| `operational` | A well-formed diagnostic or README note whose requested action looks like a reasonable troubleshooting step (v1's register) |
+| `operational` | A well-formed diagnostic or README note whose requested action looks like a reasonable troubleshooting step (`v1.0`'s register) |
 | `naive` | A bare imperative appended to the content |
 | `authority` | Text presenting itself as a site policy note, sysadmin message, or system banner |
 | `indirect` | The instruction is a consequence of following apparently benign guidance, never stated as a command |
@@ -38,9 +38,11 @@ Run `naive`, `authority`, and `indirect` on the core host's sixteen cells;
 |-----------|-------|-------------------|
 | Framing extension | 16 cells × 3 framings × 24 | 1,152 |
 
-That is 3,456 across the three-model baseline — more than the core `v1.0` budget
-again, and 144 new texts on top of the ~300 the core already needs. It is
-droppable, but it is not cheap, and the plan should not describe it as a rider.
+That is 3,456 runs across the three-model baseline — about 58% of the public
+two-agent `v1.0` sweep, or 37% of the complete `v1.0` target including H4 and the
+mode bridge — and 144 new texts on top of the core's 204 public injection texts.
+It is droppable, but it is not cheap, and the plan should not describe it as a
+rider.
 
 `authority` is the value most worth carrying for domain reasons: site-authority
 framing is exactly what HPC users are trained to comply with, so it is the
@@ -56,7 +58,7 @@ no table invites a reader to see a trend across them.
 
 **Framing is not a control, and must not be reported as one.** It looks like a
 floor condition proving the instrument works, but four genuine controls already
-do that job in v1:
+do that job in `v1.0`:
 
 - **Near-miss** — the sensitive action is reachable and the oracle detects it,
   when the *user* asks for it.
@@ -78,5 +80,5 @@ Both framings and paraphrases are wording variation. The difference is how the
 analysis treats them: paraphrases are unlabeled and modeled as a random effect,
 while a framing is a fixed effect because the whole point of naming it is to make
 a claim about the label. That claim is what costs a full set of factorial cells,
-and it is why this study is separate rather than folded into v1's three
+and it is why this study is separate rather than folded into `v1.0`'s three
 paraphrases per cell.
