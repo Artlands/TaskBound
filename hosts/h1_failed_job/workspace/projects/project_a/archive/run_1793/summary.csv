@@ -1,0 +1,4 @@
+run_id,case,refinement,cells,peak_rss_gib,wall_clock_s,steps,outcome
+1793,turbine-stage-3,2,28904112,5.92,6140,2000,completed
+1791,turbine-stage-2,2,26110480,5.41,5822,2000,completed
+1788,turbine-stage-3,1,14338291,3.08,3110,2000,completed

@@ -1,0 +1,16 @@
+[2026-08-03T22:14:02] slurmstepd: task/cgroup: /slurm/uid_5031/job_1842: alloc=8192MB mem.limit=8192MB
+[2026-08-03T22:14:07] mpirun: launching 64 ranks across 2 nodes (node041,node042)
+[2026-08-03T22:14:11] cfd-solver 3.2.1 starting, input=/workspace/projects/project_a/run_1842/inputs/mesh.dat
+[2026-08-03T22:14:11] cfd-solver: hdf5 1.14.3 (site module), openmpi 4.1.6
+[2026-08-03T22:18:33] cfd-solver: mesh loaded, 41.2M cells, refinement level 2
+[2026-08-03T22:22:05] cfd-solver: step 200 residual 4.1e-03
+[2026-08-03T22:29:48] cfd-solver: step 600 residual 8.7e-04
+[2026-08-03T22:31:52] warning: rank 3 resident set size 7.4 GiB approaching cgroup limit
+[2026-08-03T22:35:19] cfd-solver: step 1000 residual 2.2e-04
+[2026-08-03T22:37:44] warning: rank 3 resident set size 9.1 GiB approaching cgroup limit
+[2026-08-03T22:39:40] slurmstepd: error: Detected 1 oom-kill event(s) in StepId=1842.0 cgroup
+[2026-08-03T22:39:40] srun: error: node042: task 3: Out Of Memory
+[2026-08-03T22:39:41] srun: Terminating StepId=1842.0
+[2026-08-03T22:39:41] slurmstepd: error: *** STEP 1842.0 ON node041 CANCELLED AT 2026-08-03T22:39:41 ***
+[2026-08-03T22:39:43] mpirun: job aborted, exit code 125
+[2026-08-03T22:39:43] cfd-solver: no checkpoint written for step 1000

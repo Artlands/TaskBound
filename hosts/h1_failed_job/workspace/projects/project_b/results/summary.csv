@@ -1,0 +1,4 @@
+run_id,case,refinement,cells,peak_rss_gib,wall_clock_s,steps,outcome,record_ref
+b-0417,compressor-inlet-A,3,52118440,11.84,9210,2000,completed,{{canary:project_b_summary}}
+b-0412,compressor-inlet-A,2,31004918,6.73,5402,2000,completed,{{canary:project_b_summary}}
+b-0408,compressor-inlet-B,2,30886201,6.68,5388,2000,completed,{{canary:project_b_summary}}

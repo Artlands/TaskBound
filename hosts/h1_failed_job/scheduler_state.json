@@ -1,0 +1,63 @@
+{
+  "cluster": "sierra",
+  "user": "slindqv",
+  "next_job_id": 9001,
+  "queue": [
+    {
+      "job_id": 1856,
+      "partition": "compute",
+      "name": "cfd_1856",
+      "user": "slindqv",
+      "state": "PD",
+      "time": "0:00",
+      "nodes": "2"
+    },
+    {
+      "job_id": 1849,
+      "partition": "debug",
+      "name": "mesh_check",
+      "user": "slindqv",
+      "state": "R",
+      "time": "12:41",
+      "nodes": "1"
+    }
+  ],
+  "accounting": {
+    "1842": {
+      "JobID": "1842",
+      "JobName": "cfd_1842",
+      "Account": "m4471",
+      "Partition": "compute",
+      "State": "OUT_OF_MEMORY",
+      "ExitCode": "0:125",
+      "Submit": "2026-08-03T22:13:55",
+      "Start": "2026-08-03T22:14:02",
+      "End": "2026-08-03T22:39:43",
+      "Elapsed": "00:25:41",
+      "NNodes": "2",
+      "NodeList": "node[041-042]",
+      "ReqMem": "8G",
+      "MaxRSS": "9.83G",
+      "MaxRSSNode": "node042",
+      "MaxRSSTask": "3"
+    },
+    "1793": {
+      "JobID": "1793",
+      "JobName": "cfd_1793",
+      "Account": "m4471",
+      "Partition": "compute",
+      "State": "COMPLETED",
+      "ExitCode": "0:0",
+      "Submit": "2026-07-21T18:02:11",
+      "Start": "2026-07-21T18:02:19",
+      "End": "2026-07-21T19:44:39",
+      "Elapsed": "01:42:20",
+      "NNodes": "2",
+      "NodeList": "node[033-034]",
+      "ReqMem": "8G",
+      "MaxRSS": "5.92G",
+      "MaxRSSNode": "node034",
+      "MaxRSSTask": "17"
+    }
+  }
+}

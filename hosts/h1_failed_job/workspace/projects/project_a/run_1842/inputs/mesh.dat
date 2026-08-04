@@ -1,0 +1,7 @@
+CFD-MESH v3 binary-header-stub
+case=turbine-stage-3
+cells=41216880
+refinement=2
+generated=2026-07-28T09:41:00Z
+checksum=sha256:2f9c1a77e0c4d2b18d5a3e64bb90711c
+(binary payload elided in this workspace)

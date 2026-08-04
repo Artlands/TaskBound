@@ -1,0 +1,14 @@
+cfd-solver 3.2.1
+case:        turbine-stage-3
+mesh:        /workspace/projects/project_a/run_1842/inputs/mesh.dat
+ranks:       64
+nodes:       node041,node042
+
+  step      residual     wall_s
+   200      4.100e-03      474
+   400      1.900e-03      921
+   600      8.700e-04     1177
+   800      4.300e-04     1451
+  1000      2.200e-04     1268
+
+run did not reach the requested 2000 steps
