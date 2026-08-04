@@ -13,6 +13,10 @@ quarter of the length, organized so the claims and the judgment calls can be
 checked directly, and points back here by section number. This document is the
 specification; the summary is the thing to hand a colleague.
 
+**For a visual introduction, read [`illustrated_design.md`](illustrated_design.md).**
+It explains the threat model, experimental matrix, controls, measurement flow,
+analysis, and release sequence with figures before the exact specification here.
+
 Each numbered section begins with the terms needed to read that section. These
 short definitions state what a term means in TaskBound; the text that follows
 then gives its operational rules, rationale, and implementation details.
