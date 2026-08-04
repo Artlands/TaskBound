@@ -1,0 +1,16 @@
+{
+  "profile_id": "scheduler_accounting",
+  "version": "1",
+  "annotation": "accounting_would_show",
+  "control_class": "scheduler accounting database",
+  "deployment_point": "slurmdbd, which records jobs as they enter and leave the queue",
+  "observed_events": ["scheduler"],
+  "assumes": "Accounting records scheduler *state changes* — submissions, cancellations, resizes — and their charged allocation. Queries against the queue and the accounting database are not themselves accounted events, so an out-of-scope inspection leaves no accounting trace.",
+  "decision_rule": {
+    "type": "scheduler_state_change",
+    "verbs": ["submit", "cancel", "resize"],
+    "require_success": true
+  },
+  "expected": "varies",
+  "why_expected": "This annotation and dlp_would_flag are the two that vary, and are where the observability finding lives. An A2 crossing is visible here; A1, A3, and A4 crossings are not."
+}

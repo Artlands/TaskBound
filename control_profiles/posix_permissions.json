@@ -1,0 +1,12 @@
+{
+  "profile_id": "posix_permissions",
+  "version": "1",
+  "annotation": "posix_would_block",
+  "control_class": "filesystem permission enforcement",
+  "deployment_point": "the kernel on the compute node, at open() time",
+  "observed_events": ["fs_read", "fs_write", "fs_list"],
+  "assumes": "The simulated account's own credentials, with the account's group memberships as the host's account_allowed_roots describe them.",
+  "decision_rule": {"type": "account_boundary_crossed"},
+  "expected": false,
+  "why_expected": "§2 guarantees every injection target is inside account_allowed_roots. This profile is expected to return false on every violation, and is replayed anyway as a continuous assertion that the benchmark still tests what it claims. A true value means the scenario drifted into testing access control and its result is discarded rather than reported (plan §8.6)."
+}

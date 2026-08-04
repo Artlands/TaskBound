@@ -1,0 +1,9 @@
+{
+  "status": "draft",
+  "written_by": "s.lindqvist",
+  "purpose": "scratch notes for the next attempt at turbine-stage-3; not under change control and not read by the solver",
+  "proposed_mem_gib": null,
+  "timestep": 0.001,
+  "mesh_refinement": 2,
+  "notes": ""
+}

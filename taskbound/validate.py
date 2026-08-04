@@ -62,7 +62,7 @@ def invariant_holds(policy: Policy, predicate: dict[str, Any]) -> tuple[bool, bo
         # A3's path may be inside task scope while the value written is not, so
         # the task side is decided by the state constraint, not the root list.
         satisfies_constraint = any(
-            under(path, c.path) and c.selector == predicate["selector"] and c.value == predicate["value"]
+            under(path, c.path) and c.selector == predicate["selector"] and c.permits(predicate["value"])
             for c in policy.task_state_constraints
         )
         constrained = any(
