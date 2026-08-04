@@ -22,6 +22,7 @@ from . import oracle
 from .agents import (
     AgentConfigurationError,
     AnthropicAgent,
+    OpenAICompatibleAgent,
     ScriptedAgent,
     SYSTEM_PROMPT,
     config_hashes,
@@ -153,11 +154,13 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
         except AgentConfigurationError as exc:
             # Not a benchmark outcome: abort before a result is written, so a
             # setup failure never lands in the inconclusive rate.
+            extra = f" --base-url {args.base_url}" if getattr(args, "base_url", None) else ""
             raise SystemExit(
                 f"\nconfiguration error: {exc}\n\n"
                 "The run was not started and no result was written. Check credentials\n"
                 "and model access first:\n\n"
-                f"    python -m taskbound.runner preflight --model {args.model}\n"
+                f"    python -m taskbound.runner preflight "
+                f"--agent {args.agent} --model {args.model}{extra}\n"
             ) from exc
         except Exception as exc:  # an adapter failure is an outcome, not a crash
             error = f"{type(exc).__name__}: {exc}"
@@ -210,10 +213,15 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
             "canary_generation": generation,
             "agent": {
                 "adapter": agent.name,
-                "provider": "anthropic" if agent.name == "anthropic" else "local",
+                "provider": getattr(agent, "provider", "local"),
                 "sampling": getattr(agent, "sampling", lambda: {})(),
                 "api_version": "2023-06-01" if agent.name == "anthropic" else None,
                 "inference_trust_boundary": args.inference_trust_boundary,
+                # The hash is of the canonical tool contract, so it stays
+                # comparable across families; the wire format that carried it
+                # is recorded beside it (plan §6.6).
+                "tool_schema_wire_format": getattr(agent, "tool_schema_wire_format", None),
+                "resolved_model": result.resolved_model,
                 **config_hashes(SYSTEM_PROMPT, TOOL_SCHEMAS),
             },
             "outcome": {
@@ -223,6 +231,7 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
                 "adapter_error": error,
                 "usage": result.usage,
                 "request_ids": result.request_ids,
+                "malformed_tool_calls": result.malformed_tool_calls,
                 "retry_history": [],
             },
             "answer": result.answer,
@@ -331,6 +340,17 @@ def _build_agent(args: argparse.Namespace):
             raise SystemExit("--agent scripted requires --script")
         with open(args.script, encoding="utf-8") as fh:
             return ScriptedAgent(json.load(fh))
+    if args.agent == "openai_compatible":
+        return OpenAICompatibleAgent(
+            model=args.model,
+            base_url=args.base_url,
+            api_key_env=args.api_key_env,
+            max_tokens=args.max_tokens,
+            turn_limit=args.turn_limit,
+            reasoning_effort=args.reasoning_effort,
+            temperature=args.temperature,
+            token_param=args.token_param,
+        )
     return AnthropicAgent(
         model=args.model, max_tokens=args.max_tokens, turn_limit=args.turn_limit, effort=args.effort
     )
@@ -350,6 +370,59 @@ def _run_id(args: argparse.Namespace, started: str) -> str:
 
 
 # --- CLI ----------------------------------------------------------------
+def _add_openai_flags(parser: argparse.ArgumentParser) -> None:
+    group = parser.add_argument_group("openai_compatible adapter")
+    group.add_argument(
+        "--base-url",
+        help="Chat Completions endpoint, e.g. http://localhost:8000/v1. "
+        "Omit for OpenAI itself.",
+    )
+    group.add_argument(
+        "--api-key-env", default="OPENAI_API_KEY",
+        help="environment variable holding the key; a local --base-url may need none",
+    )
+    group.add_argument("--reasoning-effort", help="sent only if given; unknown params 400 on many servers")
+    group.add_argument("--temperature", type=float, help="sent only if given")
+    group.add_argument(
+        "--token-param", default="max_tokens", choices=("max_tokens", "max_completion_tokens"),
+        help="output-cap parameter name; switched automatically if the server demands the other",
+    )
+
+
+def _preflight(args: argparse.Namespace) -> int:
+    if args.agent == "openai_compatible":
+        agent = OpenAICompatibleAgent(
+            model=args.model, base_url=args.base_url, api_key_env=args.api_key_env
+        )
+        hint = (f"  export {args.api_key_env}=...\n"
+                "  # a local server may need no key, but does need --base-url")
+        sdk = "openai"
+    else:
+        agent = AnthropicAgent(model=args.model)
+        hint = "  export ANTHROPIC_API_KEY=sk-ant-...        # or: ant auth login"
+        sdk = "anthropic"
+
+    try:
+        info = agent.preflight()
+    except AgentConfigurationError as exc:
+        print(f"FAILED: {exc}\n")
+        print("Fix the configuration and retry:")
+        print(hint)
+        return 1
+    except ImportError:
+        print(f"FAILED: the {sdk} SDK is not installed.\n\n  pip install {sdk}")
+        return 1
+
+    target = agent.base_url if getattr(agent, "base_url", None) else "the provider default endpoint"
+    print(f"OK: credentials resolved, model {info['id']} reachable at {target}")
+    if "display_name" in info:
+        print(f"    {info['display_name']}  context {info['max_input_tokens']}  "
+              f"max output {info['max_output_tokens']}")
+    else:
+        print(f"    verified via {info['verified']}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="taskbound", description="TaskBound benchmark runner")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -359,12 +432,16 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--condition", required=True, choices=CONDITIONS)
     run.add_argument("--injection")
     run.add_argument("--near-miss-action")
-    run.add_argument("--agent", default="anthropic", choices=("anthropic", "scripted"))
+    run.add_argument(
+        "--agent", default="anthropic", choices=("anthropic", "openai_compatible", "scripted")
+    )
     run.add_argument("--script", help="tool-call script for --agent scripted")
     run.add_argument("--model", default="claude-opus-5")
     run.add_argument("--max-tokens", type=int, default=16000)
     run.add_argument("--turn-limit", type=int, default=30)
-    run.add_argument("--effort", default="high", choices=("low", "medium", "high", "xhigh", "max"))
+    run.add_argument("--effort", default="high", choices=("low", "medium", "high", "xhigh", "max"),
+                     help="anthropic adapter only")
+    _add_openai_flags(run)
     run.add_argument("--seed", type=int, default=1, help="placement seed for this attempt")
     run.add_argument("--canary-seed", default="dev-generation", help="never commit a real one")
     run.add_argument("--defense", default="none")
@@ -383,25 +460,14 @@ def main(argv: list[str] | None = None) -> int:
     cal.add_argument("--host", required=True)
 
     pre = sub.add_parser("preflight", help="check credentials and model access (spends nothing)")
+    pre.add_argument("--agent", default="anthropic", choices=("anthropic", "openai_compatible"))
     pre.add_argument("--model", default="claude-opus-5")
+    _add_openai_flags(pre)
 
     args = parser.parse_args(argv)
 
     if args.command == "preflight":
-        try:
-            info = AnthropicAgent(model=args.model).preflight()
-        except AgentConfigurationError as exc:
-            print(f"FAILED: {exc}\n")
-            print("Set a credential and retry:")
-            print("  export ANTHROPIC_API_KEY=sk-ant-...        # or: ant auth login")
-            return 1
-        except ImportError:
-            print("FAILED: the anthropic SDK is not installed.\n\n  pip install anthropic")
-            return 1
-        print(f"OK: credentials resolved, model {info['id']} reachable")
-        print(f"    {info['display_name']}  context {info['max_input_tokens']}  "
-              f"max output {info['max_output_tokens']}")
-        return 0
+        return _preflight(args)
     if args.command == "validate":
         from .validate import validate_all
 
@@ -431,6 +497,8 @@ def _print_summary(record: dict[str, Any], path: str, show_answer: bool) -> None
     if record["placement"]:
         print(f"placement:  {record['placement']['placement_id']} in {record['placement']['file']}")
     print(f"turns:      {out['turns']}  stop: {out['stop_reason']}  inconclusive: {out['inconclusive']}")
+    if out["malformed_tool_calls"]:
+        print(f"malformed tool calls: {out['malformed_tool_calls']}")
     print(f"exposure:   {record['exposure']}")
     if "compliance" in record:
         print(f"compliance: {record['compliance']}")

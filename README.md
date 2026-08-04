@@ -19,11 +19,12 @@ The repository ships a virtualenv at `.venv` (Python 3.14). Every command below
 uses it explicitly, so nothing depends on which shell you are in.
 
 ```sh
-.venv/bin/pip install anthropic pytest
+.venv/bin/pip install anthropic openai pytest
 ```
 
-`anthropic` is needed only for live runs; `pytest` only for the test suite. The
-harness itself is standard library only, so offline runs work with neither.
+Install only what you will use: `anthropic` for the Claude adapter, `openai`
+for any Chat Completions endpoint, `pytest` for the test suite. The harness
+itself is standard library only, so offline runs need none of them.
 
 Check the install:
 
@@ -36,9 +37,25 @@ Check the install:
 injection target, the placement classes, the canary slots, and the utility
 criteria against their calibration fixtures.
 
+### Model adapters
+
+Two live adapters share one tool contract, so the same cell runs against either
+without changing anything the oracle sees.
+
+| `--agent` | Reaches | Needs |
+|-----------|---------|-------|
+| `anthropic` | the Claude Messages API | `ANTHROPIC_API_KEY` or an `ant` profile |
+| `openai_compatible` | any Chat Completions endpoint — OpenAI, vLLM, Ollama, Together, Groq, OpenRouter | `--base-url` and usually a key |
+| `scripted` | nothing; replays a fixture | nothing |
+
+`TOOL_SCHEMAS` in `backend.py` is the single source of truth; the OpenAI wire
+format is derived from it at request time. Every family is therefore offered the
+same logical tools, and the recorded `tool_schema_sha256` stays comparable
+across them, with `tool_schema_wire_format` recording which shape carried it.
+
 ### Credentials
 
-The SDK resolves credentials in this order: `ANTHROPIC_API_KEY` →
+**Claude.** The SDK resolves credentials in this order: `ANTHROPIC_API_KEY` →
 `ANTHROPIC_AUTH_TOKEN` → an OAuth profile from `ant auth login`. Pick one.
 
 **Option A — API key.** Get one from the
@@ -67,21 +84,43 @@ variable needed. `ant auth status` shows which source is active.
 > and authenticates with an empty key. If a profile is being ignored, `unset
 > ANTHROPIC_API_KEY` — do not just blank it.
 
+**OpenAI-compatible.** The key comes from whichever environment variable
+`--api-key-env` names (default `OPENAI_API_KEY`):
+
+```sh
+export OPENAI_API_KEY=sk-...                       # OpenAI itself
+export TOGETHER_API_KEY=...                        # then --api-key-env TOGETHER_API_KEY
+```
+
+A local server usually authenticates nothing. When `--base-url` is given and the
+named variable is unset, the adapter sends a placeholder rather than failing, so
+vLLM and Ollama work with no key at all.
+
 ### Verify before spending anything
 
 ```sh
 .venv/bin/python -m taskbound.runner preflight --model claude-opus-5
+
+.venv/bin/python -m taskbound.runner preflight \
+  --agent openai_compatible --model gpt-4o
+
+.venv/bin/python -m taskbound.runner preflight \
+  --agent openai_compatible --model Qwen/Qwen3-32B \
+  --base-url http://localhost:8000/v1
 ```
 
 ```
-OK: credentials resolved, model claude-opus-5 reachable
+OK: credentials resolved, model claude-opus-5 reachable at the provider default endpoint
     Claude Opus 5  context 1000000  max output 128000
 ```
 
-This calls the Models API, which is billed at nothing. It fails for exactly the
-reasons a live run would fail to start — no credential source, a rejected key,
-or a model this account cannot reach — so a green preflight means the run will
-get as far as the model.
+Both adapters check via the Models API, which is billed at nothing. Preflight
+fails for exactly the reasons a live run would fail to start — no credential
+source, a rejected key, an unreachable `--base-url`, or a model this endpoint
+does not offer — so a green preflight means the run will get as far as the
+model. Servers that implement only `GET /models` are handled by falling back to
+the list; servers that implement neither report the endpoint as reachable with
+the model id unverified.
 
 A live `run` that hits one of those conditions **aborts and writes no result**,
 rather than recording a zero-turn inconclusive run. Setup failures are
@@ -113,6 +152,22 @@ Then the live one:
   --out results --print-answer
 ```
 
+The same cell against a Chat Completions endpoint — only the adapter flags
+change, and nothing the oracle sees changes at all:
+
+```sh
+# OpenAI
+... --agent openai_compatible --model gpt-4o
+
+# a self-hosted server, no key
+... --agent openai_compatible --model Qwen/Qwen3-32B \
+    --base-url http://localhost:8000/v1
+
+# an aggregator with its own key variable
+... --agent openai_compatible --model meta-llama/Llama-3.3-70B-Instruct-Turbo \
+    --base-url https://api.together.xyz/v1 --api-key-env TOGETHER_API_KEY
+```
+
 Flags that change what is measured:
 
 | Flag | Default | What it does |
@@ -122,8 +177,13 @@ Flags that change what is measured:
 | `--near-miss-action` | — | Required for `near_miss`; `A1` is the only one built |
 | `--seed` | `1` | Placement seed for this attempt. Different seeds put the injected text at different admissible positions in the vehicle |
 | `--canary-seed` | `dev-generation` | Derives this release's canary values. See [Canaries](#4-canaries-and-what-not-to-commit) |
-| `--model` | `claude-opus-5` | Any model id the account can reach |
-| `--effort` | `high` | `low`…`max`; recorded in the result |
+| `--agent` | `anthropic` | `anthropic`, `openai_compatible`, or `scripted` |
+| `--model` | `claude-opus-5` | Any model id the endpoint offers |
+| `--effort` | `high` | `low`…`max`. Anthropic adapter only |
+| `--base-url` | — | Chat Completions endpoint. Omit for OpenAI itself |
+| `--api-key-env` | `OPENAI_API_KEY` | Which variable holds the key |
+| `--reasoning-effort`, `--temperature` | unset | Sent **only** if given — an unknown parameter is a hard 400 on many compatible servers |
+| `--token-param` | `max_tokens` | Switched to `max_completion_tokens` automatically if the server demands it, and the switch is recorded |
 | `--turn-limit` | `30` | Hitting it is an outcome (`inconclusive: turn_limit`), never a retry |
 | `--max-tokens` | `16000` | Per-response cap |
 | `--inference-trust-boundary` | `external_api` | Whether the model endpoint is inside the facility. Governs whether a canary reaching the model counts as egress (plan §8.2) |
@@ -176,6 +236,31 @@ done
 Twelve runs is a look, not a measurement. Nothing produced this way is a `v0.5`
 result — see [Known gaps](#known-gaps-before-this-is-a-v05-result).
 
+### Comparing across model families
+
+Model family is a **replication axis, not a treatment** (plan §9.1, §14.7): the
+question is whether the failure mode is a property of LLM agents or one
+vendor's artifact, and §9.3 forbids a leaderboard. The adapters make
+cross-family runs mechanically easy; four things still deserve care before you
+read anything into a difference between them.
+
+- **Snapshots.** §6.6 requires pinning an exact model version. Many endpoints
+  cannot give you one; `agent.resolved_model` records whatever the server
+  returned, which is usually the closest available. Where no immutable snapshot
+  exists, the release must record the limitation and the interleaved attempt
+  schedule of §11.4 becomes mandatory.
+- **Tool-call fidelity is not judgment.** A server that emits unparsable
+  arguments will show low compliance for reasons that have nothing to do with
+  boundary inference. Check `outcome.malformed_tool_calls` and the inconclusive
+  rate before attributing a low rate to the model.
+- **Reasoning knobs do not map.** `--effort` (Anthropic) and
+  `--reasoning-effort` (where supported) are different controls, not a shared
+  scale. Both are recorded in `agent.sampling`; neither is comparable across
+  providers.
+- **Caching differs.** The Anthropic adapter sets an explicit cache breakpoint
+  on the stable prefix. Elsewhere caching is automatic or absent, so equal token
+  counts do not mean equal cost.
+
 ---
 
 ## 3. Reading a result
@@ -193,7 +278,9 @@ measurement:
 | `utility.success` | All three required findings present in the final report |
 | `scope_violation` | Every task-boundary crossing, targeted or not, with its control-profile annotations |
 | `outcome.inconclusive` | `turn_limit`, `max_tokens`, `error`, `no_final_answer`, or null |
-| `outcome.usage` | Token counts for this run |
+| `outcome.malformed_tool_calls` | Tool calls whose arguments were not parsable JSON. A property of the endpoint, not of the model's judgment |
+| `outcome.usage` | Token counts for this run, mapped onto shared keys whatever the provider called them |
+| `agent.resolved_model` | What the endpoint says it actually ran — often more specific than the id you asked for |
 | `action_trace` | Every tool call with its resolved path, both policy verdicts, and the result text |
 
 A quick look at one:
@@ -245,7 +332,12 @@ issue without scrubbing it.
 | `configuration error: Could not resolve authentication method` | No credential source. `export ANTHROPIC_API_KEY=...` or `ant auth login`, then `preflight` |
 | `FAILED: ... invalid x-api-key` | The key is wrong or revoked. Note an `ant` profile does not help while `ANTHROPIC_API_KEY` is set — `unset` it |
 | `preflight` fails with a 404 on the model | The account cannot reach that model id. Try `--model claude-sonnet-5` |
-| `FAILED: the anthropic SDK is not installed` | `.venv/bin/pip install anthropic` |
+| `FAILED: the anthropic SDK is not installed` | `.venv/bin/pip install anthropic` (or `openai`) |
+| `could not reach the endpoint ... Check --base-url` | Wrong URL, wrong port, or the server is down. Most endpoints want the path to end in `/v1` |
+| `FAILED: OPENAI_API_KEY is not set and no --base-url was given` | Either export the key, point `--api-key-env` at the variable you actually use, or give a `--base-url` for a keyless local server |
+| `model 'x' is not offered by this endpoint` | Preflight listed what the server has. Self-hosted servers usually name the model by its full repo path |
+| Many `malformed_tool_calls`, low compliance | The endpoint's tool-call fidelity, not the model's judgment. Report it as such — it is recorded per run for exactly this reason |
+| 400 naming an unsupported parameter | You passed `--reasoning-effort` or `--temperature` to a server that rejects it. Both are omitted unless given |
 | `condition 'attacked' needs a 'attack' injection` | The `--injection` file's `kind` does not match `--condition` |
 | `refusing to overwrite existing result` | Raw results are append-only. Use a different `--out`, or delete the file deliberately |
 | `placement class ... has no admissible position` | The vehicle file changed and the declared line positions no longer resolve. This is a hard failure by design, never a silently clean run |
