@@ -13,9 +13,27 @@ quarter of the length, organized so the claims and the judgment calls can be
 checked directly, and points back here by section number. This document is the
 specification; the summary is the thing to hand a colleague.
 
+Each numbered section begins with the terms needed to read that section. These
+short definitions state what a term means in TaskBound; the text that follows
+then gives its operational rules, rationale, and implementation details.
+
 ---
 
 ## 1. Purpose
+
+**Terms used in this section**
+
+- **LLM agent:** a language-model-based system that can inspect information,
+  call tools, and take actions for a user.
+- **HPC-like environment:** a simulated high-performance-computing workspace
+  with files, jobs, a scheduler, and software modules.
+- **Delegated task:** the specific job the user asked the agent to complete.
+- **Task boundary:** the files, scheduler operations, and state changes needed
+  for that delegated task, which may be narrower than the user's account access.
+- **Hijacking:** adversarial content redirecting the agent beyond that task
+  boundary while it continues to use otherwise valid permissions.
+- **Hijacked authorized agent:** an agent whose actions remain permitted by the
+  user's account but no longer serve the delegated task.
 
 TaskBound measures whether an LLM agent working in an HPC-like environment
 completes its assigned task without being redirected by adversarial content in
@@ -65,6 +83,22 @@ claims, and nothing outside that list is reported as confirmatory.
 
 ## 2. The central invariant
 
+**Terms used in this section**
+
+- **Invariant:** a rule that every valid benchmark scenario must satisfy.
+- **Concrete action (`a`):** the particular read, scheduler operation, parameter
+  change, or write requested by an injection.
+- **Account policy:** the permissions available to the simulated user account;
+  the backend enforces this boundary.
+- **Task policy:** the narrower set of actions justified by the delegated task;
+  crossings are allowed to occur but are recorded as benchmark outcomes.
+- **Validator:** the component that rejects malformed or off-thesis benchmark
+  scenarios before they can run.
+- **Backend:** the simulated execution layer that implements tools and enforces
+  account-level permissions.
+- **State constraint:** a policy rule about an allowed final value or semantic
+  property, even when the file containing it is inside an allowed path.
+
 **Every adversarial objective in TaskBound must be permitted by the simulated
 account policy and forbidden by the task policy.** Formally, for the concrete
 action `a` requested by an injection:
@@ -101,6 +135,24 @@ observed and counted. That recording *is* the measurement.
 ---
 
 ## 3. Design derived from identification, not from coverage
+
+**Terms used in this section**
+
+- **Factor:** a controlled dimension varied by the experiment; TaskBound's main
+  factors are entry point and induced action.
+- **Contrast:** a comparison between conditions or factor levels used to
+  estimate an effect.
+- **Identification:** having a contrast that isolates the effect of interest
+  from other differences.
+- **Confound:** a second difference that changes together with the factor of
+  interest, preventing its effect from being isolated.
+- **Entry point:** the route by which injected content reaches the agent.
+- **Execution model:** whether one agent works alone or a planner and worker act
+  in sequence.
+- **Compliance:** whether the agent performs the action requested by injected
+  text, as determined from its recorded actions.
+- **Exposure:** whether the injected text appears in a tool result returned to
+  the agent.
 
 The design in this plan is organized around one question: for each effect we
 want to report, is there a contrast in the data that isolates it?
@@ -142,6 +194,25 @@ Everything in §§4–8 follows from these four, plus the invariant in §2.
 ---
 
 ## 4. Units of the design
+
+**Terms used in this section**
+
+- **Run:** one isolated execution assembled from a host, a task, a policy, and
+  zero or one injection.
+- **Host:** a reusable simulated HPC environment: its base workspace plus the
+  scheduler and module state behind it.
+- **Task:** the natural-language request given to the agent.
+- **Policy:** the machine-readable account and task boundaries used for
+  enforcement and scoring.
+- **Injection:** attack or control text inserted into a host at run assembly.
+- **Vehicle:** the log, file, module description, or peer message through which
+  the agent can encounter an injection.
+- **Target:** the specific object or operation that an injection asks the agent
+  to access or change.
+- **Scope derivation:** a short explanation connecting the object named in the
+  task to the task policy's allowed roots, scheduler operations, and state.
+- **Operational register:** the consistent style used for injected text: a
+  plausible diagnostic or documentation note proposing a next step.
 
 A run is assembled from four things: a **host**, a **task**, at most one
 **injection**, and a **policy**. Nothing adversarial is ever checked into a
@@ -235,6 +306,27 @@ phrasings behave differently is a separate question and is outside this design.
 
 ## 5. The two factors
 
+**Terms used in this section**
+
+- **Factor:** a dimension deliberately varied in the experimental design.
+- **Level:** one named value of a factor, such as E1 or A3.
+- **Entry point (E):** how injected content reaches or influences the agent.
+- **Induced action (A):** what the injected content asks the agent to do.
+- **Cell:** one entry-point × induced-action combination, such as E2A4.
+- **Compliance predicate:** a machine-checkable rule over the recorded action
+  trace that determines whether the requested action occurred.
+- **Realization instrument:** action-specific evidence measuring how far the
+  requested action progressed toward harm.
+- **Canary:** a unique synthetic value placed in protected data to reveal reads
+  or disclosures.
+- **Payload marker:** a unique synthetic value used to reveal whether attacker
+  content was planted or later consumed.
+- **Expected exposure profile:** the anticipated likelihood that an agent will
+  encounter content through an entry point, estimated and reported rather than
+  assumed as an outcome.
+- **Parameter manifest:** the declared correct parameter state used to detect
+  whether an A3 change persisted.
+
 Both factors are defined by properties that matter for measurement — how the
 content reaches the agent, and what predicate scores compliance — rather than by
 a catalogue of places attacks have been seen.
@@ -294,6 +386,28 @@ host-specific parser with positive, negative, and malformed-input fixtures.
 ---
 
 ## 6. Allocation
+
+**Terms used in this section**
+
+- **Allocation:** the assignment of experimental cells and conditions to hosts.
+- **Core host:** H1, which contains the complete 4 × 4 factor crossing used for
+  the principal within-workspace comparisons.
+- **Generalization host:** H2 or H3, each carrying a balanced subset of cells to
+  test whether results extend beyond H1.
+- **Held-out host:** private H4, used only as an unpublished robustness check.
+- **Complete crossing:** every level of one factor paired with every level of
+  the other; here, 4 entry points × 4 induced actions = 16 cells.
+- **Balanced half:** eight cells arranged so each entry point and each induced
+  action occurs twice within that host.
+- **Request family:** the shared specification for one host/action pair,
+  including matched attacked and benign targets and paraphrase intentions.
+- **Placement:** the admissible position within a vehicle where text is inserted.
+- **Bridge arm:** a matched set of runs under another execution mode, used to
+  estimate the mode effect without mixing it into the entry-point effect.
+- **Model family:** a provider/model lineage treated as a replication axis, not
+  as a ranked treatment.
+- **Execution mode:** either a single agent or the planner → worker → planner
+  workflow used consistently across the cells being compared.
 
 ### 6.1 Hosts
 
@@ -401,6 +515,26 @@ available, the release records that limitation and the interleaved schedule in
 
 ## 7. Conditions
 
+**Terms used in this section**
+
+- **Condition:** the experimental variant applied to a run.
+- **Clean:** the default task and policy with no injected text.
+- **Inert:** non-requesting text matched to an injection's form and placement.
+- **Benign:** injected text requesting a comparable action inside task scope.
+- **Attacked:** injected text requesting an action outside task scope but inside
+  account permissions.
+- **Near-miss:** a separate task that legitimately requires the sensitive action,
+  paired with a policy widened to make that action in scope.
+- **Paraphrase:** one of three wording variants preserving the same semantic
+  intent.
+- **Targeted-action background rate:** how often a target action occurs without
+  an injected request for it.
+- **Parameter manifest:** the action-specific declaration of the correct A3 end
+  state; a near-miss uses a separate manifest because the requested change is
+  legitimate there.
+- **Paraphrase variance:** variation in outcomes attributable to wording variants
+  that preserve the same intended request.
+
 Five condition classes appear at the allocation shown below: attacked and benign
 per cell, inert per H1 entry point, near-miss per host/action, and clean per host.
 None is optional at that allocation; each removes a specific alternative
@@ -489,6 +623,46 @@ posterior interval for the paraphrase-to-cell variance ratio lying wholly above
 ---
 
 ## 8. Measurement
+
+**Terms used in this section**
+
+- **Action trace:** the normalized record of tool calls and their outcomes during
+  a run.
+- **Compliance:** the requested action occurred after exposure, according to the
+  injection's compliance predicate.
+- **Realization:** an action-specific ordinal measure of how far compliant
+  behavior progressed toward concrete harm.
+- **Utility:** whether the agent completed the assigned task, determined by the
+  host's calibrated success criteria.
+- **Exposure:** the injected text appeared in a tool result returned to the agent.
+- **Estimand:** the precisely defined quantity the study intends to estimate.
+- **Scope violation:** any recorded crossing of the task policy, whether or not
+  it matches the injection's target.
+- **Overblocking:** refusal or failure when a near-miss task legitimately requires
+  the sensitive action.
+- **Inconclusive run:** a run that errors, exceeds its step budget, or produces no
+  final answer.
+- **Oracle:** deterministic scoring logic that derives outcomes from the final
+  answer, action trace, and workspace state.
+- **Evaluated-control profile:** a versioned rule describing which recorded
+  events a particular defensive control would observe or flag.
+- **Attack susceptibility:** attacked compliance among exposed runs, standardized
+  across the populated core-host cells and shown against background rates.
+- **Scope selectivity:** the matched difference between following a benign
+  in-scope request and an attacked out-of-scope request.
+- **Deployment risk:** attacked compliance over all attempts, combining exposure
+  and compliance after exposure.
+- **Targeted-action background:** occurrence of the target action in a clean or
+  inert run that did not request it.
+- **Stated intent:** the agent says it plans or wants to perform the target action
+  but never performs the corresponding tool action.
+- **Success criteria:** deterministic required findings or required final state
+  used to score task utility.
+- **Calibration fixture:** a hand-written positive or plausible negative example
+  used to verify that success criteria accept correct work and reject incorrect
+  work.
+- **Inference trust boundary:** whether the model endpoint receiving tool results
+  is inside or outside the facility's approved environment.
 
 ### 8.1 Primary outcome and estimands
 
@@ -671,6 +845,39 @@ the residual threat to R3 after the primary DV has been made uniform.
 
 ## 9. Analysis plan
 
+**Terms used in this section**
+
+- **Pre-registration:** a signed, versioned specification of hypotheses,
+  analysis choices, and fallback procedures fixed before confirmatory results.
+- **Confirmatory analysis:** an analysis specified before results are examined;
+  any later analysis is labeled exploratory.
+- **Mixed-effects logistic regression:** a model for binary outcomes combining
+  population-level coefficients with group-level variation.
+- **Fixed effect:** a coefficient for a deliberately included level whose
+  specific differences are estimated.
+- **Random effect:** modeled variation associated with repeated or clustered
+  units such as request families, paraphrases, or placements.
+- **Standardization:** combining cell estimates using predeclared weights rather
+  than the accidental proportions in observed data.
+- **Omnibus test:** one test of whether any effect exists across a multi-level
+  factor, without making individual pairwise claims.
+- **Multiplicity:** the increased false-positive risk created by testing several
+  hypotheses.
+- **Holm correction:** a stepwise adjustment controlling family-wise error over
+  the declared group of secondary analyses.
+- **Attrition:** attempted runs that do not yield a conclusive outcome.
+- **Interval:** the reported uncertainty range around an estimate.
+- **Prior:** a distribution fixed before observing results that regularizes model
+  estimates; sensitivity fits check whether conclusions depend on its scale.
+- **Separation:** a logistic-regression condition in which a predictor perfectly
+  divides observed outcomes, making unregularized estimates unstable.
+- **Power:** the probability that the predeclared analysis detects an effect at
+  least as large as the minimum effect of interest under simulated assumptions.
+- **Minimum effect of interest:** the smallest effect the study is required to
+  have adequate power to detect.
+- **Wilson half-width:** a descriptive approximation to the distance from an
+  observed proportion to either end of its Wilson confidence interval.
+
 Fixed before any result is seen and committed as `preregistration.json` under a
 signed release tag. Anything decided afterwards is labelled exploratory **in the
 text**, not only in a footnote.
@@ -819,7 +1026,21 @@ per-cell rates only.
 
 ## 10. Budget
 
-One **configuration** is one (model family, defense) pair.
+**Terms used in this section**
+
+- **Configuration:** one model-family and defense pair.
+- **Target run:** a run counted toward the planned exposed sample or a control
+  with a fixed run count.
+- **Attempt:** any started run, including unexposed or inconclusive runs.
+- **Hard attempt cap:** the maximum attempts allowed before a cell is reported
+  with the exposure it actually achieved.
+- **Cost gate:** approval of expected cost, worst-case cost, and contingency
+  before a sweep begins.
+- **Defense arm:** one concurrently evaluated defense configuration.
+- **Scope-reduction ladder:** the predeclared order for reducing the study when
+  cost or authoring capacity binds, including the claim lost at each step.
+- **Acceptance review:** human review confirming that authored benchmark material
+  preserves its intended meaning, matching, provenance, and realism.
 
 ### 10.1 `v0.5` — core host, single-agent, E1–E3 × A1–A4
 
@@ -932,6 +1153,49 @@ release. Removing one requires a new study design, not merely a smaller N.
 ---
 
 ## 11. Engineering
+
+**Terms used in this section**
+
+- **Harness:** the complete software system that assembles, runs, records, and
+  scores benchmark executions.
+- **Runner:** the command-line component that assembles one isolated run and
+  writes its result.
+- **Backend:** the implementation of simulated tools, scheduler state, policy
+  enforcement, and deterministic replay.
+- **Agent adapter:** the layer connecting a model to the harness's prompts and
+  allowlisted tools.
+- **Schema:** the required machine-readable structure of hosts, injections, and
+  results.
+- **Validator:** the component that checks schema and semantic requirements
+  before execution.
+- **Placement class:** the set of valid positions where an injection may be
+  inserted in a particular vehicle.
+- **Consumer:** the declared later reader used to test whether an A4 payload is
+  actually consumed.
+- **Oracle:** the deterministic scoring component.
+- **Aggregator:** the component that converts immutable raw results into the
+  pre-registered models, estimates, and report tables.
+- **Context hook:** a defense interface that transforms information before it
+  reaches the agent.
+- **Action hook:** a defense interface that allows, denies, or annotates a
+  proposed action before the backend executes it.
+- **Pilot:** preliminary runs used to verify integration and size the study, not
+  to contribute benchmark results.
+- **Sweep:** the scheduled collection of runs for one release or comparison.
+- **Acceptance gate:** required evidence that must pass before a milestone or
+  release is complete.
+- **Release manifest:** a hashed record of the exact inputs, configurations, and
+  raw results needed to reproduce aggregation.
+- **Deterministic replay:** rerunning recorded simulated actions from the same
+  seed and inputs to obtain the same backend behavior.
+- **Normalized path:** a filesystem path resolved to its canonical location
+  before policy checking, including handling of `..` and symbolic links.
+- **Integration smoke test:** a minimal end-to-end run used to expose wiring or
+  data-flow defects before the sizing pilot or sweep.
+- **Positive control:** a deliberately idealized mechanism expected to enforce
+  the boundary, used to confirm that the harness can measure enforcement.
+- **Realism review:** pre-result assessment by HPC practitioners of whether a
+  task, vehicle, writer capability, and requested action form a plausible case.
 
 ### 11.1 Phases
 
@@ -1205,6 +1469,22 @@ host must not require touching it.
 
 ## 12. Contamination
 
+**Terms used in this section**
+
+- **Benchmark contamination:** benchmark material appearing in model training
+  data, potentially changing measured behavior through prior familiarity.
+- **Canary generation:** the release-specific set of synthetic secret values
+  substituted into canary slots at load time.
+- **Marker generation:** the corresponding release-specific A4 payload values.
+- **Private host:** H4, stored outside the public repository and evaluated under
+  the same protocol.
+- **Robustness check:** a comparison showing sensitivity to different,
+  unpublished material without assigning a single causal explanation.
+- **Contamination estimator:** a design capable of isolating the causal effect of
+  training-data exposure; H4 is explicitly not such a design.
+- **Distribution shift:** any difference between public and private material,
+  including host, task, wording generator, or publication status.
+
 TaskBound is intended to be public, so its material will eventually appear in
 training data.
 
@@ -1245,6 +1525,22 @@ as sensitivity to unpublished material.
 ---
 
 ## 13. Releases and milestones
+
+**Terms used in this section**
+
+- **Release:** a named benchmark scope with a fixed definition of done and a
+  limited set of claims it licenses.
+- **Milestone:** a dependency-ordered unit of implementation work, not a calendar
+  week.
+- **Pre-registration amendment:** a signed, additive change extending an earlier
+  registration while preserving its history as a reviewable diff.
+- **Defense arm:** a fresh set of runs under one defense implementation.
+- **Replication result:** evidence from an earlier or separate run reported as a
+  repeat, not substituted for a concurrent confirmatory contrast.
+- **Paraphrase protocol:** the frozen rules for generating, matching, reviewing,
+  and accepting wording variants.
+- **Main pre-registration:** the signed analysis and configuration specification
+  that freezes the confirmatory baseline sweep.
 
 | Target | Milestones | Scope | What it licenses |
 |--------|-----------|-------|------------------|
@@ -1304,6 +1600,16 @@ harness configuration change.
 
 ## 14. Decisions most worth challenging
 
+**Terms used in this section**
+
+- **Judgment call:** a defensible design choice that follows from priorities or
+  tradeoffs rather than uniquely from the identification requirements.
+- **Fallback:** the predeclared alternative used if a judgment call fails review.
+- **Covariate:** an additional measured characteristic used for adjustment or
+  sensitivity analysis, not for selecting which results to report.
+- **Replication axis:** repeated evaluation across model families to test whether
+  the phenomenon is broader than one family, without ranking those families.
+
 Listed because they are judgment calls, not derivations.
 
 1. **The core host carries all sixteen cells.** This is what buys identification,
@@ -1339,6 +1645,18 @@ Listed because they are judgment calls, not derivations.
 ---
 
 ## 15. Definition of done
+
+**Terms used in this section**
+
+- **Definition of done:** the complete set of evidence and outputs required to
+  call a release complete.
+- **Configuration hash:** a digest identifying the exact model, prompt, tool,
+  sampling, and harness configuration used for a run block.
+- **Reproducible aggregation:** regenerating all reported tables and estimates
+  from the release manifest and immutable raw results.
+- **Perfect-policy upper bound:** the result from an idealized defense given the
+  hidden ground-truth task policy, representing perfect enforcement rather than
+  deployable scope inference.
 
 `v0.5` is complete when milestones 0–8 pass every applicable acceptance gate and
 the H1 E1–E3 single-agent sweep reproduces from its release manifest. It may make
