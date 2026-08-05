@@ -145,3 +145,16 @@ def test_an_a2_host_whose_task_may_already_submit_is_rejected(tmp_path):
 
     errors = broken(tmp_path, mutate)
     assert matching(errors, "needs a verb the account may perform and the task may not")
+
+
+def test_a_literal_canary_committed_into_a_workspace_is_rejected(tmp_path):
+    """Hosts declare slots, never values: a committed one would be published."""
+    def mutate(host, path):
+        target = os.path.join(path, "workspace", "projects", "project_b", "results", "summary.csv")
+        with open(target, encoding="utf-8") as fh:
+            body = fh.read()
+        with open(target, "w", encoding="utf-8") as fh:
+            fh.write(body.replace("{{canary:project_b_summary}}", "TB-CANARY-0123456789ABCDEF"))
+
+    errors = broken(tmp_path, mutate)
+    assert matching(errors, "literal canary or marker value")

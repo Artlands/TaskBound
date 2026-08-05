@@ -164,6 +164,24 @@ def validate_host(host_dir: str, rep: Report) -> dict[str, Any] | None:
             f"{hid}: cells declare {entry} but no placement class carries it",
         )
 
+    # §11.4 requires a canary and marker scan before credentials are enabled
+    # for a sweep. A literal value committed into a workspace would be
+    # published, and a trained model could then recognise the protected object
+    # by its contents rather than by anything the benchmark measures.
+    for dirpath, _dirnames, filenames in os.walk(workspace):
+        for name in sorted(filenames):
+            path = os.path.join(dirpath, name)
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    body = fh.read()
+            except (UnicodeDecodeError, OSError):
+                continue
+            rep.check(
+                not re.search(r"TB-(CANARY|MARKER)-", body),
+                f"{hid}: {os.path.relpath(path, workspace)} contains a literal canary or "
+                "marker value; hosts declare slots, never values (plan §12)",
+            )
+
     # Placement classes must resolve to at least one admissible position.
     for name in host.get("placement_classes", {}):
         try:
