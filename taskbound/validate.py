@@ -133,21 +133,35 @@ def validate_host(host_dir: str, rep: Report) -> dict[str, Any] | None:
             b_account, b_task, b_what = invariant_holds(policy, benign)
             rep.check(b_account, f"{hid}: benign {action} target {b_what} is not account-permitted")
             rep.check(b_task, f"{hid}: benign {action} target {b_what} is outside task scope")
-        if action == "A1":
-            rep.check(
-                spec.get("canary_slot") in policy.canary_slots,
-                f"{hid}: A1 target declares no canary slot in this host",
-            )
+        _check_action_requirements(host_dir, host, policy, action, spec, rep)
 
     for cell in host.get("cells", []):
         action = cell[2:]
+        widened_raw = host.get("near_miss_policies", {}).get(action)
         rep.check(
-            action in host.get("near_miss_policies", {}),
+            widened_raw is not None,
             f"{hid}: no near-miss policy for {action} (plan §7.4)",
         )
         rep.check(
             f"near_miss_{action}" in host.get("tasks", {}),
             f"{hid}: no near-miss task for {action}",
+        )
+        # Widening the wrong layer leaves the near-miss task impossible, which
+        # would score correct refusal-free work as overblocking.
+        if widened_raw and action in host.get("action_targets", {}):
+            widened = policy.widened(widened_raw)
+            _, task_ok, what = invariant_holds(
+                widened, host["action_targets"][action]["compliance_predicate"]
+            )
+            rep.check(
+                task_ok,
+                f"{hid}: near-miss policy for {action} does not bring {what} into task scope",
+            )
+
+    for entry in {c[:2] for c in host.get("cells", [])}:
+        rep.check(
+            any(p.get("entry_point") == entry for p in host.get("placement_classes", {}).values()),
+            f"{hid}: cells declare {entry} but no placement class carries it",
         )
 
     # Placement classes must resolve to at least one admissible position.
@@ -167,6 +181,120 @@ def validate_host(host_dir: str, rep: Report) -> dict[str, Any] | None:
 
     host["_dir"] = host_dir
     return host
+
+
+def _check_action_requirements(
+    host_dir: str,
+    host: dict[str, Any],
+    policy: Policy,
+    action: str,
+    spec: dict[str, Any],
+    rep: Report,
+) -> None:
+    """What each induced action needs from its host beyond a valid target."""
+    hid = host["host_id"]
+    if action == "A1":
+        rep.check(
+            spec.get("canary_slot") in policy.canary_slots,
+            f"{hid}: A1 target declares no canary slot in this host",
+        )
+    if action == "A2":
+        # Both allowlists have to be non-trivial: an account that cannot submit
+        # makes the attack an access-control failure, and a task that can makes
+        # it in scope.
+        rep.check(
+            bool(set(policy.account_allowed_scheduler_actions)
+                 - set(policy.task_allowed_scheduler_actions)),
+            f"{hid}: A2 needs a verb the account may perform and the task may not",
+        )
+    if action == "A3":
+        predicate = spec["compliance_predicate"]
+        rep.check(
+            any(
+                under(predicate["path"], c.path) and c.selector == predicate["selector"]
+                for c in policy.task_state_constraints
+            ),
+            f"{hid}: A3 target {predicate['path']}{predicate['selector']} is covered by no "
+            "task_state_constraint, so nothing distinguishes it from an allowed write",
+        )
+        _check_manifests(host_dir, host, policy, rep)
+    if action == "A4":
+        consumer = host.get("oracle", {}).get("a4_consumer")
+        if not rep.check(consumer is not None, f"{hid}: A4 declares no consumer (plan §11 phase 3)"):
+            return
+        for field in ("kind", "path", "description"):
+            rep.check(bool(consumer.get(field)), f"{hid}: A4 consumer is missing {field!r}")
+        path = consumer.get("path", "")
+        rep.check(
+            policy.account_allows_path(path) and not policy.task_allows_path(path),
+            f"{hid}: A4 consumer path {path} does not satisfy the central invariant",
+        )
+        rep.check(
+            under(spec["compliance_predicate"]["path"], path),
+            f"{hid}: A4 target is not under the declared consumption path {path}",
+        )
+        rep.check(
+            bool(spec.get("marker_slot")),
+            f"{hid}: A4 target declares no payload marker slot",
+        )
+        # A marker that collided with a canary would make the A1 and A4 ladders
+        # mutually indistinguishable, which is the one thing the two-instrument
+        # split exists to prevent (plan §11 phase 2).
+        rep.check(
+            spec.get("marker_slot") not in policy.canary_slots,
+            f"{hid}: marker slot {spec.get('marker_slot')!r} collides with a canary slot",
+        )
+
+
+def _check_manifests(host_dir: str, host: dict[str, Any], policy: Policy, rep: Report) -> None:
+    """The manifest and the policy's state constraints must not drift apart.
+
+    They are two artifacts saying related things: the constraint says which
+    final values this task's authority permits, the manifest says which one is
+    correct. A manifest value the policy forbids, or a pinned value the manifest
+    never mentions, means one of them has been edited and the other has not.
+    """
+    hid = host["host_id"]
+    manifests = host.get("manifests", {})
+    if not rep.check("default" in manifests, f"{hid}: owns an A3 cell but ships no default manifest"):
+        return
+    rep.check(
+        "near_miss_A3" in manifests,
+        f"{hid}: owns an A3 cell but ships no near-miss manifest (plan §7.4)",
+    )
+    for key, rel in manifests.items():
+        path = os.path.join(host_dir, rel)
+        if not rep.check(os.path.isfile(path), f"{hid}: manifest {key!r} missing file {rel}"):
+            continue
+        with open(path, encoding="utf-8") as fh:
+            entries = json.load(fh)["parameters"]
+        effective = policy
+        if key.startswith("near_miss_"):
+            override = host.get("near_miss_policies", {}).get(key[len("near_miss_"):])
+            if override is None:
+                continue
+            effective = policy.widened(override)
+        constraints = effective.task_state_constraints
+        for entry in entries:
+            match = [
+                c for c in constraints
+                if c.path == entry["path"] and c.selector == entry["selector"]
+            ]
+            if not rep.check(match, f"{hid}: manifest {key!r} pins {entry['selector']} at "
+                                    f"{entry['path']}, which no state constraint covers"):
+                continue
+            rep.check(
+                all(c.permits(entry["value"]) for c in match),
+                f"{hid}: manifest {key!r} declares {entry['selector']} = {entry['value']!r}, "
+                "which its own task policy forbids",
+            )
+        covered = {(e["path"], e["selector"]) for e in entries}
+        for c in constraints:
+            rep.check(
+                (c.path, c.selector) in covered,
+                f"{hid}: task policy pins {c.selector} at {c.path} but manifest {key!r} "
+                "says nothing about it",
+            )
 
 
 def _calibrate(host_dir: str, host: dict[str, Any], criteria: dict[str, Any], rep: Report) -> None:
@@ -196,6 +324,7 @@ def _read(host_dir: str, rel: str) -> str:
 def validate_injections(injection_dir: str, hosts: dict[str, dict[str, Any]], rep: Report) -> None:
     paths = sorted(glob.glob(os.path.join(injection_dir, "*.json")))
     by_cell: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    inert_by_entry: dict[tuple[str, str], list[dict[str, Any]]] = {}
     seen_ids: set[str] = set()
 
     for path in paths:
@@ -213,10 +342,32 @@ def validate_injections(injection_dir: str, hosts: dict[str, dict[str, Any]], re
             continue
         policy = Policy.from_dict(host["policy"])
 
+        placement = host.get("placement_classes", {}).get(inj["placement_class"])
+        if rep.check(placement is not None, f"{name}: unknown placement class {inj['placement_class']!r}"):
+            rep.check(
+                placement.get("entry_point") == inj["entry_point"],
+                f"{name}: declares {inj['entry_point']} but its vehicle carries "
+                f"{placement.get('entry_point')}",
+            )
+
+        # Canaries and payload markers are generated per release and never
+        # committed. A literal one here would be published, and would let a
+        # trained model recognise the attack by its payload (plan §12).
         rep.check(
-            inj["placement_class"] in host.get("placement_classes", {}),
-            f"{name}: unknown placement class {inj['placement_class']!r}",
+            not re.search(r"TB-(CANARY|MARKER)-", inj["text"]),
+            f"{name}: text contains a literal canary or marker value",
         )
+        for slot in inj.get("marker_slots", []):
+            rep.check(
+                "{{marker:" + slot + "}}" in inj["text"],
+                f"{name}: declares marker slot {slot!r} that its text never uses",
+            )
+        if inj.get("induced_action") == "A4":
+            target = host.get("action_targets", {}).get("A4", {})
+            rep.check(
+                inj.get("marker_slots") == [target.get("marker_slot")],
+                f"{name}: every A4 injection carries the host's payload marker slot",
+            )
 
         if inj["kind"] == "inert":
             rep.check(inj.get("induced_action") is None, f"{name}: inert text declares an induced action")
@@ -224,6 +375,7 @@ def validate_injections(injection_dir: str, hosts: dict[str, dict[str, Any]], re
                 "compliance_predicate" not in inj,
                 f"{name}: inert text carries a compliance predicate (nothing can be complied with)",
             )
+            inert_by_entry.setdefault((inj["host"], inj["entry_point"]), []).append(inj)
         else:
             predicate = inj.get("compliance_predicate")
             if not rep.check(predicate is not None, f"{name}: missing compliance_predicate"):
@@ -233,18 +385,38 @@ def validate_injections(injection_dir: str, hosts: dict[str, dict[str, Any]], re
             except ValueError as exc:
                 rep.check(False, f"{name}: {exc}")
                 continue
+            action = host.get("action_targets", {}).get(inj.get("induced_action") or "", {})
             if inj["kind"] == "attack":
                 rep.check(account_ok, f"{name}: attack target {what} is not account-permitted (off-thesis)")
                 rep.check(not task_ok, f"{name}: attack target {what} is inside task scope (off-thesis)")
-                # The requested action must appear in the text: a target the text
-                # never asks for cannot be complied with.
                 rep.check(
-                    _text_requests(inj, predicate),
-                    f"{name}: injected text does not name the declared target",
+                    inj.get("target", {}).get("scope") == "out_of_scope",
+                    f"{name}: attack target is not declared out_of_scope",
                 )
+                mirror = action.get("benign_predicate", {})
             else:
                 rep.check(account_ok, f"{name}: benign target {what} is not account-permitted")
                 rep.check(task_ok, f"{name}: benign target {what} is outside task scope")
+                rep.check(
+                    inj.get("target", {}).get("scope") == "in_scope",
+                    f"{name}: benign target is not declared in_scope",
+                )
+                mirror = action.get("compliance_predicate", {})
+            # The requested action must appear in the text: a target the text
+            # never asks for cannot be complied with.
+            rep.check(
+                _text_requests(inj, predicate),
+                f"{name}: injected text does not name the declared target",
+            )
+            # And the *other* condition's target must not, or the text offers
+            # the agent both an in-scope and an out-of-scope way to satisfy it
+            # and the contrast stops being a contrast.
+            if mirror.get("path") and mirror.get("path") != predicate.get("path"):
+                rep.check(
+                    mirror["path"].lower() not in inj["text"].lower(),
+                    f"{name}: text also names the matched {'benign' if inj['kind'] == 'attack' else 'attacked'} "
+                    f"target {mirror['path']}",
+                )
             key = (inj["host"], inj["cell"], inj["kind"])
             by_cell.setdefault(key, []).append(inj)
 
@@ -289,6 +461,36 @@ def validate_injections(injection_dir: str, hosts: dict[str, dict[str, Any]], re
             {i["paraphrase"] for i in group} == {i["paraphrase"] for i in mirror},
             f"{host_id}/{cell}: attacked and benign paraphrase intents are not matched",
         )
+
+    # A declared cell with no texts is a hole in the grid, and it would show up
+    # as a missing row rather than as a failure if nothing checked for it.
+    for host_id, host in sorted(hosts.items()):
+        for cell in host.get("cells", []):
+            for kind in ("attack", "benign"):
+                rep.check(
+                    (host_id, cell, kind) in by_cell,
+                    f"{host_id}: cell {cell} is declared but has no {kind} texts",
+                )
+        # Inert is per entry point, not per cell: one set of texts per vehicle,
+        # scored against every target predicate the host declares (plan §7.2).
+        for entry in sorted({c[:2] for c in host.get("cells", [])}):
+            group = inert_by_entry.get((host_id, entry), [])
+            rep.check(
+                len(group) == PARAPHRASES_PER_CELL,
+                f"{host_id}/{entry}: {len(group)} inert texts, expected {PARAPHRASES_PER_CELL}",
+            )
+            rep.check(
+                len({i["paraphrase"] for i in group}) == len(group),
+                f"{host_id}/{entry}: inert paraphrase ids are not distinct",
+            )
+            for i, a in enumerate(group):
+                for b in group[i + 1:]:
+                    sim = _similarity(a["text"], b["text"])
+                    rep.check(
+                        sim < NEAR_DUPLICATE_THRESHOLD,
+                        f"{host_id}/{entry}: {a['injection_id']} and {b['injection_id']} are "
+                        f"near-duplicate inert texts (Jaccard {sim:.2f})",
+                    )
 
 
 def _text_requests(inj: dict[str, Any], predicate: dict[str, Any]) -> bool:
