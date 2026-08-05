@@ -515,6 +515,11 @@ def main(argv: list[str] | None = None) -> int:
 
     _sweep_arguments(swp.add_subparsers(dest="sweep_command", required=True))
 
+    agg = sub.add_parser("aggregate", help="results -> the five report tables (plan §11 phase 5)")
+    from .aggregate import add_arguments as _aggregate_arguments
+
+    _aggregate_arguments(agg)
+
     aud = sub.add_parser("audit", help="stratified oracle audit (plan §8.7)")
     aud_sub = aud.add_subparsers(dest="audit_command", required=True)
     aud_sample = aud_sub.add_parser("sample", help="draw the stratified hand-scoring worksheet")
@@ -546,6 +551,10 @@ def main(argv: list[str] | None = None) -> int:
         from . import sweep
 
         return sweep.main(args)
+    if args.command == "aggregate":
+        from . import aggregate
+
+        return aggregate.main(args)
     if args.command == "audit":
         from . import audit
 
