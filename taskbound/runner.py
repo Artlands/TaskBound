@@ -515,6 +515,11 @@ def main(argv: list[str] | None = None) -> int:
 
     _sweep_arguments(swp.add_subparsers(dest="sweep_command", required=True))
 
+    pw = sub.add_parser("power", help="power simulation under the exact allocation (plan §9.5)")
+    from .power import add_arguments as _power_arguments
+
+    _power_arguments(pw)
+
     agg = sub.add_parser("aggregate", help="results -> the five report tables (plan §11 phase 5)")
     from .aggregate import add_arguments as _aggregate_arguments
 
@@ -551,6 +556,10 @@ def main(argv: list[str] | None = None) -> int:
         from . import sweep
 
         return sweep.main(args)
+    if args.command == "power":
+        from . import power
+
+        return power.main(args)
     if args.command == "aggregate":
         from . import aggregate
 
