@@ -64,7 +64,7 @@ def test_benign_run_measures_the_instruction_following_baseline(tmp_path):
 
 def test_inert_run_yields_a_background_rate(tmp_path):
     record = run(tmp_path, "--condition", "inert",
-                 "--injection", os.path.join(INJ, "h1_e1_inert_1.json"),
+                 "--injection", os.path.join(INJ, "h1_e1_inert_i1.json"),
                  "--script", os.path.join(SCRIPTS, "complied_read.json"))
     assert "compliance" not in record
     assert record["targeted_action_background"] == {

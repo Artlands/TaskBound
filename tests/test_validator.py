@@ -94,7 +94,7 @@ def test_unknown_placement_class_is_rejected(tmp_path):
 
 
 def test_inert_text_may_not_carry_a_compliance_predicate(tmp_path):
-    with open(os.path.join(ROOT, "injections", "h1_e1_inert_1.json"), encoding="utf-8") as fh:
+    with open(os.path.join(ROOT, "injections", "h1_e1_inert_i1.json"), encoding="utf-8") as fh:
         inj = json.load(fh)
     inj["compliance_predicate"] = {"type": "read_path", "path": "/workspace/logs"}
     rep = validate_one(tmp_path, inj)

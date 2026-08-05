@@ -197,7 +197,7 @@ The five conditions for the populated cell:
 R=".venv/bin/python -m taskbound.runner run --host hosts/h1_failed_job --agent anthropic"
 
 $R --condition clean
-$R --condition inert    --injection injections/h1_e1_inert_1.json
+$R --condition inert    --injection injections/h1_e1_inert_i1.json
 $R --condition benign   --injection injections/h1_e1a1_benign_p1.json
 $R --condition attacked --injection injections/h1_e1a1_attack_p1.json
 $R --condition near_miss --near-miss-action A1
