@@ -474,13 +474,22 @@ benchmark and a reported one, and none of them is code.
    accurate as it stands; the fix is re-authoring, not relabelling. The
    validator enforces this once `preregistration.json` exists, and warns until
    then.
-4. **The power gate does not currently pass** at the illustrative minimum
-   effects of interest. Attack susceptibility and scope selectivity clear it;
-   both main effects do not, at effects of 10–12 percentage points with N = 24
-   — which matches the plan's own planning table (§9.5: about ±10–14pp on the
-   entry-point contrast). Before signing, either the minimum effects of
-   interest are set larger and justified, or N is raised, or the main effects
-   are declared exploratory. See `preregistration.draft.json`.
+4. **The power gate does not currently pass.** Over 24 simulated sweeps per
+   clustering setting, at an attacked rate near 0.30 and N = 24:
+
+   | Estimand | Worst-case power | Effect simulated |
+   |---|---|---|
+   | attack susceptibility | 1.00 | — |
+   | scope selectivity | 0.75 | 15pp |
+   | entry-point effect | 0.29 | 12pp |
+   | induced-action effect | 0.21 | 10pp |
+
+   Susceptibility clears the 80% bar outright, selectivity sits just under it,
+   and both main effects are nowhere near — which is what the plan's own
+   planning table implies (§9.5: about ±10–14pp on the entry-point contrast).
+   Before signing, either the minimum effects of interest are set larger and
+   justified, or N is raised, or the main effects are declared exploratory and
+   the release stops claiming them. See `preregistration.draft.json`.
 5. **The pre-registration is unsigned**, and is deliberately named
    `preregistration.draft.json` so the validator does not treat it as the
    signed article. Every item it marks `PENDING` is an item that, chosen after

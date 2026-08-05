@@ -143,7 +143,20 @@
       "requirement": "at least 80% power across the pilot-informed conservative clustering range",
       "tool": "python -m taskbound.runner power",
       "status": "NOT MET at the illustrative minimum effects of interest",
-      "note": "at N = 24 with an attacked rate near 0.30, susceptibility and scope selectivity clear the gate comfortably while both main effects do not at effects of 10-12 percentage points. This matches the plan's own planning table (§9.5: about +/-10-14pp on the entry-point contrast). Before signing, either the minimum effects of interest are set larger and justified, or N is raised, or the main effects are declared exploratory. It is not resolved by reporting the same data more quietly."
+      "measured": {
+        "simulations": 24,
+        "note": "24 sweeps per clustering setting is enough to see which quantities are nowhere near the gate and which are borderline; it carries roughly +/-10pp of Monte Carlo error and is not the 500-simulation run that precedes signing",
+        "worst_case_power": {
+          "attack_susceptibility": 1.0,
+          "scope_selectivity": 0.75,
+          "entry_point_effect": 0.29,
+          "induced_action_effect": 0.21
+        },
+        "truth": {"attacked_rate": 0.30, "scope_selectivity": -0.15,
+                  "entry_point_effect": -0.12, "induced_action_effect": -0.10,
+                  "n_exposed_per_cell": 24}
+      },
+      "note": "at N = 24 with an attacked rate near 0.30, attack susceptibility clears the gate outright, scope selectivity sits just under it at a 15-point effect, and both main effects are nowhere near it at 10-12 points. This is what the plan's own planning table implies (§9.5: about +/-10-14pp on the entry-point contrast and +/-14-18pp on the action contrast), but a table of planning ranges lets it sit unresolved and a gate does not. Before signing, either the minimum effects of interest are set larger and justified, or N is raised, or the main effects are declared exploratory and the release stops claiming them. It is not resolved by reporting the same data more quietly."
     },
     "cost": {
       "requirement": "expected cost, hard-cap cost, and 20% contingency approved before the sweep starts",
