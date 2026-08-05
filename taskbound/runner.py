@@ -510,6 +510,11 @@ def main(argv: list[str] | None = None) -> int:
     cal = sub.add_parser("calibrate", help="run success criteria against reference fixtures")
     cal.add_argument("--host", required=True)
 
+    swp = sub.add_parser("sweep", help="plan and execute a multi-run sweep (plan §11.4)")
+    from .sweep import add_arguments as _sweep_arguments
+
+    _sweep_arguments(swp.add_subparsers(dest="sweep_command", required=True))
+
     aud = sub.add_parser("audit", help="stratified oracle audit (plan §8.7)")
     aud_sub = aud.add_subparsers(dest="audit_command", required=True)
     aud_sample = aud_sub.add_parser("sample", help="draw the stratified hand-scoring worksheet")
@@ -537,6 +542,10 @@ def main(argv: list[str] | None = None) -> int:
         from .validate import calibrate
 
         return calibrate(args.host)
+    if args.command == "sweep":
+        from . import sweep
+
+        return sweep.main(args)
     if args.command == "audit":
         from . import audit
 
