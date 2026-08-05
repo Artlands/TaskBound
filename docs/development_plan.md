@@ -17,6 +17,10 @@ specification; the summary is the thing to hand a colleague.
 It explains the threat model, experimental matrix, controls, measurement flow,
 analysis, and release sequence with figures before the exact specification here.
 
+**For what is built and what is not, see [§13.1 Development
+status](#131-development-status).** This document specifies the benchmark; that
+table says which parts of it exist yet.
+
 Each numbered section begins with the terms needed to read that section. These
 short definitions state what a term means in TaskBound; the text that follows
 then gives its operational rules, rationale, and implementation details.
@@ -1599,6 +1603,48 @@ harness configuration change.
     compliance/overblocking pair against concurrent `none`. Pilot each arm first
     — a defense that silently suppresses injection application scores as
     robustness.
+
+### 13.1 Development status
+
+Current as of 2026-08-05. **Done** means the artifact exists on disk, is
+exercised by a test or smoke run, and is represented in the validator or
+aggregator where it affects benchmark semantics (§11.3) — it does not mean the
+artifact has been reviewed, run, or reported.
+
+| # | Milestone | Status | Evidence |
+|---|-----------|--------|----------|
+| 0 | Harness and `local_sim` backend | **Done** | `taskbound/{runner,backend,agents,inject}.py`; deterministic replay, cache breakpoints, and token accounting exercised in `tests/test_end_to_end.py` |
+| 1 | Host schema and validator | **Done** | `taskbound/validate.py`, 2,115 checks; every check ships an intentionally invalid fixture in `tests/test_validator*.py` |
+| 2 | Unified policy checking | **Done** | `taskbound/policy.py`: paths, scheduler verbs, and state constraints through one evaluator; descriptor-relative access rejects `..` and symlink escapes |
+| 3 | H1 workspace, tasks, policy, references | **Partial** | Workspace, four clean vehicles, five tasks, both policy layers, and criterion calibration are done. **Realism review has not happened**; `realism_review.status` is `pending` |
+| 4 | Oracle | **Done** | Compliance predicates, four realization ladders, exposure, `control_profiles/*.json`, the declared A4 consumer, and the audit sampler in `taskbound/audit.py` |
+| 5 | Injection library and paraphrase protocol | **Done** | `docs/paraphrase_protocol.md`; four request families and an inert specification in `injections/specs/` |
+| 6 | H1's twelve E1–E3 cells | **Partial** | 36 attacked, 36 benign, 9 inert texts; four near-miss tasks and the A3 manifest twin. **Acceptance review has not happened**; every text records `accepted_by: PENDING_ACCEPTANCE_REVIEW` |
+| 7 | Sweep driver and aggregator; freeze the pilot protocol | **Done** | `taskbound/{sweep,glmm,aggregate,power}.py`; five tables, mixed-effects fit and its fallback, variance decomposition, all tested on synthetic data. Pilot protocol frozen in `docs/pilot_protocol.md` |
+| 8 | Pilot, gates, sign the pre-registration, run `v0.5` | **Not started** | `preregistration.draft.json` names every item still to freeze. Blocked — see below |
+| 9 | Two-agent execution mode and H1's four E4 cells | **Not started** | E4's vehicle and placement class exist and stay clean in every run (R1); no texts |
+| 10 | H2 and H3, complementary halves | **Not started** | — |
+| 11 | Private H4 | **Not started** | — |
+| 12 | Pilot the expanded design, amend, run `v1.0` | **Not started** | — |
+| 13 | Defense interface and both hooks | **Not started** | `--defense` is recorded per run and only `none` exists |
+| 14 | `v1.1` defense arms | **Not started** | — |
+
+**What blocks milestone 8.** Four things, none of them code:
+
+| Blocker | State | Resolution |
+|---------|-------|------------|
+| Power gate (§9.5) | **Failing.** Over 24 simulated sweeps at N = 24: attack susceptibility 1.00, scope selectivity 0.75, entry-point effect 0.29, induced-action effect 0.21 | Raise N, declare larger minimum effects of interest with justification, or declare the main effects exploratory. This is the choice §9.5's planning table defers and the gate forces |
+| Generator provenance (§7.5, §12) | **Blocking if a Claude lineage is selected.** Every text records `generator: claude-opus-5` | Re-author with a generator outside the evaluated set. The provenance field is accurate; the fix is re-authoring, not relabelling |
+| Realism review (§11.3, milestone 3) | Not started | Two HPC practitioners who did not author the cell rate each one against `realism_rubric.md`, before any model result exists |
+| Acceptance review (§11.3, milestone 6) | Not started | A named reviewer per text, per `paraphrase_protocol.md` §6 |
+
+The oracle audit gate (§8.7) is implemented and cannot be *evaluated* until a
+sweep exists to sample; it is a milestone 8 exit condition rather than an entry
+condition.
+
+**Nothing has been run.** No pilot, no sweep, no results. The pipeline is
+exercised end to end by scripted fixtures only, and no number in this
+repository is a `v0.5` result.
 
 ---
 
