@@ -7,6 +7,7 @@ __pycache__/
 # happens to contain a directory called `results` — project_b's does.
 /results/
 /test-results/
+/test-results-v2/
 
 # Release canaries and payload markers are generated per release and never
 # committed (plan §12). Nothing under here belongs in the repository.

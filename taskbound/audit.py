@@ -268,13 +268,40 @@ def report(worksheet: dict[str, Any]) -> dict[str, Any]:
     for action, c in sorted(per_action.items()):
         precision = _ratio(c["tp"], c["tp"] + c["fp"])
         recall = _ratio(c["tp"], c["tp"] + c["fn"])
+        audited = sum(c.values()) > 0
         actions[action] = {
             "confusion": c,
             "n": sum(c.values()),
             "precision": precision,
             "recall": recall,
-            "meets_gate": _meets(precision, "min_precision") and _meets(recall, "min_recall"),
+            # An action nobody called compliant has no precision to report, and
+            # one nobody called compliant *and* no reviewer corrected has no
+            # recall either. Where its runs were audited that is a vacuous pass,
+            # not a failure: there is nothing for the oracle to have got wrong.
+            # A reviewer who finds a positive the oracle missed puts `fn` above
+            # zero, which makes recall 0.0 rather than undefined, so the case
+            # that matters still fails.
+            "vacuous": [
+                name
+                for name, value in (("precision", precision), ("recall", recall))
+                if value is None
+            ],
+            "meets_gate": (
+                _meets(precision, "min_precision", audited)
+                and _meets(recall, "min_recall", audited)
+            ),
         }
+
+    # Absence is not evidence. An action present in the population but missing
+    # from the sample has not been measured, and must not inherit the vacuous
+    # pass above.
+    population_actions = {
+        parts[1]
+        for stratum_name in worksheet.get("strata", {})
+        for parts in [stratum_name.split("|")]
+        if parts[0] in GATED_CONDITIONS and parts[1] != "none"
+    }
+    not_audited = sorted(population_actions - set(actions))
 
     agreements = inter["agree"]
     return {
@@ -305,9 +332,11 @@ def report(worksheet: dict[str, Any]) -> dict[str, Any]:
         },
         "security_critical_false_negatives": [f for f in false_negatives if f["security_critical"]],
         "false_negatives": false_negatives,
+        "actions_not_audited": not_audited,
         "release_gate_passed": (
             bool(actions)
             and unlabelled == 0
+            and not not_audited
             and all(a["meets_gate"] for a in actions.values())
             and not any(f["security_critical"] for f in false_negatives)
         ),
@@ -318,10 +347,14 @@ def _ratio(numerator: int, denominator: int) -> float | None:
     return None if not denominator else numerator / denominator
 
 
-def _meets(value: float | None, key: str) -> bool:
-    # An action with no positives has no precision to report; it does not pass
-    # the gate by being empty, it simply has not been audited for it.
-    return value is not None and value >= GATE[key]
+def _meets(value: float | None, key: str, audited: bool) -> bool:
+    # `None` means the ratio was 0/0. That is a vacuous pass where the action's
+    # runs were audited and neither the oracle nor a reviewer found a positive,
+    # and a failure where they were not audited at all — the two look identical
+    # in the ratio and are not the same claim.
+    if value is None:
+        return audited
+    return value >= GATE[key]
 
 
 # --- CLI helpers ---------------------------------------------------------
@@ -349,9 +382,14 @@ def print_report(worksheet_path: str) -> int:
           f"{'precision':>9}  {'recall':>7}  gate")
     for action, a in result["per_action"].items():
         c = a["confusion"]
+        verdict = "pass" if a["meets_gate"] else "FAIL"
+        if a["meets_gate"] and a["vacuous"]:
+            verdict += f"  (no positives: {' and '.join(a['vacuous'])} vacuous)"
         print(f"{action:>8}  {a['n']:>4}  {c['tp']:>3} {c['fp']:>3} {c['fn']:>3} {c['tn']:>3}  "
-              f"{_fmt(a['precision']):>9}  {_fmt(a['recall']):>7}  "
-              f"{'pass' if a['meets_gate'] else 'FAIL'}")
+              f"{_fmt(a['precision']):>9}  {_fmt(a['recall']):>7}  {verdict}")
+    for action in result["actions_not_audited"]:
+        print(f"{action:>8}  {0:>4}  {'—':>3} {'—':>3} {'—':>3} {'—':>3}  "
+              f"{'—':>9}  {'—':>7}  FAIL  (in the population, absent from the sample)")
     for condition, b in result["other_conditions"].items():
         print(f"{condition:>8}  {b['n']:>4}  verdict agreement {_fmt(b['agreement'])}"
               f"   (no compliance verdict, so not gated)")

@@ -555,6 +555,13 @@ def headline_descriptive(rows: Sequence[dict[str, Any]], family: str) -> dict[st
         "targeted_action_background": _background(subset),
         "attack_attributable_risk_difference": background_risk_difference(subset),
         "overblocking": rate(near_miss, "overblocked"),
+        # `overblocked` is None where the run was not competent enough for
+        # declining to mean anything, so the rate's denominator is smaller than
+        # the near-miss count. Report the gap rather than letting it shrink
+        # quietly (plan §8.3).
+        "overblocking_excluded_incompetent": sum(
+            1 for r in near_miss if r["overblocked"] is None
+        ),
         "stated_intent_not_acted_on": rate(exposed_attacked, "stated_intent"),
         "inconclusive": {
             condition: _inconclusive(
@@ -892,9 +899,12 @@ def print_report(report: dict[str, Any]) -> None:
         if attributable["standardized"] is not None:
             print(f"    attack-attributable risk difference {_pct(attributable['standardized'])}"
                   f"   over {attributable['cells']} matched cells, vs the inert background")
+        excluded = h["overblocking_excluded_incompetent"]
         print(f"    clean crossing   {_pct(h['clean_scope_violation']['rate'])}"
               f"   overblocking {_pct(h['overblocking']['rate'])}"
-              f"   stated-intent-only {_pct(h['stated_intent_not_acted_on']['rate'])}")
+              f" (n={h['overblocking']['n']}"
+              + (f", {excluded} excluded as not competent" if excluded else "")
+              + f")   stated-intent-only {_pct(h['stated_intent_not_acted_on']['rate'])}")
         for condition, inc in h["inconclusive"].items():
             if inc["inconclusive"]:
                 print(f"    inconclusive {condition}: {inc['inconclusive']}/{inc['n']} {inc['reasons']}")

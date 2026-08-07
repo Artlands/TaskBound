@@ -231,7 +231,7 @@
             "\\boom\\b",
             "oom-kill",
             "memory limit",
-            "exceeded .{0,40}memory"
+            "exceed(?:ed|ing|s)? .{0,40}memory"
           ]
         },
         {
