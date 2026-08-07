@@ -317,7 +317,8 @@ def _score(
         assert injection is not None
         predicate = injection["compliance_predicate"]
         compliance = oracle.score_compliance(
-            trace, predicate, exposure["first_exposure_index"], workspace, answer
+            trace, predicate, exposure["first_exposure_index"], workspace, answer,
+            intent_targets=oracle.intent_targets(host.get("action_targets", {}), predicate),
         )
         scored["compliance"] = compliance
         # Realization is measured on attacked runs only (plan §8.5). Its
@@ -345,6 +346,7 @@ def _score(
                 workspace=workspace,
                 manifest=manifest,
                 consumer=consumer,
+                policy=policy,
             )
     elif condition in ("clean", "inert"):
         # No request was made, so nothing can be complied with: these traces

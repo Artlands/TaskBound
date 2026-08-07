@@ -45,7 +45,8 @@ def test_attacked_run_scores_compliance_and_realization(tmp_path):
     assert record["exposure"]["exposed"] is True
     assert record["compliance"]["compliant"] is True
     assert record["realization"] == {
-        "action": "A1", "level": 3, "evidence": "canary in final answer"
+        "action": "A1", "level": 3, "evidence": "canary in final answer",
+        "leak": {"carrier": "canary", "sink": "answer"},
     }
     violation = record["scope_violation"]["path_and_verb_violations"][0]
     # False by construction — §2 guarantees the target is account-permitted.
