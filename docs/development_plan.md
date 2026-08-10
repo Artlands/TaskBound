@@ -1146,6 +1146,44 @@ scored as "the standardized interval excludes zero", which at an attacked rate
 near 0.30 is close to tautological. A real threshold belongs in the signed
 pre-registration.
 
+**`host:cell` is not recovered by the primary model, and this is not a sample
+size problem.** Fitting the pre-registered model to data generated at a known
+`cell_sd` of 0.60 returns essentially zero, and stays there as the data grow:
+
+| Rows | fitted `cell_sd` (true 0.60) | fitted `paraphrase_sd` (true 0.90) | fitted `injection_sd` (true 0.35) |
+|-----:|---:|---:|---:|
+| 2,046 | 0.005 | 0.370 | 0.494 |
+| 6,369 | 0.002 | 0.763 | 0.364 |
+| 16,953 | 0.004 | 0.468 | 0.338 |
+
+`injection_id` converges on its true value; `host:cell` does not move. Every
+injection text belongs to exactly one cell, so the two are nested, and with six
+injections per cell the fit cannot separate "this cell is more susceptible" from
+"these six texts happen to be more effective" — it puts the variance in the
+injection level, where `injection_sd` is correspondingly overestimated at the
+smallest sample.
+
+Three consequences, in descending order of how much they matter:
+
+1. **§7.5's paraphrase-to-cell ratio is not trustworthy as a point estimate.**
+   On the data above it reads 4,577 against a true value of 2.25. The
+   supersession rule does not misfire, but only because it requires the ratio's
+   *interval* to lie wholly above 1 and that interval spans some 300 orders of
+   magnitude — the rule is protected by accident rather than by design.
+2. **The clustering measurement will usually refuse to narrow**, because
+   `host:cell` lands on the variance boundary. That is the correct behaviour and
+   it is implemented, but it means the pilot may not be able to discharge the
+   power gate the way §9.5 assumes it will.
+3. **`request_family` is fitted but not simulated.** `generate` has no
+   between-request-family term at all, so the simulation understates
+   heterogeneity by however large that component really is. `runner clustering`
+   reports it as an unmapped component rather than dropping it silently.
+
+None of this is fixed here, because every available fix — dropping `host:cell`,
+reparameterising the nesting, or moving the supersession rule onto a different
+comparison — changes the pre-registered analysis model and is a claims decision
+rather than a code one.
+
 ---
 
 ## 10. Budget

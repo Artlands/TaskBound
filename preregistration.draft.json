@@ -101,7 +101,24 @@
       "model": "fixed effects only, same priors",
       "rule": "used when the primary fit does not converge; both fits are disclosed and the model is never simplified after seeing the answer"
     },
-    "implementation": "taskbound/glmm.py, exercised on synthetic data in tests/test_analysis.py"
+    "implementation": "taskbound/glmm.py, exercised on synthetic data in tests/test_analysis.py",
+    "known_identification_problem": {
+      "component": "host:cell",
+      "status": "PENDING \u2014 a claims decision, not yet made",
+      "finding": "fitted against data generated at a known cell_sd of 0.60, the primary model returns 0.005 at 2,046 rows, 0.002 at 6,369 and 0.004 at 16,953: it does not recover with sample size. injection_id converges on its true value over the same range (0.494 -> 0.364 -> 0.338 against a true 0.35). Every injection text belongs to exactly one cell, so the two are nested, and with six injections per cell the fit cannot separate a susceptible cell from six effective texts; the variance goes to the injection level.",
+      "affects": [
+        "the supersession rule: the paraphrase-to-cell ratio reads 4577 against a true 2.25 on the data above. It does not misfire, but only because it requires the ratio interval to lie wholly above 1 and that interval spans roughly 300 orders of magnitude \u2014 protection by accident, not by design",
+        "the power gate's clustering measurement, which will usually refuse to narrow because host:cell sits on the variance boundary"
+      ],
+      "options": [
+        "drop host:cell and let injection_id carry the cell level",
+        "reparameterise the nesting so the cell level is identified",
+        "move the supersession rule onto a comparison that is identified",
+        "keep the model and report the ratio as uninterpretable"
+      ],
+      "not_decided_here": "every option changes the pre-registered analysis model"
+    },
+    "request_family_not_simulated": "the power simulation's `generate` has no between-request-family term, so it understates heterogeneity by whatever that component really is. `runner clustering` reports it as an unmapped component rather than dropping it"
   },
   "exposure_model": {
     "outcome": "exposed",

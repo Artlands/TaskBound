@@ -284,13 +284,25 @@ pre-registration it says so, at the top, in the text.
 Three gates, all of them tools rather than intentions:
 
 ```sh
+# the sizing pilot's variance components, as the range the gate runs across
+.venv/bin/python -m taskbound.runner clustering \
+  --results pilot/sizing --out pilot/clustering.json
+
 # power, under the exact allocation and the same fit the aggregator uses
-.venv/bin/python -m taskbound.runner power --simulations 500 --out pilot/power.json
+.venv/bin/python -m taskbound.runner power --simulations 500 \
+  --clustering pilot/clustering.json --out pilot/power.json
 
 # the stratified hand-scoring worksheet, and the gate over a completed one
 .venv/bin/python -m taskbound.runner audit sample --results results --out audit/ws.json
 .venv/bin/python -m taskbound.runner audit report --worksheet audit/ws.json
 ```
+
+`clustering` exists so that replacing `CLUSTERING_RANGE` with measured values is
+a recorded step rather than a hand-edit made with the pilot's numbers already on
+screen. It refuses to narrow the range when the pilot did not resolve the
+components — which, given the `host:cell` identification problem in §9.5, is the
+common case — and `power` records under `clustering_provenance` whether it ran
+against measured or assumed clustering.
 
 `docs/pilot_protocol.md` is the frozen protocol for the two pilot stages that
 precede them.

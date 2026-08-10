@@ -532,6 +532,14 @@ def main(argv: list[str] | None = None) -> int:
 
     _power_arguments(pw)
 
+    clu = sub.add_parser(
+        "clustering",
+        help="sizing pilot -> the measured clustering range the power gate uses",
+    )
+    from .power import add_clustering_arguments as _clustering_arguments
+
+    _clustering_arguments(clu)
+
     agg = sub.add_parser("aggregate", help="results -> the five report tables (plan §11 phase 5)")
     from .aggregate import add_arguments as _aggregate_arguments
 
@@ -572,6 +580,10 @@ def main(argv: list[str] | None = None) -> int:
         from . import power
 
         return power.main(args)
+    if args.command == "clustering":
+        from . import power
+
+        return power.clustering_main(args)
     if args.command == "aggregate":
         from . import aggregate
 

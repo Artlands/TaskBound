@@ -332,13 +332,29 @@ def variance_decomposition(
 
 def _variance_ratio_samples(primary, prior_sd, seed, step=0.15):
     """Draw ratios from a normal approximation to the profiled log-sd surface."""
-    fit, design = primary["fit"], primary["design"]
-    names = [f.name for f in design.factors]
+    drawn = log_sd_samples(primary, prior_sd, seed, step)
+    if drawn is None:
+        return None
+    names, draws = drawn
     try:
         i = names.index("request_family:paraphrase")
         j = names.index("host:cell")
     except ValueError:
         return None
+    return [math.exp(2.0 * (d[i] - d[j])) for d in draws]
+
+
+def log_sd_samples(primary, prior_sd, seed, step=0.15, count=500):
+    """Draw log-sds from a normal approximation to the profiled surface.
+
+    The §7.5 ratio and the §9.5 clustering measurement want the same object —
+    the curvature of the profiled likelihood around the fitted variance
+    components — so it is built once here and differenced or exponentiated by
+    the caller. Returns (factor names, draws) or None when the surface has no
+    usable curvature, which is itself a finding rather than a retryable error.
+    """
+    fit, design = primary["fit"], primary["design"]
+    names = [f.name for f in design.factors]
 
     def objective(log_sd):
         _, _, marginal, ok = glmm._newton(design, log_sd, prior_sd, None)
@@ -368,11 +384,8 @@ def _variance_ratio_samples(primary, prior_sd, seed, step=0.15):
     except ValueError:
         return None
     rng = random.Random(seed)
-    samples = []
-    for _ in range(500):
-        draw = glmm.sample_normal(centre, lower, rng)
-        samples.append(math.exp(2.0 * (draw[i] - draw[j])))
-    return samples
+    draws = [glmm.sample_normal(centre, lower, rng) for _ in range(count)]
+    return names, draws
 
 
 # --- multiplicity --------------------------------------------------------

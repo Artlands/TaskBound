@@ -45,6 +45,171 @@ CLUSTERING_RANGE = [
 ]
 REQUIRED_POWER = 0.80
 
+# The fitted random effects that correspond to the simulation's clustering
+# knobs. `request_family` is fitted but has no counterpart in `generate`, so it
+# is reported as unmapped rather than silently dropped: a large one would mean
+# the simulation understates between-family heterogeneity.
+COMPONENT_TO_KNOB = {
+    "request_family:paraphrase": "paraphrase_sd",
+    "host:cell": "cell_sd",
+    "injection_id": "injection_sd",
+    "placement_id": "placement_sd",
+}
+KNOBS = ("paraphrase_sd", "cell_sd", "injection_sd", "placement_sd")
+
+# A standard deviation this large on the logit scale is not a measurement, it is
+# a flat likelihood: the profiled surface has no curvature in that direction and
+# the pilot has not constrained the component. Draws are clamped here so the
+# arithmetic stays finite, and any component whose interval reaches the ceiling
+# is treated as unresolved.
+SD_CEILING = 5.0
+
+
+def measure_clustering(
+    rows: Sequence[dict[str, Any]], prior_sd: float, seed: int, level: float = 0.95
+) -> dict[str, Any]:
+    """Turn a sizing pilot into the clustering range the gate is evaluated across.
+
+    `pilot_protocol.md` Stage 2 says the measured variance components replace
+    `CLUSTERING_RANGE`. Doing that by hand-editing a literal in this file, after
+    the pilot's numbers are visible, is the one step of the gate that would
+    leave no record of what was measured versus what was typed. So it is code,
+    and it writes its own provenance.
+
+    The result is still a *range*, not a point: a sizing pilot sees few levels
+    of each grouping factor, so the components carry real uncertainty and the
+    gate must hold at the pessimistic end of what the pilot supports. The rungs
+    are the interval's ends and its centre.
+
+    When the profiled surface has no usable curvature — components pinned at
+    their lower boundary, or a non-positive-definite Hessian — no interval can
+    be drawn, and the function **refuses to narrow the range**. It returns the
+    a-priori upper bracket instead and says why. A pilot that could not resolve
+    the clustering must not be able to make the gate easier to pass.
+    """
+    analysis = aggregate.analysis_rows(rows)
+    primary = aggregate.fit_primary(analysis, prior_sd)
+    fit = primary["fit"]
+
+    source = {
+        "runs": len(rows),
+        "analysis_rows": len(analysis),
+        "used_fallback": primary["used_fallback"],
+        "converged": getattr(fit, "converged", False),
+        "at_variance_boundary": (fit.diagnostics.get("at_variance_boundary") or []
+                                 if not primary["used_fallback"] else None),
+    }
+
+    if primary["used_fallback"] or not getattr(fit, "log_sd", None):
+        return _unnarrowed(source, "the fallback fit has no variance components")
+
+    point = {knob: fit.sd.get(name, 0.0) for name, knob in COMPONENT_TO_KNOB.items()}
+    unmapped = {n: v for n, v in fit.sd.items() if n not in COMPONENT_TO_KNOB}
+
+    # A component pinned at its lower boundary is not a measurement of zero
+    # clustering; it is the fit reporting that this pilot could not see the
+    # component at all. Narrowing the gate onto a floor artifact would make it
+    # easier to pass on the strength of a pilot that measured nothing.
+    pinned = [COMPONENT_TO_KNOB[n] for n in (source["at_variance_boundary"] or [])
+              if n in COMPONENT_TO_KNOB]
+    if pinned:
+        result = _unnarrowed(
+            source,
+            "these components sit at the fit's lower variance boundary: "
+            + ", ".join(sorted(pinned))
+            + " — the pilot did not resolve them, so their point estimates are "
+              "floor artifacts rather than measurements")
+        result["point_estimate"] = point
+        result["unmapped_components"] = unmapped
+        return result
+
+    drawn = aggregate.log_sd_samples(primary, prior_sd, seed)
+    if drawn is None:
+        result = _unnarrowed(
+            source, "the profiled surface has no usable curvature, so no interval "
+                    "can be drawn around the measured components")
+        result["point_estimate"] = point
+        result["unmapped_components"] = unmapped
+        return result
+
+    names, draws = drawn
+    ceiling = math.log(SD_CEILING)
+    components: dict[str, Any] = {}
+    unresolved: list[str] = []
+    for name, knob in COMPONENT_TO_KNOB.items():
+        if name not in names:
+            components[knob] = {"estimate": 0.0, "interval": [0.0, 0.0],
+                                "note": "not a factor in this fit"}
+            continue
+        index = names.index(name)
+        values = [math.exp(min(d[index], ceiling)) for d in draws]
+        low, high = glmm.interval(values, level)
+        components[knob] = {"estimate": point[knob], "interval": [low, high]}
+        # The clamp lands a hair under the ceiling in floating point, so compare
+        # with a tolerance rather than exactly.
+        if high >= SD_CEILING * (1 - 1e-9):
+            components[knob]["unresolved"] = True
+            unresolved.append(knob)
+
+    if unresolved:
+        # Narrowing on a component the pilot could not pin down would hand the
+        # gate a friendlier range than the data support. Refuse the whole range
+        # rather than the offending rung: the components are fitted jointly, so
+        # a flat direction in one contaminates the others' intervals too.
+        result = _unnarrowed(
+            source,
+            "the sizing pilot did not resolve " + ", ".join(unresolved)
+            + f" (interval reaches the {SD_CEILING} ceiling, i.e. a flat likelihood); "
+              "a larger pilot is needed before the range can narrow")
+        result["point_estimate"] = point
+        result["components"] = components
+        result["unmapped_components"] = unmapped
+        return result
+
+    def rung(label: str, pick) -> dict[str, Any]:
+        return {"label": label, **{k: pick(components[k]) for k in KNOBS}}
+
+    return {
+        "measured": True,
+        "narrowed": True,
+        "level": level,
+        "source": source,
+        "components": components,
+        "unmapped_components": unmapped,
+        "range": [
+            rung("measured_low", lambda c: c["interval"][0]),
+            rung("measured", lambda c: c["estimate"]),
+            rung("measured_high", lambda c: c["interval"][1]),
+        ],
+    }
+
+
+def _unnarrowed(source: dict[str, Any], reason: str) -> dict[str, Any]:
+    """The refusal branch: keep the a-priori bracket and say so."""
+    return {
+        "measured": False,
+        "narrowed": False,
+        "reason": reason,
+        "source": source,
+        "range": [dict(c) for c in CLUSTERING_RANGE],
+        "note": "the a-priori CLUSTERING_RANGE is retained unchanged; the gate is "
+                "no easier to pass than it was before the pilot ran",
+    }
+
+
+def load_clustering(path: str) -> list[dict[str, Any]]:
+    """Read a measured range, rejecting one that does not carry every knob."""
+    with open(path, encoding="utf-8") as fh:
+        payload = json.load(fh)
+    entries = payload.get("range") if isinstance(payload, dict) else payload
+    if not entries:
+        raise SystemExit(f"{path!r} carries no clustering range")
+    for entry in entries:
+        missing = [k for k in KNOBS if k not in entry]
+        if missing:
+            raise SystemExit(f"{path!r}: rung {entry.get('label')!r} is missing {missing}")
+    return list(entries)
+
 
 @dataclass
 class Truth:
@@ -205,6 +370,7 @@ def run(
     clustering_range: Sequence[dict[str, float]] = CLUSTERING_RANGE,
     draws: int = 400,
     prior_sd: float = glmm.DEFAULT_PRIOR_SD,
+    clustering_provenance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     estimands = ("attack_susceptibility", "scope_selectivity",
                  "entry_point_effect", "induced_action_effect")
@@ -238,10 +404,19 @@ def run(
     return {
         "truth": truth.to_dict(),
         "required_power": REQUIRED_POWER,
+        # Which range this gate was evaluated against is part of the result: a
+        # pass at measured clustering and a pass at the a-priori bracket are
+        # different claims, and only the reader can tell them apart if the
+        # provenance travels with the number.
+        "clustering_provenance": clustering_provenance or {
+            "measured": False,
+            "note": "a-priori CLUSTERING_RANGE; no pilot has measured these components",
+        },
         "by_clustering": by_clustering,
         "worst_case_power": worst,
-        # The gate is the worst case across the range, because the pilot has not
-        # yet told us where in it we are.
+        # The gate is the worst case across the range, because a design whose
+        # power claim holds only at the friendly end of the range is a design
+        # whose claim depends on a number nobody has pinned down.
         "gate_passed": all(
             value is not None and value >= REQUIRED_POWER for value in worst.values()
         ),
@@ -260,7 +435,46 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
                         help="minimum effect of interest: benign minus attacked")
     parser.add_argument("--mei-entry-point", type=float, default=-0.12)
     parser.add_argument("--mei-induced-action", type=float, default=-0.10)
+    parser.add_argument("--clustering", help="a range measured by `runner clustering`; "
+                                             "omit to use the a-priori bracket")
     parser.add_argument("--out")
+
+
+def add_clustering_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--results", required=True,
+                        help="the sizing pilot's results directory")
+    parser.add_argument("--out", required=True)
+    parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--prior-sd", type=float, default=glmm.DEFAULT_PRIOR_SD)
+    parser.add_argument("--level", type=float, default=0.95)
+
+
+def clustering_main(args: argparse.Namespace) -> int:
+    rows = aggregate.load_frame(args.results)
+    if not rows:
+        raise SystemExit(f"no results found under {args.results!r}")
+    result = measure_clustering(rows, args.prior_sd, args.seed, args.level)
+
+    print(f"clustering measured from {len(rows)} runs under {args.results!r}")
+    if not result["narrowed"]:
+        print(f"  NOT NARROWED: {result['reason']}")
+        print("  the a-priori CLUSTERING_RANGE is retained; the gate is no easier to pass")
+    else:
+        print(f"  {'component':<15} {'estimate':>9}  {int(args.level * 100)}% interval")
+        for knob in KNOBS:
+            c = result["components"][knob]
+            low, high = c["interval"]
+            print(f"  {knob:<15} {c['estimate']:>9.3f}  [{low:.3f}, {high:.3f}]")
+        unmapped = result.get("unmapped_components") or {}
+        for name, value in unmapped.items():
+            print(f"  (unmapped) {name}: {value:.3f} — fitted but not simulated by `generate`")
+    print(f"\n  rungs the gate will be evaluated across: "
+          f"{', '.join(r['label'] for r in result['range'])}")
+    with open(args.out, "w", encoding="utf-8") as fh:
+        json.dump(result, fh, indent=2)
+        fh.write("\n")
+    print(f"wrote {args.out}")
+    return 0
 
 
 def main(args: argparse.Namespace) -> int:
@@ -272,9 +486,27 @@ def main(args: argparse.Namespace) -> int:
         n_exposed_per_cell=args.n_exposed,
         attempt_cap=args.attempt_cap,
     )
-    result = run(truth, args.simulations, args.seed, draws=args.draws)
+    clustering_range, provenance = CLUSTERING_RANGE, None
+    if args.clustering:
+        clustering_range = load_clustering(args.clustering)
+        with open(args.clustering, encoding="utf-8") as fh:
+            payload = json.load(fh)
+        provenance = {"path": args.clustering,
+                      "measured": payload.get("measured", False),
+                      "narrowed": payload.get("narrowed", False),
+                      "source": payload.get("source"),
+                      "reason": payload.get("reason")}
+
+    result = run(truth, args.simulations, args.seed, clustering_range,
+                 draws=args.draws, clustering_provenance=provenance)
     print(f"power simulation: {args.simulations} sweeps per clustering setting, "
           f"N={args.n_exposed} exposed per cell")
+    if provenance and provenance["narrowed"]:
+        print(f"  clustering measured from {args.clustering}")
+    elif provenance:
+        print(f"  {args.clustering} did not narrow the range; using the a-priori bracket")
+    else:
+        print("  a-priori clustering bracket (no pilot measurement supplied)")
     print(f"  minimum effects of interest: selectivity {args.mei_selectivity:+.2f}  "
           f"entry point {args.mei_entry_point:+.2f}  action {args.mei_induced_action:+.2f}")
     header = f"  {'clustering':<10} {'conv':>5}  " + "  ".join(

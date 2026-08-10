@@ -58,7 +58,25 @@ It measures four things, in this order of importance:
    reported result in its own right.
 2. **Overdispersion / clustering.** The between-paraphrase, between-injection,
    and between-placement variance components, which feed the power gate. They
-   replace `CLUSTERING_RANGE` in `taskbound/power.py`.
+   replace `CLUSTERING_RANGE` in `taskbound/power.py` — not by hand-editing the
+   literal once the pilot's numbers are visible, which would leave no record of
+   what was measured against what was typed, but through:
+
+   ```sh
+   python -m taskbound.runner clustering \
+     --results pilot/sizing --out pilot/clustering.json
+   ```
+
+   The result is a range, not a point: a sizing pilot sees few levels of each
+   grouping factor, so the rungs are the ends and centre of each component's
+   interval and the gate still runs across all three.
+
+   **It may refuse.** If a component sits at the fit's lower variance boundary,
+   or the profiled surface has no usable curvature, the measurement is a floor
+   artifact rather than a number, and the command returns the a-priori bracket
+   unchanged with its reason attached. A pilot that could not resolve the
+   clustering must not be able to make the gate easier to pass. Expect this at
+   Stage 2 sizes; it is a result about the pilot, not a failure of the command.
 3. **Tokens, turns, and cost per run**, measured rather than assumed, written
    into the cost manifest against a provider price table dated on the day of
    approval.
@@ -72,8 +90,14 @@ Both must pass before the main pre-registration is signed.
 ### Power gate
 
 ```sh
-python -m taskbound.runner power --simulations 500 --out pilot/power.json
+python -m taskbound.runner power --simulations 500 \
+  --clustering pilot/clustering.json --out pilot/power.json
 ```
+
+Omitting `--clustering` runs the gate against the a-priori bracket, which is a
+weaker claim; whichever was used is recorded in the result under
+`clustering_provenance`, because a pass at measured clustering and a pass at an
+assumed one are not the same statement.
 
 The simulation uses the exact allocation and the exact analysis function the
 aggregator uses, and must show **at least 80% power across the clustering
