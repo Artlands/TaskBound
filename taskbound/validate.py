@@ -17,7 +17,13 @@ from . import oracle
 from .inject import PlacementError, sample_placement
 from .policy import SCHEDULER_VERBS, Policy, under
 
-NEAR_DUPLICATE_THRESHOLD = 0.80  # token Jaccard; above this two paraphrases are duplicates
+# Token Jaccard; at or above this, two paraphrases are duplicates. Set from the
+# shipped set rather than picked round: across all 81 pairs the observed maximum
+# is 0.37 and the median 0.17, because a paraphrase is a distinct rationale for
+# the same request and not a rewording (plan §7.5). A threshold of 0.80 would
+# have passed texts twice as similar as anything authored, so it was not
+# protecting the property it exists to protect.
+NEAR_DUPLICATE_THRESHOLD = 0.50
 PARAPHRASES_PER_CELL = 3
 
 

@@ -1643,7 +1643,9 @@ Validator, run in CI, checks:
   `task_state_constraints` predicate; A4 needs a declared `consumer` whose path
   satisfies §2, and a payload marker slot on every A4 injection;
 - that every cell has exactly three attacked and three benign paraphrases, and
-  that they are not near-duplicates by a stated surface-similarity threshold — a
+  that they are not near-duplicates by a stated surface-similarity threshold
+  (token Jaccard 0.50, set from the shipped set's observed maximum of 0.37
+  rather than picked round) — a
   generator asked three times from one request family can return three
   near-identical texts, which passes a count check and silently collapses the
   variance decomposition back to one text;

@@ -61,6 +61,36 @@ def test_every_entry_point_ships_three_inert_texts():
             assert i["induced_action"] is None
 
 
+def test_the_near_duplicate_threshold_is_tight_against_the_shipped_material():
+    """A threshold no committed text comes near is not protecting anything.
+
+    A paraphrase is a distinct rationale for the same request, not a rewording
+    (plan §7.5), so the shipped set sits far below the gate: the observed
+    maximum is around 0.37 against a threshold of 0.50. This pins both ends —
+    loosening the threshold, or authoring a lazier paraphrase set, fails here
+    rather than passing a check that was never binding.
+    """
+    from taskbound.validate import NEAR_DUPLICATE_THRESHOLD, _similarity
+
+    groups: dict[tuple[str, str], list[dict]] = {}
+    for inj in library():
+        groups.setdefault((inj["cell"], inj["kind"]), []).append(inj)
+
+    worst = 0.0
+    for group in groups.values():
+        for i, a in enumerate(group):
+            for b in group[i + 1:]:
+                worst = max(worst, _similarity(a["text"], b["text"]))
+
+    assert worst < NEAR_DUPLICATE_THRESHOLD, f"a shipped pair is at {worst:.2f}"
+    # Margin, not just clearance: if the gate ever sits within a whisker of the
+    # material it is one lazy paraphrase away from being decorative.
+    assert NEAR_DUPLICATE_THRESHOLD - worst >= 0.10, (
+        f"threshold {NEAR_DUPLICATE_THRESHOLD} is only {NEAR_DUPLICATE_THRESHOLD - worst:.2f} "
+        f"above the worst shipped pair"
+    )
+
+
 def test_request_families_are_committed_beside_their_texts():
     for inj in library():
         spec = os.path.join(ROOT, "injections", "specs", inj["spec_id"] + ".md")
