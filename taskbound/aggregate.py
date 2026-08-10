@@ -33,17 +33,19 @@ from . import glmm
 DRAWS = 2000
 BOOTSTRAP = 2000
 
-PRIMARY_FIXED = ["condition*entry_point*induced_action", "condition*host", "model_family"]
+PRIMARY_FIXED = ["condition*entry_point*induced_action", "condition*task", "model_family"]
 # `host:cell` and `request_family` were dropped after §9.5 showed both aliased
 # with the fixed block: `condition * entry_point * induced_action` is saturated
 # at one parameter per (condition, cell), which spans the twelve cells, and
 # `request_family`'s four levels are the four induced actions that
 # `induced_action` already carries. Neither estimated anything, and refitting
-# without them moves every reported contrast by less than 0.005. `host:cell`
-# becomes identified at `v1.0`, where cells are (host, entry point, action) and
-# the interaction is not, and is reinstated there rather than deleted outright.
+# without them moves every reported contrast by less than 0.005. Neither returns
+# at any version: `host:cell` cannot exist in a single-host design, and
+# `task:cell` — the only successor candidate — enters the model only if a
+# synthetic-data fit at the exact allocation shows it recovers a known non-zero
+# variance (plan §9.5). The default is that it stays out.
 PRIMARY_RANDOM = ["request_family:paraphrase", "injection_id", "placement_id"]
-EXPOSURE_FIXED = ["condition*entry_point", "induced_action", "model_family", "host"]
+EXPOSURE_FIXED = ["condition*entry_point", "induced_action", "model_family", "task"]
 EXPOSURE_RANDOM = ["request_family:paraphrase", "placement_id"]
 
 # The one multiplicity family, corrected by Holm across every model family
@@ -80,6 +82,7 @@ def _row(record: dict[str, Any]) -> dict[str, Any]:
     return {
         "run_id": record["run_id"],
         "host": record["host"]["id"],
+        "task": record["task"]["id"],
         "condition": record["condition"],
         "cell": record.get("cell"),
         "entry_point": injection.get("entry_point"),
@@ -201,7 +204,7 @@ def fit_primary(rows: Sequence[dict[str, Any]], prior_sd: float) -> dict[str, An
 
 def standardized_susceptibility(
     design: glmm.Design, draws: Sequence[Sequence[float]], cells: Sequence[tuple[str, str]],
-    host: str, model_family: str,
+    task: str, model_family: str,
 ) -> dict[str, Any]:
     """Attacked compliance standardized to weight every populated cell equally.
 
@@ -212,7 +215,7 @@ def standardized_susceptibility(
     vectors = [
         glmm.design_row(design, {
             "condition": "attacked", "entry_point": entry, "induced_action": action,
-            "host": host, "model_family": model_family,
+            "task": task, "model_family": model_family,
         })
         for entry, action in cells
     ]
@@ -229,14 +232,14 @@ def standardized_susceptibility(
 
 def standardized_contrast(
     design: glmm.Design, draws: Sequence[Sequence[float]], cells: Sequence[tuple[str, str]],
-    host: str, model_family: str, left: dict[str, str], right: dict[str, str],
+    task: str, model_family: str, left: dict[str, str], right: dict[str, str],
 ) -> dict[str, Any]:
     """A difference of two standardized predictions on the probability scale."""
     def vectors(overrides):
         return [
             glmm.design_row(design, {
                 "condition": "attacked", "entry_point": entry, "induced_action": action,
-                "host": host, "model_family": model_family, **overrides,
+                "task": task, "model_family": model_family, **overrides,
             })
             for entry, action in cells
         ]
@@ -265,7 +268,7 @@ def interaction_omnibus(
     """One omnibus test, never sixteen per-cell claims (plan §9.1, §9.3)."""
     reduced_fixed = [
         "condition*entry_point", "condition*induced_action", "entry_point*induced_action",
-        "condition*host", "model_family",
+        "condition*task", "model_family",
     ]
     reduced_design = glmm.build_design(rows, "compliant", reduced_fixed, PRIMARY_RANDOM)
     reduced = glmm.fit(reduced_design, prior_sd=prior_sd)
@@ -480,7 +483,7 @@ def build_report(
 ) -> dict[str, Any]:
     fitted = analysis_rows(rows)
     families = sorted({r["model_family"] for r in rows if r["model_family"]})
-    hosts = sorted({r["host"] for r in rows})
+    tasks = sorted({r["task"] for r in rows})
     cells = sorted({(r["entry_point"], r["induced_action"]) for r in fitted})
 
     report: dict[str, Any] = {
@@ -489,7 +492,7 @@ def build_report(
             "in_primary_fit": len(fitted),
             "by_condition": _counts(rows, "condition"),
             "model_families": families,
-            "hosts": hosts,
+            "tasks": tasks,
             "defenses": sorted({r["defense"] for r in rows if r["defense"]}),
             "execution_modes": sorted({r["execution_mode"] for r in rows if r["execution_mode"]}),
         },
@@ -527,15 +530,15 @@ def build_report(
         report["headline"][family] = {
             **headline_descriptive(rows, family),
             "attack_susceptibility": standardized_susceptibility(
-                primary["design"], posterior, cells, hosts[0], family
+                primary["design"], posterior, cells, tasks[0], family
             ),
             "scope_selectivity": standardized_contrast(
-                primary["design"], posterior, cells, hosts[0], family,
+                primary["design"], posterior, cells, tasks[0], family,
                 left={"condition": "benign"}, right={"condition": "attacked"},
             ),
         }
 
-    report["factor_effects"] = factor_effects(primary, posterior, cells, hosts[0], families)
+    report["factor_effects"] = factor_effects(primary, posterior, cells, tasks[0], families)
     report["factor_effects"]["interaction_omnibus"] = interaction_omnibus(fitted, primary, prior_sd)
     report["variance_decomposition"] = variance_decomposition(primary, prior_sd, seed)
 
@@ -711,7 +714,7 @@ def _inconclusive(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
             "rate": total / len(rows) if rows else None, "reasons": reasons}
 
 
-def factor_effects(primary, posterior, cells, host, families) -> dict[str, Any]:
+def factor_effects(primary, posterior, cells, task, families) -> dict[str, Any]:
     """Main effects in the attacked condition, with their identification labelled."""
     design = primary["design"]
     entries = sorted({e for e, _ in cells})
@@ -723,7 +726,7 @@ def factor_effects(primary, posterior, cells, host, families) -> dict[str, Any]:
     for entry in entries[1:]:
         entry_contrasts[f"{entry}-vs-{entries[0]}"] = standardized_contrast(
             design, posterior, [(e, a) for e, a in cells if e in (entry, entries[0])],
-            host, family,
+            task, family,
             left={"entry_point": entry}, right={"entry_point": entries[0]},
         )
     effects["entry_point_effect"] = {
@@ -736,7 +739,7 @@ def factor_effects(primary, posterior, cells, host, families) -> dict[str, Any]:
     for action in actions[1:]:
         action_contrasts[f"{action}-vs-{actions[0]}"] = standardized_contrast(
             design, posterior, [(e, a) for e, a in cells if a in (action, actions[0])],
-            host, family,
+            task, family,
             left={"induced_action": action}, right={"induced_action": actions[0]},
         )
     effects["induced_action_effect"] = {
@@ -749,7 +752,7 @@ def factor_effects(primary, posterior, cells, host, families) -> dict[str, Any]:
         heterogeneity = {}
         for other in families[1:]:
             heterogeneity[f"{other}-vs-{families[0]}"] = standardized_contrast(
-                design, posterior, cells, host, families[0],
+                design, posterior, cells, task, families[0],
                 left={"model_family": other}, right={"model_family": families[0]},
             )
         effects["model_family_heterogeneity"] = {
@@ -774,7 +777,7 @@ def _two_sided(contrasts: dict[str, dict[str, Any]]) -> float | None:
 def exposure_table(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     """Per entry point, with both denominators — a result in its own right (§8.4)."""
     injected = [r for r in rows if r["entry_point"]]
-    out: dict[str, Any] = {"per_entry_point": {}, "per_host": {}}
+    out: dict[str, Any] = {"per_entry_point": {}, "per_task": {}}
     for entry in sorted({r["entry_point"] for r in injected}):
         subset = [r for r in injected if r["entry_point"] == entry]
         exposed = sum(1 for r in subset if r["exposed"])
@@ -783,10 +786,10 @@ def exposure_table(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
             "attempted": len(subset), "exposed": exposed,
             "rate": exposed / len(subset), "wilson": [low, high],
         }
-    for host in sorted({r["host"] for r in injected}):
-        subset = [r for r in injected if r["host"] == host]
+    for task in sorted({r["task"] for r in injected}):
+        subset = [r for r in injected if r["task"] == task]
         exposed = sum(1 for r in subset if r["exposed"])
-        out["per_host"][host] = {"attempted": len(subset), "exposed": exposed,
+        out["per_task"][task] = {"attempted": len(subset), "exposed": exposed,
                                  "rate": exposed / len(subset) if subset else None}
     return out
 

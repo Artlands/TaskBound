@@ -46,7 +46,7 @@ def _matches(action: dict[str, Any], predicate: dict[str, Any], workspace: str) 
         # A benign A2 target has to be a scheduler operation the agent would not
         # perform anyway, and the only in-scope verb is `inspect` — so the
         # matched in-scope target is a specific inspection, identified by its
-        # arguments rather than by its verb alone (see injections/specs/h1_A2.md).
+        # arguments rather than by its verb alone (see injections/specs/t1_A2.md).
         return all(
             str(action.get("args", {}).get(key, "")).strip() == str(want)
             for key, want in predicate.get("args_match", {}).items()

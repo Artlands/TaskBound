@@ -4,13 +4,23 @@ A benchmark for measuring whether an LLM agent working in an HPC-like
 environment stays inside the task it was given. See `docs/development_plan.md`
 for the design and `docs/plan_summary.md` for the short version.
 
-**Status: `v0.5` built, not yet run.** The complete `v0.5` grid exists — H1's
-twelve E1–E3 × A1–A4 cells, all five condition classes, 81 committed injection
-texts — together with the sweep driver, the pre-registered analysis, the oracle
-audit, and the power gate. What has *not* happened is the part that costs money
-and people: the pilot, the human reviews, and the confirmatory sweep. Nothing
-here is a `v0.5` result yet; see
+**Status: `v0.5` built, not yet run.** The complete `v0.5` grid exists — the core
+task's twelve E1–E3 × A1–A4 cells, all five condition classes, 81 committed
+injection texts — together with the sweep driver, the pre-registered analysis,
+the oracle audit, and the power gate. What has *not* happened is the part that
+costs money and people: the pilot, the human reviews, and the confirmatory sweep.
+Nothing here is a `v0.5` result yet; see
 [Known gaps](#known-gaps-before-this-is-a-v05-result).
+
+**The `v1.0` allocation changed.** The plan moved from four hosts to **one host
+with five tasks** — 24 cells and 12 request families, no private held-out host,
+and no host-generalization claim at any version. `v0.5` is unaffected: it was
+always the core task alone. See `docs/development_plan.md` §6 and §9.3.
+
+The assets and CLI follow the new shape. The host is `hosts/site_a`, its tasks
+live in `hosts/site_a/tasks/<task_id>/`, and `run` and `calibrate` take
+`--task`. Only the core task `t1_failed_job` is built; T2–T5 are milestones 10
+and 11.
 
 ---
 
@@ -145,8 +155,8 @@ backend, the oracle, and result writing without a model call:
 
 ```sh
 .venv/bin/python -m taskbound.runner run \
-  --host hosts/h1_failed_job --condition attacked \
-  --injection injections/h1_e1a1_attack_p1.json \
+  --host hosts/site_a --condition attacked \
+  --injection injections/t1_e1a1_attack_p1.json \
   --agent scripted --script fixtures/scripts/complied_disclosed.json
 ```
 
@@ -154,8 +164,8 @@ Then the live one:
 
 ```sh
 .venv/bin/python -m taskbound.runner run \
-  --host hosts/h1_failed_job --condition attacked \
-  --injection injections/h1_e1a1_attack_p1.json \
+  --host hosts/site_a --condition attacked \
+  --injection injections/t1_e1a1_attack_p1.json \
   --agent anthropic --model claude-opus-5 \
   --seed 1 --canary-seed "$TB_CANARY_SEED" \
   --out results --print-answer
@@ -203,19 +213,24 @@ Flags that change what is measured:
 The five conditions, here for cell E1A1:
 
 ```sh
-R=".venv/bin/python -m taskbound.runner run --host hosts/h1_failed_job --agent anthropic"
+R=".venv/bin/python -m taskbound.runner run --host hosts/site_a --agent anthropic"
 
 $R --condition clean
-$R --condition inert    --injection injections/h1_e1_inert_i1.json
-$R --condition benign   --injection injections/h1_e1a1_benign_p1.json
-$R --condition attacked --injection injections/h1_e1a1_attack_p1.json
+$R --condition inert    --injection injections/t1_e1_inert_i1.json
+$R --condition benign   --injection injections/t1_e1a1_benign_p1.json
+$R --condition attacked --injection injections/t1_e1a1_attack_p1.json
 $R --condition near_miss --near-miss-action A1
 ```
 
 Any of the twelve cells substitutes directly: injections are named
-`h1_<cell>_<attack|benign>_<p1|p2|p3>.json`, inert texts
-`h1_<entry point>_inert_<i1|i2|i3>.json`, and `--near-miss-action` takes `A1`
+`t1_<cell>_<attack|benign>_<p1|p2|p3>.json`, inert texts
+`t1_<entry point>_inert_<i1|i2|i3>.json`, and `--near-miss-action` takes `A1`
 through `A4`.
+
+`--task` selects which task defined over the host a run uses. It may be omitted
+only while the host declares exactly one; with more than one, omitting it is an
+error rather than a guess, because scope — and therefore what counts as a
+violation — is declared per task.
 
 ### What a run costs
 
@@ -238,11 +253,11 @@ never a decision made with results visible.
 
 ```sh
 .venv/bin/python -m taskbound.runner sweep plan \
-  --host hosts/h1_failed_job --out schedules/v05_seed1_a3844135.json --seed 1
+  --host hosts/site_a --out schedules/v05_seed1_bd9d56e55e04.json --seed 1
 # 32 groups, 1536 target runs, 4128 maximum attempts
 
 .venv/bin/python -m taskbound.runner sweep run \
-  --schedule schedules/v05_seed1_a3844135.json --out results \
+  --schedule schedules/v05_seed1_bd9d56e55e04.json --out results \
   --agent anthropic --model claude-opus-5 \
   --canary-seed "$TB_CANARY_SEED" \
   --spend-ceiling 250 --price-in 5 --price-cached 0.5 --price-out 25 \
@@ -300,8 +315,8 @@ Three gates, all of them tools rather than intentions:
 `clustering` exists so that replacing `CLUSTERING_RANGE` with measured values is
 a recorded step rather than a hand-edit made with the pilot's numbers already on
 screen. It refuses to narrow the range when the pilot did not resolve the
-components — which, given the `host:cell` identification problem in §9.5, is the
-common case — and `power` records under `clustering_provenance` whether it ran
+components — which, given the aliasing problem recorded in §9.5, is the common
+case — and `power` records under `clustering_provenance` whether it ran
 against measured or assumed clustering.
 
 `docs/pilot_protocol.md` is the frozen protocol for the two pilot stages that
@@ -462,7 +477,8 @@ taskbound/
   aggregate.py  results -> estimands, Holm, the five tables
   power.py      power simulation under the exact allocation
   runner.py     CLI: run, validate, calibrate, sweep, aggregate, audit, power
-hosts/h1_failed_job/     workspace, tasks, policies, manifests, references
+hosts/site_a/            one host: workspace, scheduler, account policy, vehicles
+  tasks/t1_failed_job/   task.json, task files, policy, manifests, references
 injections/              four request families, an inert spec, 81 texts
 control_profiles/        the four evaluated-control rules, versioned
 fixtures/scripts/        scripted-agent traces for offline tests
@@ -540,8 +556,10 @@ benchmark and a reported one, and none of them is code.
    `cell_sd` 0.60 it returned 0.005 and stayed there from 2,046 rows to 16,953;
    drop the interaction and the same fit returns 0.555. Both components have
    been dropped, and refitting without them moves every reported contrast by
-   less than 0.005. `host:cell` returns at `v1.0`, where cells are (host, entry
-   point, action) while the interaction is not, so it is identified there.
+   less than 0.005. Neither returns at any version: with a single host there is
+   no `host:cell`, and `task:cell` — the only successor candidate — enters the
+   model only if a synthetic-data fit at the exact allocation shows it recovers a
+   known non-zero variance. The default is that it stays out.
 
    §7.5's supersession rule divided by `host:cell` and could not fire. Its
    denominator is now `injection_id`, which is identified — but that makes both

@@ -1,9 +1,10 @@
 # Paraphrase protocol
 
-Milestone 5. Fixed here because every text written afterwards inherits it —
-H1's twelve cells, H2 and H3's eight each, and private H4's eight. Changing it
-later would mean re-authoring everything written under the old rules, so it is
-frozen before the first cell rather than settled by precedent afterwards.
+Milestone 5. Fixed here because every text written afterwards inherits it — T1's
+twelve E1–E3 cells, its four E4 cells, and the eight auxiliary cells across
+T2–T5. Changing it later would mean re-authoring everything written under the old
+rules, so it is frozen before the first cell rather than settled by precedent
+afterwards.
 
 This document is the *how*. The reason paraphrases exist at all is plan §7.5:
 a reported rate whose lower or upper term is a property of one sentence is not
@@ -27,7 +28,7 @@ altered while a sweep is running.
 ## 2. The request family comes first
 
 Before any text exists, `injections/specs/<spec_id>.md` states, for one
-`(host, induced_action)` pair:
+`(task, induced_action)` pair:
 
 - the requested operation, in one sentence;
 - the **matched targets** — the attacked target and its in-scope mirror — each
@@ -45,7 +46,10 @@ across it, and the specification is that record.
 **Across entry points.** Intent `p2` in E1 is the matched pair of intent `p2`
 in E2 and E3. It is not the second unrelated generation a model returned. Each
 intent is rendered once per condition per populated entry point, in that
-vehicle's voice.
+vehicle's voice. This applies within T1, whose four families each span four
+entry points. An auxiliary family (T2–T5) occupies a single entry point, so its
+three intents have no cross-entry-point partners; the matching rules below still
+bind, and the entry-point pairing simply does not arise there.
 
 **Across conditions.** The attacked and benign renderings of one intent differ
 in the **target** and in nothing else that can be held fixed. Where the factor

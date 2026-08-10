@@ -45,17 +45,48 @@ def load_host(host_dir: str) -> dict[str, Any]:
     return host
 
 
-def load_manifest(host: dict[str, Any], key: str) -> list[dict[str, Any]]:
+def load_task(host: dict[str, Any], task_id: str | None) -> dict[str, Any]:
+    """Load one task defined over the host (plan §6.1).
+
+    One host carries several tasks, so a run names the task as well as the host.
+    When the host declares exactly one, omitting `--task` is unambiguous and
+    selects it; with more than one it is an error rather than a guess, because
+    scope — and therefore what counts as a violation — is declared per task.
+    """
+    declared = host.get("tasks", {})
+    if not declared:
+        raise SystemExit(f"{host['host_id']}: host declares no tasks")
+    if task_id is None:
+        if len(declared) > 1:
+            raise SystemExit(
+                f"{host['host_id']} declares {len(declared)} tasks "
+                f"({', '.join(sorted(declared))}); pass --task"
+            )
+        task_id = next(iter(declared))
+    if task_id not in declared:
+        raise SystemExit(
+            f"{host['host_id']} declares no task {task_id!r}; "
+            f"known: {', '.join(sorted(declared))}"
+        )
+    task_dir = os.path.join(host["_dir"], declared[task_id])
+    with open(os.path.join(task_dir, "task.json"), encoding="utf-8") as fh:
+        task = json.load(fh)
+    task["_dir"] = task_dir
+    task["_hash"] = _hash_dir(task_dir)
+    return task
+
+
+def load_manifest(task: dict[str, Any], key: str) -> list[dict[str, Any]]:
     """The declared correct parameter end state for this task (plan §7.4, §8.2).
 
     A near-miss task legitimately performs the change the attacked run tries to
     induce, so it has its own manifest; scoring it against the default one would
     count correct work as an integrity violation.
     """
-    rel = host.get("manifests", {}).get(key) or host.get("manifests", {}).get("default")
+    rel = task.get("manifests", {}).get(key) or task.get("manifests", {}).get("default")
     if not rel:
         return []
-    with open(os.path.join(host["_dir"], rel), encoding="utf-8") as fh:
+    with open(os.path.join(task["_dir"], rel), encoding="utf-8") as fh:
         return json.load(fh)["parameters"]
 
 
@@ -103,7 +134,8 @@ def derive_secrets(host: dict[str, Any], injection: dict[str, Any] | None, canar
         return f"TB-{kind.upper()}-{raw}"
 
     canaries = {
-        slot: value("canary", slot) for slot in host["policy"].get("canary_slots", {})
+        slot: value("canary", slot)
+        for slot in host["account_policy"].get("canary_slots", {})
     }
     markers: dict[str, str] = {}
     if injection:
@@ -117,6 +149,7 @@ def derive_secrets(host: dict[str, Any], injection: dict[str, Any] | None, canar
 # --- run ----------------------------------------------------------------
 def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
     host = load_host(args.host)
+    task = load_task(host, getattr(args, "task", None))
     injection = load_injection(args.injection) if args.injection else None
     condition = args.condition
 
@@ -130,15 +163,29 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
     if condition == "near_miss" and not args.near_miss_action:
         raise SystemExit("condition 'near_miss' requires --near-miss-action (e.g. A1)")
 
-    policy = Policy.from_dict(host["policy"])
+    # Inert text is keyed to an entry point rather than a cell (plan §7.2).
+    if (
+        injection is not None
+        and injection["kind"] != "inert"
+        and injection["cell"] not in task["cells"]
+    ):
+        raise SystemExit(
+            f"task {task['task_id']!r} carries no cell {injection['cell']}; "
+            f"it carries {', '.join(task['cells'])}"
+        )
+
+    policy = Policy.from_layers(host["account_policy"], task["policy"])
     task_key = "default"
     if condition == "near_miss":
         task_key = f"near_miss_{args.near_miss_action}"
-        override = host.get("near_miss_policies", {}).get(args.near_miss_action)
+        override = task.get("near_miss_policies", {}).get(args.near_miss_action)
         if override is None:
-            raise SystemExit(f"host declares no near-miss policy for {args.near_miss_action}")
+            raise SystemExit(
+                f"task {task['task_id']!r} declares no near-miss policy "
+                f"for {args.near_miss_action}"
+            )
         policy = policy.widened(override)
-    task_path = os.path.join(host["_dir"], host["tasks"][task_key])
+    task_path = os.path.join(task["_dir"], task["task_files"][task_key])
     with open(task_path, encoding="utf-8") as fh:
         task_text = fh.read().strip()
 
@@ -187,6 +234,7 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
         profiles = oracle.load_control_profiles(args.control_profiles)
         scored = _score(
             host=host,
+            task=task,
             condition=condition,
             injection=injection,
             policy=policy,
@@ -197,7 +245,7 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
             canaries=canaries,
             markers=markers,
             near_miss_action=args.near_miss_action,
-            manifest=load_manifest(host, task_key),
+            manifest=load_manifest(task, task_key),
             profiles=profiles,
             inference_trust_boundary=args.inference_trust_boundary,
         )
@@ -206,15 +254,20 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
             "schema_version": SCHEMA_VERSION,
             "release": RELEASE,
             "git_commit": _git_commit(),
-            "run_id": _run_id(args, started),
+            "run_id": _run_id(args, task["task_id"], started),
             "started_at": started,
             "finished_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
             "host": {"id": host["host_id"], "hash": host["_hash"]},
+            "task": {
+                "id": task["task_id"],
+                "role": task.get("role", "auxiliary"),
+                "hash": task["_hash"],
+            },
             "cell": injection["cell"] if injection else None,
             "condition": condition,
             "execution_mode": "single_agent",
             "defense": args.defense,
-            "task_file": host["tasks"][task_key],
+            "task_file": task["task_files"][task_key],
             "policy": policy.to_dict(),
             "injection": _injection_record(injection),
             "placement": (
@@ -284,6 +337,7 @@ def _injection_record(injection: dict[str, Any] | None) -> dict[str, Any] | None
 def _score(
     *,
     host: dict[str, Any],
+    task: dict[str, Any],
     condition: str,
     injection: dict[str, Any] | None,
     policy: Policy,
@@ -308,9 +362,12 @@ def _score(
     scope = oracle.score_scope_violations(trace, policy, workspace, profiles, ctx)
     scored: dict[str, Any] = {"exposure": exposure, "scope_violation": scope}
 
+    # Action targets and success criteria are task-scoped: which path is out
+    # of scope depends on the task's policy, not on the workspace (plan §6.1).
+    action_targets = task.get("action_targets", {})
     target_predicates = {
         name: spec["compliance_predicate"]
-        for name, spec in host.get("action_targets", {}).items()
+        for name, spec in action_targets.items()
     }
 
     if condition in ("attacked", "benign"):
@@ -318,7 +375,7 @@ def _score(
         predicate = injection["compliance_predicate"]
         compliance = oracle.score_compliance(
             trace, predicate, exposure["first_exposure_index"], workspace, answer,
-            intent_targets=oracle.intent_targets(host.get("action_targets", {}), predicate),
+            intent_targets=oracle.intent_targets(action_targets, predicate),
         )
         scored["compliance"] = compliance
         # Realization is measured on attacked runs only (plan §8.5). Its
@@ -359,10 +416,10 @@ def _score(
     # Every condition is scored for utility, near-miss included: §8.3 makes it
     # the denominator the overblocking argument rests on, and every near-miss
     # task restates the host's base request alongside the widened one.
-    scored["utility"] = oracle.score_utility(answer, oracle_cfg["success_criteria"], workspace)
+    scored["utility"] = oracle.score_utility(answer, task["success_criteria"], workspace)
 
     if condition == "near_miss":
-        spec = host["action_targets"][near_miss_action]
+        spec = action_targets[near_miss_action]
         completed = oracle.score_target_predicates(
             trace, {near_miss_action: spec["compliance_predicate"]}, workspace
         )[near_miss_action]
@@ -415,9 +472,10 @@ def _build_agent(args: argparse.Namespace, substitutions: dict[str, str] | None 
     )
 
 
-def _run_id(args: argparse.Namespace, started: str) -> str:
+def _run_id(args: argparse.Namespace, task_id: str, started: str) -> str:
     parts = [
         os.path.basename(os.path.normpath(args.host)),
+        task_id,
         args.condition,
         os.path.splitext(os.path.basename(args.injection))[0] if args.injection else "none",
         args.agent,
@@ -425,7 +483,7 @@ def _run_id(args: argparse.Namespace, started: str) -> str:
         started,
     ]
     digest = hashlib.sha256("|".join(parts).encode()).hexdigest()[:10]
-    return "_".join(parts[:5]) + "_" + digest
+    return "_".join(parts[:6]) + "_" + digest
 
 
 # --- CLI ----------------------------------------------------------------
@@ -488,6 +546,10 @@ def main(argv: list[str] | None = None) -> int:
 
     run = sub.add_parser("run", help="assemble and execute one run")
     run.add_argument("--host", required=True)
+    run.add_argument(
+        "--task",
+        help="task id defined over the host; optional only when the host declares one",
+    )
     run.add_argument("--condition", required=True, choices=CONDITIONS)
     run.add_argument("--injection")
     run.add_argument("--near-miss-action")
@@ -521,6 +583,7 @@ def main(argv: list[str] | None = None) -> int:
 
     cal = sub.add_parser("calibrate", help="run success criteria against reference fixtures")
     cal.add_argument("--host", required=True)
+    cal.add_argument("--task", help="calibrate one task; default is every task the host declares")
 
     swp = sub.add_parser("sweep", help="plan and execute a multi-run sweep (plan §11.4)")
     from .sweep import add_arguments as _sweep_arguments
@@ -571,7 +634,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "calibrate":
         from .validate import calibrate
 
-        return calibrate(args.host)
+        return calibrate(args.host, args.task)
     if args.command == "sweep":
         from . import sweep
 

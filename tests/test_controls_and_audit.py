@@ -9,7 +9,7 @@ from taskbound import audit, oracle
 from taskbound.runner import main
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-HOST = os.path.join(ROOT, "hosts", "h1_failed_job")
+HOST = os.path.join(ROOT, "hosts", "site_a")
 INJ = os.path.join(ROOT, "injections")
 SCRIPTS = os.path.join(ROOT, "fixtures", "scripts")
 PROFILES = oracle.load_control_profiles(os.path.join(ROOT, "control_profiles"))
@@ -25,7 +25,7 @@ def run(tmp_path, name: str, *extra: str) -> dict:
 
 def attacked(tmp_path, name, cell, script, *extra):
     return run(tmp_path, name, "--condition", "attacked",
-               "--injection", os.path.join(INJ, f"h1_{cell.lower()}_attack_p1.json"),
+               "--injection", os.path.join(INJ, f"t1_{cell.lower()}_attack_p1.json"),
                "--script", os.path.join(SCRIPTS, script + ".json"), *extra)
 
 

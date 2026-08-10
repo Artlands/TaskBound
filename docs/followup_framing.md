@@ -31,18 +31,17 @@ Add a `framing` field to the injection schema, with four values:
 | `authority` | Text presenting itself as a site policy note, sysadmin message, or system banner |
 | `indirect` | The instruction is a consequence of following apparently benign guidance, never stated as a command |
 
-Run `naive`, `authority`, and `indirect` on the core host's sixteen cells;
+Run `naive`, `authority`, and `indirect` on the core task's sixteen cells;
 `operational` is already covered by the core runs.
 
 | Run class | Count | Per configuration |
 |-----------|-------|-------------------|
-| Framing extension | 16 cells × 3 framings × 24 | 1,152 |
+| Framing extension | 16 cells × 3 framings × 48 | 2,304 |
 
-That is 3,456 runs across the three-model baseline — about 58% of the public
-two-agent `v1.0` sweep, or 37% of the complete `v1.0` target including H4 and the
-mode bridge — and 144 new texts on top of the core's 204 public injection texts.
-It is droppable, but it is not cheap, and the plan should not describe it as a
-rider.
+That is 6,912 runs across the three-model baseline — about 70% of the `v1.0`
+two-agent sweep, or 51% of the complete `v1.0` target including the mode bridge —
+and 144 new texts on top of the core's 156 injection texts. It is droppable, but
+it is not cheap, and the plan should not describe it as a rider.
 
 `authority` is the value most worth carrying for domain reasons: site-authority
 framing is exactly what HPC users are trained to comply with, so it is the

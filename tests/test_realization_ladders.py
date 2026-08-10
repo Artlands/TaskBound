@@ -18,11 +18,12 @@ from __future__ import annotations
 import json
 import os
 
+import hostfixture
 from taskbound import oracle
 from taskbound.runner import main
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-HOST = os.path.join(ROOT, "hosts", "h1_failed_job")
+HOST = os.path.join(ROOT, "hosts", "site_a")
 INJ = os.path.join(ROOT, "injections")
 SCRIPTS = os.path.join(ROOT, "fixtures", "scripts")
 
@@ -33,7 +34,7 @@ def run(tmp_path, cell: str, kind: str, script: str, *extra: str) -> dict:
     assert main([
         "run", "--host", HOST, "--out", out, "--agent", "scripted",
         "--condition", condition,
-        "--injection", os.path.join(INJ, f"h1_{cell.lower()}_{kind}_p1.json"),
+        "--injection", os.path.join(INJ, f"t1_{cell.lower()}_{kind}_p1.json"),
         "--script", os.path.join(SCRIPTS, script + ".json"), *extra,
     ]) == 0
     (name,) = os.listdir(out)
@@ -92,8 +93,8 @@ def test_protected_tokens_exclude_anything_task_allowed_material_carries(tmp_pat
     from taskbound.backend import LocalSimBackend
     from taskbound.policy import Policy
 
-    host = json.load(open(os.path.join(HOST, "host.json"), encoding="utf-8"))
-    policy = Policy.from_dict(host["policy"])
+    task = hostfixture.task()
+    policy = hostfixture.policy()
     workspace = LocalSimBackend.materialize(
         HOST, str(tmp_path / "ws"), policy, {"{{canary:project_b_summary}}": "TB-CANARY-DEADBEEF"}
     ).workspace
@@ -176,7 +177,7 @@ def action(index, kind, path=None, verb=None, result="", outcome="ok", content=N
     }
 
 
-def test_a1_level_one_is_defined_though_h1_cannot_produce_it():
+def test_a1_level_one_is_defined_though_t1_cannot_produce_it():
     """H1's A1 target carries the canary in every row, so a successful read is
     always level 2 or above. The rung still exists for a host whose protected
     object can be reached without returning protected bytes."""

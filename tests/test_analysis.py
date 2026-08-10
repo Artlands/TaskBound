@@ -42,7 +42,7 @@ def synthetic(
             cell = entry + action
             cell_effect.setdefault(cell, rng.gauss(0, cell_sd))
             for paraphrase in ("p1", "p2", "p3"):
-                key = f"h1_{action}|{paraphrase}"
+                key = f"t1_{action}|{paraphrase}"
                 family_effect.setdefault(key, rng.gauss(0, paraphrase_sd))
                 for condition in ("attacked", "benign"):
                     injection = f"{cell}_{condition}_{paraphrase}"
@@ -63,9 +63,9 @@ def synthetic(
                         exposed = rng.random() < exposure[entry_index]
                         rows.append({
                             "run_id": f"{cell}_{condition}_{paraphrase}_{replicate}",
-                            "host": "h1", "condition": condition, "cell": cell,
+                            "task": "t1", "condition": condition, "cell": cell,
                             "entry_point": entry, "induced_action": action,
-                            "request_family": f"h1_{action}", "paraphrase": paraphrase,
+                            "request_family": f"t1_{action}", "paraphrase": paraphrase,
                             "injection_id": f"{cell}_{condition}_{paraphrase}",
                             "placement_id": f"{entry.lower()}@{replicate % 4}",
                             "model_family": "family_x", "resolved_model": "family_x",
@@ -86,7 +86,7 @@ def controls(rows: list[dict], seed: int = 0) -> list[dict]:
     out = list(rows)
     for i in range(24):
         out.append({
-            "run_id": f"clean_{i}", "host": "h1", "condition": "clean", "cell": None,
+            "run_id": f"clean_{i}", "task": "t1", "condition": "clean", "cell": None,
             "entry_point": None, "induced_action": None, "request_family": None,
             "paraphrase": None, "injection_id": None, "placement_id": None,
             "model_family": "family_x", "resolved_model": "family_x", "defense": "none",
@@ -99,7 +99,7 @@ def controls(rows: list[dict], seed: int = 0) -> list[dict]:
     for action in ACTIONS:
         for i in range(6):
             out.append({
-                "run_id": f"nm_{action}_{i}", "host": "h1", "condition": "near_miss",
+                "run_id": f"nm_{action}_{i}", "task": "t1", "condition": "near_miss",
                 "cell": None, "entry_point": None, "induced_action": None,
                 "request_family": None, "paraphrase": None, "injection_id": None,
                 "placement_id": None, "model_family": "family_x", "resolved_model": "family_x",
@@ -343,10 +343,10 @@ def test_the_primary_estimand_includes_the_matched_inert_risk_difference():
     for entry in ENTRIES:
         for i in range(9):
             rows.append({
-                "run_id": f"inert_{entry}_{i}", "host": "h1", "condition": "inert",
+                "run_id": f"inert_{entry}_{i}", "task": "t1", "condition": "inert",
                 "cell": entry, "entry_point": entry, "induced_action": None,
-                "request_family": "h1_inert", "paraphrase": f"i{i % 3 + 1}",
-                "injection_id": f"h1_{entry}_inert_i{i % 3 + 1}",
+                "request_family": "t1_inert", "paraphrase": f"i{i % 3 + 1}",
+                "injection_id": f"t1_{entry}_inert_i{i % 3 + 1}",
                 "placement_id": f"{entry.lower()}@{i % 3}", "model_family": "family_x",
                 "resolved_model": "family_x", "defense": "none",
                 "execution_mode": "single_agent", "exposed": True, "compliant": None,

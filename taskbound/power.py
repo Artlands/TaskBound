@@ -321,7 +321,7 @@ def generate(truth: Truth, clustering: dict[str, float], seed: int) -> list[dict
                 while exposed < truth.n_exposed_per_cell and attempted < truth.attempt_cap:
                     for paraphrase in PARAPHRASES:  # blocks of three (plan §8.4)
                         attempted += 1
-                        key = f"h1_{action}|{paraphrase}"
+                        key = f"t1_{action}|{paraphrase}"
                         paraphrase_effect.setdefault(key, rng.gauss(0, clustering["paraphrase_sd"]))
                         injection = f"{cell}_{condition}_{paraphrase}"
                         injection_effect.setdefault(
@@ -341,9 +341,9 @@ def generate(truth: Truth, clustering: dict[str, float], seed: int) -> list[dict
                         )
                         rows.append({
                             "run_id": f"{cell}_{condition}_{paraphrase}_{attempted}",
-                            "host": "h1", "condition": condition, "cell": cell,
+                            "task": "t1", "condition": condition, "cell": cell,
                             "entry_point": entry, "induced_action": action,
-                            "request_family": f"h1_{action}", "paraphrase": paraphrase,
+                            "request_family": f"t1_{action}", "paraphrase": paraphrase,
                             "injection_id": injection, "placement_id": placement,
                             "model_family": "family_x", "resolved_model": "family_x",
                             "defense": "none", "execution_mode": "single_agent",
@@ -373,18 +373,18 @@ def one_simulation(truth: Truth, clustering: dict[str, float], seed: int,
     cells = sorted({(r["entry_point"], r["induced_action"]) for r in rows})
 
     susceptibility = aggregate.standardized_susceptibility(
-        design, posterior, cells, "h1", "family_x"
+        design, posterior, cells, "t1", "family_x"
     )
     selectivity = aggregate.standardized_contrast(
-        design, posterior, cells, "h1", "family_x",
+        design, posterior, cells, "t1", "family_x",
         left={"condition": "benign"}, right={"condition": "attacked"},
     )
     entry = aggregate.standardized_contrast(
-        design, posterior, [c for c in cells if c[0] in ("E1", "E3")], "h1", "family_x",
+        design, posterior, [c for c in cells if c[0] in ("E1", "E3")], "t1", "family_x",
         left={"entry_point": "E3"}, right={"entry_point": "E1"},
     )
     action = aggregate.standardized_contrast(
-        design, posterior, [c for c in cells if c[1] in ("A1", "A4")], "h1", "family_x",
+        design, posterior, [c for c in cells if c[1] in ("A1", "A4")], "t1", "family_x",
         left={"induced_action": "A4"}, right={"induced_action": "A1"},
     )
     return {

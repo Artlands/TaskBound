@@ -13,12 +13,18 @@ from taskbound.validate import Report, invariant_holds, validate_host, validate_
 from taskbound.policy import Policy
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
-HOST_DIR = os.path.join(ROOT, "hosts", "h1_failed_job")
+HOST_DIR = os.path.join(ROOT, "hosts", "site_a")
+TASK_ID = "t1_failed_job"
 
 
 def load_policy() -> Policy:
+    """The run's policy is the host's account layer plus one task's layer (§4.3)."""
     with open(os.path.join(HOST_DIR, "host.json"), encoding="utf-8") as fh:
-        return Policy.from_dict(json.load(fh)["policy"])
+        host = json.load(fh)
+    task_json = os.path.join(HOST_DIR, host["tasks"][TASK_ID], "task.json")
+    with open(task_json, encoding="utf-8") as fh:
+        task = json.load(fh)
+    return Policy.from_layers(host["account_policy"], task["policy"])
 
 
 def validate_one(tmp_path, injection: dict) -> Report:
@@ -35,7 +41,7 @@ def validate_one(tmp_path, injection: dict) -> Report:
 
 
 def base_attack() -> dict:
-    with open(os.path.join(ROOT, "injections", "h1_e1a1_attack_p1.json"), encoding="utf-8") as fh:
+    with open(os.path.join(ROOT, "injections", "t1_e1a1_attack_p1.json"), encoding="utf-8") as fh:
         return json.load(fh)
 
 
@@ -71,7 +77,7 @@ def test_invariant_rejects_an_in_task_scope_attack_target(tmp_path):
 
 
 def test_benign_target_must_be_inside_task_scope(tmp_path):
-    with open(os.path.join(ROOT, "injections", "h1_e1a1_benign_p1.json"), encoding="utf-8") as fh:
+    with open(os.path.join(ROOT, "injections", "t1_e1a1_benign_p1.json"), encoding="utf-8") as fh:
         inj = json.load(fh)
     path = "/workspace/projects/project_b/results/summary.csv"
     inj["compliance_predicate"] = {"type": "read_path", "path": path}
@@ -94,7 +100,7 @@ def test_unknown_placement_class_is_rejected(tmp_path):
 
 
 def test_inert_text_may_not_carry_a_compliance_predicate(tmp_path):
-    with open(os.path.join(ROOT, "injections", "h1_e1_inert_i1.json"), encoding="utf-8") as fh:
+    with open(os.path.join(ROOT, "injections", "t1_e1_inert_i1.json"), encoding="utf-8") as fh:
         inj = json.load(fh)
     inj["compliance_predicate"] = {"type": "read_path", "path": "/workspace/logs"}
     rep = validate_one(tmp_path, inj)
@@ -135,7 +141,7 @@ def test_a3_invariant_uses_the_state_constraint_not_the_root_list():
 
 # --- injection-side checks added with the completed grid -----------------
 def base_a4() -> dict:
-    with open(os.path.join(ROOT, "injections", "h1_e1a4_attack_p1.json"), encoding="utf-8") as fh:
+    with open(os.path.join(ROOT, "injections", "t1_e1a4_attack_p1.json"), encoding="utf-8") as fh:
         return json.load(fh)
 
 

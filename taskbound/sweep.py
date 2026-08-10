@@ -55,23 +55,35 @@ def plan(
     injections = _index_injections(injections_dir, host["host_id"])
     rng = random.Random(seed)
 
+    # One host carries several tasks (plan §6.1). Attacked and benign are per
+    # (task, cell); near-miss and clean are per task, because each task declares
+    # its own scope and therefore its own floor; inert is per entry point under
+    # the core task alone, which supplies the text-presence contrast (plan §7).
     groups: dict[str, dict[str, Any]] = {}
-    for cell in host["cells"]:
-        for condition, kind in (("attacked", "attack"), ("benign", "benign")):
-            texts = [injections[cell, kind, p] for p in PARAPHRASES]
-            groups[f"{condition}|{cell}"] = _group(
-                condition, exposed_target, attempt_cap, texts, cell=cell, recruits=True
+    tasks = {tid: runner.load_task(host, tid) for tid in sorted(host.get("tasks", {}))}
+    for task_id, task in tasks.items():
+        for cell in task["cells"]:
+            for condition, kind in (("attacked", "attack"), ("benign", "benign")):
+                texts = [injections[task_id, cell, kind, p] for p in PARAPHRASES]
+                groups[f"{condition}|{task_id}|{cell}"] = _group(
+                    condition, exposed_target, attempt_cap, texts,
+                    task=task_id, cell=cell, recruits=True,
+                )
+        if task.get("role") == "core":
+            for entry in sorted({c[:2] for c in task["cells"]}):
+                texts = [injections[task_id, entry, "inert", p] for p in INERT_PARAPHRASES]
+                groups[f"inert|{task_id}|{entry}"] = _group(
+                    "inert", exposed_target, attempt_cap, texts,
+                    task=task_id, cell=entry, recruits=True,
+                )
+        for action in sorted({c[2:] for c in task["cells"]}):
+            groups[f"near_miss|{task_id}|{action}"] = _group(
+                "near_miss", exposed_target, exposed_target, [],
+                task=task_id, near_miss_action=action, recruits=False,
             )
-    for entry in sorted({c[:2] for c in host["cells"]}):
-        texts = [injections[entry, "inert", p] for p in INERT_PARAPHRASES]
-        groups[f"inert|{entry}"] = _group(
-            "inert", exposed_target, attempt_cap, texts, cell=entry, recruits=True
+        groups[f"clean|{task_id}"] = _group(
+            "clean", exposed_target, exposed_target, [], task=task_id, recruits=False
         )
-    for action in sorted({c[2:] for c in host["cells"]}):
-        groups[f"near_miss|{action}"] = _group(
-            "near_miss", exposed_target, exposed_target, [], near_miss_action=action, recruits=False
-        )
-    groups["clean|host"] = _group("clean", exposed_target, exposed_target, [], recruits=False)
 
     attempts = _interleave(groups, rng)
     schedule = {
@@ -101,12 +113,14 @@ def _group(
     exposed_target: int,
     attempt_cap: int,
     texts: list[dict[str, Any]],
+    task: str,
     cell: str | None = None,
     near_miss_action: str | None = None,
     recruits: bool = True,
 ) -> dict[str, Any]:
     return {
         "condition": condition,
+        "task": task,
         "cell": cell,
         "near_miss_action": near_miss_action,
         "target": exposed_target,
@@ -118,7 +132,9 @@ def _group(
     }
 
 
-def _index_injections(directory: str, host_id: str) -> dict[tuple[str, str, str], dict[str, Any]]:
+def _index_injections(
+    directory: str, host_id: str
+) -> dict[tuple[str, str, str, str], dict[str, Any]]:
     index = {}
     for path in sorted(glob.glob(os.path.join(directory, "*.json"))):
         with open(path, encoding="utf-8") as fh:
@@ -126,7 +142,7 @@ def _index_injections(directory: str, host_id: str) -> dict[tuple[str, str, str]
         if inj["host"] != host_id:
             continue
         inj["_path"] = path
-        index[inj["cell"], inj["kind"], inj["paraphrase"]] = inj
+        index[inj["task"], inj["cell"], inj["kind"], inj["paraphrase"]] = inj
     return index
 
 
@@ -146,6 +162,7 @@ def _interleave(groups: dict[str, dict[str, Any]], rng: random.Random) -> list[d
             attempts.append({
                 "group": name,
                 "condition": group["condition"],
+                "task": group["task"],
                 "cell": group["cell"],
                 "near_miss_action": group["near_miss_action"],
                 "injection": texts[index % len(texts)] if texts else None,
@@ -254,6 +271,7 @@ def _group_complete(group: dict[str, Any], counts: dict[str, int]) -> bool:
 def _run_one(schedule: dict[str, Any], attempt: dict[str, Any], args: argparse.Namespace):
     run_args = argparse.Namespace(
         host=schedule["host"]["dir"],
+        task=attempt["task"],
         condition=attempt["condition"],
         injection=attempt["injection"],
         near_miss_action=attempt["near_miss_action"],

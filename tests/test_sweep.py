@@ -9,7 +9,10 @@ import os
 from taskbound import sweep
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-HOST = os.path.join(ROOT, "hosts", "h1_failed_job")
+HOST = os.path.join(ROOT, "hosts", "site_a")
+# Groups are keyed by (condition, task, cell): one host carries several
+# tasks, and near-miss and clean are per task (plan §6.1, §7.1, §7.4).
+TASK = "t1_failed_job"
 INJ = os.path.join(ROOT, "injections")
 SCRIPTS = os.path.join(ROOT, "fixtures", "scripts")
 
@@ -51,12 +54,12 @@ def test_only_injected_conditions_recruit_to_exposure():
         expected = group["condition"] in ("attacked", "benign", "inert")
         assert group["recruits_to_exposure"] is expected, name
     # Conditions that do not recruit have no headroom above their target.
-    assert s["groups"]["clean|host"]["attempt_cap"] == s["groups"]["clean|host"]["target"]
+    assert s["groups"][f"clean|{TASK}"]["attempt_cap"] == s["groups"][f"clean|{TASK}"]["target"]
 
 
 def test_attempts_are_laid_out_in_balanced_paraphrase_blocks():
     s = schedule()
-    attempts = [a for a in s["attempts"] if a["group"] == "attacked|E1A1"]
+    attempts = [a for a in s["attempts"] if a["group"] == f"attacked|{TASK}|E1A1"]
     attempts.sort(key=lambda a: a["index_in_group"])
     for start in range(0, len(attempts), sweep.BLOCK):
         block = attempts[start:start + sweep.BLOCK]
@@ -68,7 +71,7 @@ def test_groups_are_interleaved_rather_than_contiguous():
     """So provider drift cannot align with one condition (plan §11.4)."""
     s = schedule()
     order = [a["group"] for a in s["attempts"]]
-    first = order.index("attacked|E1A1")
+    first = order.index(f"attacked|{TASK}|E1A1")
     stretch = order[first:first + 24]
     assert len(set(stretch)) > 1
 
@@ -90,10 +93,10 @@ def test_the_schedule_is_bound_to_the_material_it_was_planned_from():
 def test_recruitment_stops_at_the_target_and_retains_every_attempt(tmp_path):
     s = schedule(exposed_target=6, attempt_cap=12)
     manifest = sweep.execute(s, run_args(tmp_path / "out"))
-    clean = manifest["groups"]["clean|host"]
+    clean = manifest["groups"][f"clean|{TASK}"]
     assert clean["attempted"] == 6
 
-    exposed_group = manifest["groups"]["attacked|E1A1"]
+    exposed_group = manifest["groups"][f"attacked|{TASK}|E1A1"]
     assert exposed_group["exposed"] == 6
     assert exposed_group["attempted"] == 6  # E1 exposure is near 1 by construction
     # One result file per attempt, including any that were never exposed.
@@ -105,12 +108,12 @@ def test_a_group_the_agent_never_reads_hits_the_cap_and_says_so(tmp_path):
     """The scripted agent never renders a module description, so E3 never exposes."""
     s = schedule(exposed_target=6, attempt_cap=12)
     manifest = sweep.execute(s, run_args(tmp_path / "out"))
-    e3 = manifest["groups"]["attacked|E3A1"]
+    e3 = manifest["groups"][f"attacked|{TASK}|E3A1"]
     assert e3["exposed"] == 0
     assert e3["attempted"] == 12
     assert e3["hit_attempt_cap"] is True
     assert e3["reached_target"] is False
-    assert "attacked|E3A1" in manifest["totals"]["groups_short_of_target"]
+    assert f"attacked|{TASK}|E3A1" in manifest["totals"]["groups_short_of_target"]
 
 
 def test_an_interrupted_sweep_resumes_rather_than_reruns(tmp_path):

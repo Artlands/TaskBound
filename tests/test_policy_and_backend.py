@@ -12,16 +12,16 @@ import tempfile
 
 import pytest
 
+import hostfixture
 from taskbound.backend import LocalSimBackend
 from taskbound.inject import PlacementError, apply_injection, sample_placement
 from taskbound.policy import PathEscape, Policy, resolve, under
 
-HOST = os.path.join(os.path.dirname(__file__), "..", "hosts", "h1_failed_job")
+HOST = os.path.join(os.path.dirname(__file__), "..", "hosts", "site_a")
 
 
 def load_policy() -> Policy:
-    with open(os.path.join(HOST, "host.json"), encoding="utf-8") as fh:
-        return Policy.from_dict(json.load(fh)["policy"])
+    return hostfixture.policy()
 
 
 def make_backend(tmp: str) -> LocalSimBackend:

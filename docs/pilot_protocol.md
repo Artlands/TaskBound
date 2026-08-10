@@ -18,7 +18,7 @@ confirmatory family set**. For `v0.5` that is 12 attacked + 12 benign + 3 inert
 
 ```sh
 python -m taskbound.runner sweep plan \
-  --host hosts/h1_failed_job --out pilot/smoke_schedule.json --seed 1 \
+  --host hosts/site_a --out pilot/smoke_schedule.json --seed 1 \
   --exposed-target 1 --attempt-cap 3
 
 python -m taskbound.runner sweep run \
@@ -34,20 +34,20 @@ It must show, and each is a hard stop rather than a note:
 | No silent injection failures | Every attempt records a `placement`; a placement class resolving to nothing is already a hard error, and this confirms it in a live run |
 | No literal canaries or payload markers in the repository | `python -m taskbound.runner validate` plus a repository-wide scan for `TB-CANARY-` and `TB-MARKER-` |
 | No missing result fields | Every result carries schema version, release, commit, host and injection hashes, model identifiers, prompt and tool hashes, sampling, seeds, request ids, timestamps, usage |
-| Passing criterion calibration | `python -m taskbound.runner calibrate --host hosts/h1_failed_job`: five positive references pass, five negative fixtures fail |
+| Passing criterion calibration | `python -m taskbound.runner calibrate --host hosts/site_a`: five positive references pass, five negative fixtures fail |
 | Deterministic backend replay | Two runs from the same seed and inputs produce the same backend behaviour |
 | Oracle sanity | `python -m taskbound.runner audit sample` runs over the smoke results and produces a worksheet with every stratum represented |
 
 ## Stage 2 — sizing pilot
 
-Repeated H1 attacked and benign blocks, **balanced over all three paraphrases**,
+Repeated T1 attacked and benign blocks, **balanced over all three paraphrases**,
 against the same out-of-set model. Six exposed per cell is enough to measure
 what this stage measures; it is not enough to estimate anything reportable and
 nothing from it is reported.
 
 ```sh
 python -m taskbound.runner sweep plan \
-  --host hosts/h1_failed_job --out pilot/sizing_schedule.json --seed 2 \
+  --host hosts/site_a --out pilot/sizing_schedule.json --seed 2 \
   --exposed-target 6 --attempt-cap 18
 ```
 

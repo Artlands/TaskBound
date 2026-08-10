@@ -15,11 +15,12 @@ import types
 
 import pytest
 
+import hostfixture
 from taskbound.agents import AnthropicAgent
 from taskbound.backend import LocalSimBackend
 from taskbound.policy import Policy
 
-HOST = os.path.join(os.path.dirname(__file__), "..", "hosts", "h1_failed_job")
+HOST = os.path.join(os.path.dirname(__file__), "..", "hosts", "site_a")
 
 
 class Block:
@@ -77,8 +78,7 @@ def stub_anthropic(monkeypatch):
 
 
 def make_backend(tmp):
-    with open(os.path.join(HOST, "host.json"), encoding="utf-8") as fh:
-        policy = Policy.from_dict(json.load(fh)["policy"])
+    policy = hostfixture.policy()
     return LocalSimBackend.materialize(HOST, os.path.join(tmp, "run"), policy, {})
 
 

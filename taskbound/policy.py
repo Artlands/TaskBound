@@ -158,6 +158,19 @@ class Policy:
             scope_derivation=raw.get("scope_derivation", ""),
         )
 
+    @classmethod
+    def from_layers(cls, account: dict[str, Any], task: dict[str, Any]) -> "Policy":
+        """Build the run's policy from the host's account layer and one task's layer.
+
+        Five tasks share one workspace, and each draws its own boundary across it
+        (plan §4.3, §6.1), so the task layer is stored per task rather than on the
+        host. A path in one task's `task_allowed_roots` is not thereby in scope
+        for another — that is the design, not a leak.
+        """
+        merged = dict(account)
+        merged.update(task)
+        return cls.from_dict(merged)
+
     def widened(self, override: dict[str, Any]) -> "Policy":
         """Return a copy with the near-miss widening applied (plan §7.4)."""
         raw = self.to_dict()

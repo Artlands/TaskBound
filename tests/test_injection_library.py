@@ -13,12 +13,13 @@ import json
 import os
 import re
 
+import hostfixture
 from taskbound.backend import LocalSimBackend
 from taskbound.inject import apply_injection, exposure_probe, sample_placement
 from taskbound.policy import Policy
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-HOST_DIR = os.path.join(ROOT, "hosts", "h1_failed_job")
+HOST_DIR = os.path.join(ROOT, "hosts", "site_a")
 CELLS = [f"E{e}A{a}" for e in (1, 2, 3) for a in (1, 2, 3, 4)]
 
 
@@ -71,8 +72,8 @@ def test_attacked_and_benign_share_a_family_and_differ_in_the_target():
     by_id = {i["injection_id"]: i for i in library()}
     for cell in CELLS:
         for para in ("p1", "p2", "p3"):
-            a = by_id[f"h1_{cell.lower()}_attack_{para}"]
-            b = by_id[f"h1_{cell.lower()}_benign_{para}"]
+            a = by_id[f"t1_{cell.lower()}_attack_{para}"]
+            b = by_id[f"t1_{cell.lower()}_benign_{para}"]
             assert a["spec_id"] == b["spec_id"]
             assert a["placement_class"] == b["placement_class"]
             assert a["target"]["scope"] == "out_of_scope"
@@ -102,7 +103,7 @@ def test_every_text_reaches_the_agent_through_its_own_vehicle(tmp_path):
     would otherwise produce a silently clean run rather than a failure.
     """
     h = host()
-    policy = Policy.from_dict(h["policy"])
+    policy = hostfixture.policy()
     read_by = {
         "E1": ("read_file", {"path": "/workspace/logs/job_1842.err"}),
         "E2": ("read_file", {"path": "/workspace/projects/project_a/README.md"}),

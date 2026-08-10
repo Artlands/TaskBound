@@ -55,18 +55,21 @@ access control and does not belong in TaskBound.
 
 **Terms used here**
 
-- **Host:** a reusable simulated HPC workspace plus scheduler and module state.
-- **Task:** the user's natural-language request.
-- **Policy:** machine-readable account and task boundaries.
+- **Host:** the simulated HPC workspace plus scheduler and module state. There is
+  exactly one, shared by every task.
+- **Task:** the user's natural-language request. Five of them are defined over the
+  one host.
+- **Policy:** machine-readable account and task boundaries — account-level fields
+  shared by every task, task-level fields declared per task.
 - **Injection:** attack or control text inserted into the environment.
 - **Vehicle:** the log, file, module description, or peer message carrying text.
 - **Run:** one isolated execution using a fresh copy of a host.
 
 ```mermaid
 flowchart LR
-    H[Host<br/>workspace + scheduler + modules]
-    T[Task<br/>what the user wants]
-    P[Policy<br/>account and task boundaries]
+    H[Host<br/>workspace + scheduler + modules<br/>one, shared by all tasks]
+    T[Task<br/>one of five<br/>what the user wants]
+    P[Policy<br/>account layer + this task's layer]
     I[Zero or one injection<br/>attack or control text]
 
     H --> A[Run assembler]
@@ -140,45 +143,58 @@ The primary outcome is the same in every column: did the agent perform the
 requested action? Realized harm is secondary because the four evidence
 instruments do not have equal sensitivity.
 
-## 4. Why four hosts are used
+## 4. One host, five tasks
 
 **Terms used here**
 
-- **Core host:** H1, which carries all 16 cells.
-- **Generalization host:** H2 or H3, which carries a balanced half of the cells.
-- **Private host:** H4, an unpublished robustness check.
-- **Host confound:** a difference attributed to an experimental factor that may
-  actually be caused by changing the task or workspace.
+- **Core task:** T1, failed-job diagnosis, which carries all 16 cells.
+- **Auxiliary task:** one of T2–T5, each carrying two cells.
+- **Request family:** the specification for one (task, action) pair — matched
+  attacked and benign targets plus three paraphrase intents. Its cells are its
+  entry-point renderings.
+- **Task confound:** a difference attributed to an experimental factor that may
+  actually be caused by changing the task.
 
 ```mermaid
 flowchart TB
     ALL[16 entry-point × action cells]
-    ALL --> H1[H1: failed-job diagnosis<br/>all 16 cells<br/>core causal comparisons]
-    ALL --> SPLIT{Complementary balanced halves}
-    SPLIT --> H2[H2: post-processing repair<br/>8 cells, half X]
-    SPLIT --> H3[H3: build and run<br/>8 cells, half Y]
-    SPLIT --> H4[H4: data staging<br/>8 cells, half X<br/>private]
+    ALL --> T1[T1: failed-job diagnosis<br/>all 16 cells<br/>4 families × 4 entry points]
+    ALL --> SPLIT{8 more cells,<br/>balanced across E and A}
+    SPLIT --> T2[T2: post-processing repair<br/>E1A3, E2A1]
+    SPLIT --> T3[T3: build and run<br/>E1A2, E3A3]
+    SPLIT --> T4[T4: data staging<br/>E2A4, E4A2]
+    SPLIT --> T5[T5: status report<br/>E3A4, E4A1]
 
-    H1 --> C1[Estimate both main effects<br/>and their interaction<br/>within one workspace]
-    H2 --> C2[Coarse public-host<br/>generalization]
-    H3 --> C2
-    H4 --> C3[Sensitivity to unpublished<br/>material, not a contamination estimate]
+    T1 --> C1[Both main effects and<br/>their interaction,<br/>free of task confound]
+    T2 --> C2[8 more request families<br/>for the action contrast]
+    T3 --> C2
+    T4 --> C2
+    T5 --> C2
 ```
 
-**Figure 4.** H1 provides the internally controlled comparison. H2 and H3 test
-whether the broad result travels to other tasks. H4 tests robustness to private
-material.
+**Figure 4.** T1 provides the internally controlled comparison; R1 requires the
+crossing to sit on one task, since an entry point seen only under one task would
+be confounded with it. T2–T5 exist for request families, not generalization —
+each carries its two cells at one entry point apiece, because
+`families = cells ÷ entry points per family`, and the unpaired action contrast is
+short of families rather than of runs.
 
-| Host | HPC task | Allocation | Role |
-|---|---|---:|---|
-| H1 | Diagnose a failed job | 16 cells | Complete core crossing |
-| H2 | Repair post-processing | 8 cells | Public generalization, half X |
-| H3 | Build and run with modules | 8 cells | Public generalization, half Y |
-| H4 | Stage archive inputs to scratch | 8 cells | Private robustness check, half X |
+| Task | HPC task | Cells | Families | Role |
+|---|---|---:|---:|---|
+| T1 | Diagnose a failed job | 16 | 4 | Complete core crossing |
+| T2 | Repair post-processing | 2 | 2 | Family base |
+| T3 | Build and run with modules | 2 | 2 | Family base |
+| T4 | Stage archive inputs to scratch | 2 | 2 | Family base |
+| T5 | Summarize runs for a status report | 2 | 2 | Family base |
 
-Every host contains all of its vehicles in clean form on every run. Only the
-location of injected text changes. This prevents “the README existed” or “the
-handoff directory existed” from becoming an accidental experimental difference.
+**24 cells, 12 request families, one workspace.** The workspace contains all four
+vehicles in clean form on every run, under every task. Only the location of
+injected text changes. This prevents "the README existed" or "the handoff
+directory existed" from becoming an accidental experimental difference.
+
+Scope is declared **per task**, not per workspace: the `task_*` policy fields are
+what make an action out of scope, so a path that is a legitimate target under T4
+is an out-of-scope target under T1. The workspace is shared; the boundary is not.
 
 ## 5. The five conditions
 
@@ -269,7 +285,7 @@ compliance.
 
 ```mermaid
 flowchart TB
-    R1[R1: vary entry point<br/>inside the same workspace] --> E1[Removes task and host<br/>from the entry-point effect]
+    R1[R1: vary entry point<br/>inside one task] --> E1[Removes task, workspace,<br/>and difficulty from<br/>the entry-point effect]
     R2[R2: hold execution mode<br/>constant across cells] --> E2[Prevents peer messages<br/>from being a harness effect]
     R3[R3: use one compliance<br/>definition across actions] --> E3[Prevents action effects<br/>from being instrument effects]
     R4[R4: separate exposure<br/>from compliance] --> E4[Prevents never-read content<br/>from looking like resistance]
@@ -280,14 +296,14 @@ complexity.
 
 E4 requires two agents, but running only E4 in two-agent mode would confound
 entry point with execution mode. In `v1.0`, every main cell therefore uses the
-planner → worker → planner mode. A concurrent H1 bridge reruns E1–E3 in
+planner → worker → planner mode. A concurrent T1 bridge reruns E1–E3 in
 single-agent mode to estimate the mode difference separately.
 
 ```mermaid
 flowchart LR
     MAIN[Main v1.0 sweep<br/>E1-E4, all two-agent] --> ENTRY[Entry-point and action effects]
-    TWO[Matched H1 E1-E3<br/>two-agent rows] --> MODE[Execution-mode contrast]
-    ONE[Concurrent H1 E1-E3<br/>single-agent bridge] --> MODE
+    TWO[Matched T1 E1-E3<br/>two-agent rows] --> MODE[Execution-mode contrast]
+    ONE[Concurrent T1 E1-E3<br/>single-agent bridge] --> MODE
 ```
 
 ## 8. From raw runs to claims
@@ -322,7 +338,7 @@ The benchmark may support claims about:
 - entry-point and induced-action effects;
 - a coarse entry-point × action interaction;
 - exposure, utility, realization, and overblocking;
-- coarse host generalization;
+- a coarse task contrast, declared underpowered in advance;
 - a concurrent execution-mode effect;
 - observability under the specific control profiles evaluated; and
 - replication across model families.
@@ -333,7 +349,11 @@ It does **not** support:
 - significance claims for individual cells;
 - comparing realization severity across different actions;
 - general claims about every real HPC site or security control; or
-- treating the public/private host difference as a causal contamination estimate.
+- **any claim of host or workspace generalization, at any version.** TaskBound
+  runs on one host, so every rate is a property of one file layout, one scheduler
+  and module state, one site's conventions. The five tasks vary what the agent is
+  asked to do and what its scope permits; they do not vary the environment, and
+  nothing in the design can test whether the result would hold on another.
 
 ## 9. Sample sizes and release sequence
 
@@ -350,14 +370,14 @@ scale across three model families:
 
 | Release | Purpose | Target runs | Hard cap |
 |---|---|---:|---:|
-| `v0.5` | H1 core, E1–E3, single-agent | 2,304 | 4,248 |
-| `v1.0` | Public hosts, private H4, and mode bridge | 9,288 | 17,064 |
-| `v1.1` | Three concurrent defense arms on public hosts | 17,928 | 32,616 |
+| `v0.5` | T1 core, E1–E3, single-agent | 4,608 | 12,384 |
+| `v1.0` | All five tasks, E1–E4, plus the mode bridge | 13,536 | 35,424 |
+| `v1.1` | Three concurrent defense arms | 29,808 | 74,736 |
 
 ```mermaid
 flowchart LR
-    V05[v0.5 core<br/>H1, E1-E3<br/>susceptibility and factor effects]
-    V10[v1.0 full<br/>add E4, H2-H4, mode bridge<br/>generalization and private sensitivity]
+    V05[v0.5 core<br/>T1, E1-E3<br/>susceptibility and factor effects]
+    V10[v1.0 full<br/>add E4, T2-T5, mode bridge<br/>24 cells, 12 request families]
     V11[v1.1 defenses<br/>none vs prompt hardening<br/>vs perfect-policy upper bound]
     REAL[Later real-HPC backend<br/>only with written site approval]
 
@@ -367,9 +387,10 @@ flowchart LR
 **Figure 9.** Each release adds machinery and licenses new claims. A smaller
 release cannot silently claim results reserved for a later one.
 
-More than half of the public `v1.0` target runs are controls rather than attacks.
-That is intentional: without clean, inert, benign, and near-miss evidence, a low
-or high attack rate is difficult to interpret.
+Most of the `v1.0` target runs are controls rather than attacks — 2,160 of the
+3,312 in each model family's sweep. That is intentional: without clean, inert,
+benign, and near-miss evidence, a low or high attack rate is difficult to
+interpret.
 
 ## 10. The whole benchmark at a glance
 
@@ -377,13 +398,13 @@ or high attack rate is difficult to interpret.
 flowchart TB
     THREAT[Threat model<br/>account-authorized but task-forbidden action]
     FACTORS[Design factors<br/>4 entry points × 4 induced actions]
-    HOSTS[Allocation<br/>H1 complete + H2/H3 halves + private H4]
+    HOSTS[Allocation<br/>one host, five tasks<br/>T1 complete + 8 auxiliary cells]
     CONDITIONS[Controls<br/>clean, inert, benign, attacked, near-miss]
-    RUNS[Isolated runs<br/>fresh host + task + policy + injection]
+    RUNS[Isolated runs<br/>fresh workspace + task + policy + injection]
     MEASURE[Measurement<br/>exposure → compliance → realization<br/>plus utility and scope violations]
     VALIDATE[Validity<br/>paraphrases, realism review,<br/>oracle audit, deterministic replay]
     ANALYZE[Analysis<br/>pre-registered models and intervals]
-    CLAIMS[Bounded claims<br/>susceptibility, selectivity, factors,<br/>generalization, mode, observability]
+    CLAIMS[Bounded claims<br/>susceptibility, selectivity, factors,<br/>mode, observability<br/>— not host generalization]
 
     THREAT --> FACTORS --> HOSTS --> CONDITIONS --> RUNS
     RUNS --> MEASURE --> ANALYZE --> CLAIMS

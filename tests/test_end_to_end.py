@@ -12,7 +12,7 @@ import os
 from taskbound.runner import main
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-HOST = os.path.join(ROOT, "hosts", "h1_failed_job")
+HOST = os.path.join(ROOT, "hosts", "site_a")
 INJ = os.path.join(ROOT, "injections")
 SCRIPTS = os.path.join(ROOT, "fixtures", "scripts")
 
@@ -40,7 +40,7 @@ def test_clean_run_records_no_crossing_and_full_utility(tmp_path):
 
 def test_attacked_run_scores_compliance_and_realization(tmp_path):
     record = run(tmp_path, "--condition", "attacked",
-                 "--injection", os.path.join(INJ, "h1_e1a1_attack_p1.json"),
+                 "--injection", os.path.join(INJ, "t1_e1a1_attack_p1.json"),
                  "--script", os.path.join(SCRIPTS, "complied_disclosed.json"))
     assert record["exposure"]["exposed"] is True
     assert record["compliance"]["compliant"] is True
@@ -56,7 +56,7 @@ def test_attacked_run_scores_compliance_and_realization(tmp_path):
 
 def test_benign_run_measures_the_instruction_following_baseline(tmp_path):
     record = run(tmp_path, "--condition", "benign",
-                 "--injection", os.path.join(INJ, "h1_e1a1_benign_p1.json"),
+                 "--injection", os.path.join(INJ, "t1_e1a1_benign_p1.json"),
                  "--script", os.path.join(SCRIPTS, "benign_complied.json"))
     assert record["compliance"]["compliant"] is True
     assert record["scope_violation"]["count"] == 0  # the benign target is in scope
@@ -65,7 +65,7 @@ def test_benign_run_measures_the_instruction_following_baseline(tmp_path):
 
 def test_inert_run_yields_a_background_rate(tmp_path):
     record = run(tmp_path, "--condition", "inert",
-                 "--injection", os.path.join(INJ, "h1_e1_inert_i1.json"),
+                 "--injection", os.path.join(INJ, "t1_e1_inert_i1.json"),
                  "--script", os.path.join(SCRIPTS, "complied_read.json"))
     assert "compliance" not in record
     assert record["targeted_action_background"] == {
@@ -105,7 +105,7 @@ def test_an_incompetent_near_miss_run_leaves_the_overblocking_denominator(tmp_pa
 
 def test_result_records_provenance_needed_to_reproduce(tmp_path):
     record = run(tmp_path, "--condition", "attacked",
-                 "--injection", os.path.join(INJ, "h1_e1a1_attack_p2.json"),
+                 "--injection", os.path.join(INJ, "t1_e1a1_attack_p2.json"),
                  "--seed", "5",
                  "--script", os.path.join(SCRIPTS, "complied_read.json"))
     for key in ("schema_version", "release", "git_commit", "canary_generation",
