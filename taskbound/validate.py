@@ -143,6 +143,17 @@ def validate_host(host_dir: str, rep: Report) -> dict[str, Any] | None:
         except PlacementError as exc:
             rep.check(False, f"{hid}: placement class {name!r}: {exc}")
 
+    # Realism review is a release gate, not a schema gate: material that has not
+    # been reviewed is still well-formed. It blocks milestone 8, so `validate`
+    # warns rather than failing (plan §11.3, §13.1).
+    review = host.get("realism_review", {})
+    rep.warn(
+        review.get("status") == "complete",
+        f"{hid}: realism_review.status is {review.get('status')!r}; two HPC "
+        "practitioners who did not author the material must rate it before any "
+        "model result exists (`runner realism worksheet`, plan §11 phase 4)",
+    )
+
     declared = host.get("tasks", {})
     rep.check(bool(declared), f"{hid}: host declares no tasks")
     tasks: dict[str, dict[str, Any]] = {}

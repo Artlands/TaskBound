@@ -476,7 +476,8 @@ taskbound/
   glmm.py       the pre-registered mixed-effects logistic fit
   aggregate.py  results -> estimands, Holm, the five tables
   power.py      power simulation under the exact allocation
-  runner.py     CLI: run, validate, calibrate, sweep, aggregate, audit, power
+  realism.py    realism review worksheet and gate                 (phase 4)
+  runner.py     CLI: run, validate, calibrate, sweep, aggregate, audit, power, realism
 hosts/site_a/            one host: workspace, scheduler, account policy, vehicles
   tasks/t1_failed_job/   task.json, task files, policy, manifests, references
 injections/              four request families, an inert spec, 81 texts
@@ -501,6 +502,17 @@ benchmark and a reported one, and none of them is code.
    `realism_review.status` is `pending`. Both are release gates (plan §11.3);
    the rubric is in `docs/realism_rubric.md` and the protocol in
    `docs/paraphrase_protocol.md`.
+
+   The realism instrument is built and `validate` warns while the status stays
+   `pending`, but the review itself needs **two HPC practitioners who did not
+   author the material** — that independence is the whole reason the scores are
+   evidence, so no tool and no author can stand in for them:
+
+   ```sh
+   .venv/bin/python -m taskbound.runner realism worksheet \
+     --host hosts/site_a --out review.json     # 162 ratings per reviewer
+   .venv/bin/python -m taskbound.runner realism report --worksheet review.json
+   ```
 3. **The paraphrase generator is `claude-opus-5`.** If the pre-registration
    names that lineage among the three confirmatory families, every text must be
    re-authored by a generator outside the set first. The provenance field is

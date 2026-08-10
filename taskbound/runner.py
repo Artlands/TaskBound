@@ -618,6 +618,12 @@ def main(argv: list[str] | None = None) -> int:
     aud_report = aud_sub.add_parser("report", help="score a completed worksheet against the gate")
     aud_report.add_argument("--worksheet", required=True)
 
+    rea = sub.add_parser("realism", help="realism review instrument (plan §11 phase 4)")
+    rea_sub = rea.add_subparsers(dest="realism_command", required=True)
+    from .realism import add_arguments as _realism_arguments
+
+    _realism_arguments(rea_sub)
+
     pre = sub.add_parser("preflight", help="check credentials and model access (spends nothing)")
     pre.add_argument("--agent", default="anthropic", choices=("anthropic", "openai_compatible"))
     pre.add_argument("--model", default="claude-opus-5")
@@ -631,6 +637,10 @@ def main(argv: list[str] | None = None) -> int:
         from .validate import validate_all
 
         return validate_all(args.hosts, args.injections)
+    if args.command == "realism":
+        from .realism import main as realism_main
+
+        return realism_main(args)
     if args.command == "calibrate":
         from .validate import calibrate
 

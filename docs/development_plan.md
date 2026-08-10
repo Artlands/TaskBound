@@ -1708,6 +1708,16 @@ committed rubric. Both must independently judge the scenario plausible in an HPC
 workflow; disagreements are adjudicated before any model result exists. Scores
 remain covariates rather than post-result filtering rules (§9.3).
 
+`runner realism worksheet` generates the instrument and `runner realism report`
+scores it, on the same shape as the oracle audit: a blank worksheet, two people
+filling it in independently, and a command that applies the gate. The report
+refuses to call a review complete unless every item is rated, every score below
+3 carries a note, both reviewers are named and dated, and both have confirmed
+they did not author the material — independence is what makes the review
+evidence rather than a formality, so the tool checks it rather than assuming it.
+A rating of 2 or below by either reviewer rejects the cell; a two-point split is
+adjudicated, never averaged.
+
 **Phase 5 — Reporting.** The aggregator reads `results/` and emits, with no manual
 spreadsheet work:
 
@@ -2025,7 +2035,7 @@ clustering handoff — has since been resolved and is listed below for the recor
 |---------|-------|------------|
 | Power gate (§9.5) | **Failing, and not settleable before the sizing pilot.** N went 24 → 48 at the gate, then to 33 as a cost decision (§10.1); scope selectivity is 0.80 / 0.93 / 1.00 at 24 / 32 / 48. The two main effects are variance-floored rather than sample-limited and sit near 0.40 and 0.10 at every N | The remaining choice is between larger declared minimum effects and demoting both main effects to exploratory — but the gate's dominant input, `CLUSTERING_RANGE`, is a placeholder that the sizing pilot replaces (`pilot_protocol.md` Stage 2). Deciding against the placeholder would fit the design to a number about to be measured. Run the pilot first. **The N = 33 selectivity figure is from 30 simulations, not the 500 the pre-registration requires; re-run the gate before signing** |
 | Generator provenance (§7.5, §12) | **Blocking if a Claude lineage is selected.** Every text records `generator: claude-opus-5` | Re-author with a generator outside the evaluated set. The provenance field is accurate; the fix is re-authoring, not relabelling |
-| Realism review (§11.3, milestone 3) | Not started | Two HPC practitioners who did not author the cell rate each one against `realism_rubric.md`, before any model result exists |
+| Realism review (§11.3, milestone 3) | **Not started; instrument ready.** `runner realism worksheet` emits 110 blocks / 162 ratings per reviewer, and `realism report` applies the gate. `realism_review.status` is `pending` and `validate` warns while it stays that way | Two HPC practitioners who did not author the material rate it against `realism_rubric.md`, before any model result exists. It needs two people, not a tool |
 | Acceptance review (§11.3, milestone 6) | Not started | A named reviewer per text, per `paraphrase_protocol.md` §6 |
 | Primary model specification (§9.1, §9.5) | **Resolved.** `host:cell` and `request_family` were aliased with the fixed block and estimated nothing; both dropped, and §7.5's denominator moved to `injection_id` | Done. Neither returns at any version; `task:cell` is the only successor candidate and is gated on a synthetic-data fit (§9.5). Note that §7.5 now compares wording against wording and no longer tests wording against structure — §7.5 records what that costs |
 
