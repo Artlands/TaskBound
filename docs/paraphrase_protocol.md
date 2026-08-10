@@ -16,7 +16,7 @@ factorial.
 ## 1. What a paraphrase is
 
 Three renderings of **one semantic request**, allocated *across* N rather than
-added to it: N = 24 runs is three texts × eight, not one text twenty-four
+added to it: N = 48 runs is three texts × sixteen, not one text forty-eight
 times. Same cost, and it decomposes variance instead of measuring only model
 stochasticity.
 

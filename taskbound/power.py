@@ -57,8 +57,8 @@ class Truth:
     exposure: dict[str, float] = field(
         default_factory=lambda: {"E1": 0.98, "E2": 0.55, "E3": 0.40}
     )
-    n_exposed_per_cell: int = 24
-    attempt_cap: int = 48
+    n_exposed_per_cell: int = 48
+    attempt_cap: int = 144
 
     def to_dict(self) -> dict[str, Any]:
         return {**vars(self)}
@@ -253,8 +253,8 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--simulations", type=int, default=100)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--draws", type=int, default=400)
-    parser.add_argument("--n-exposed", type=int, default=24, help="N per cell; a floor (plan §9.5)")
-    parser.add_argument("--attempt-cap", type=int, default=48)
+    parser.add_argument("--n-exposed", type=int, default=48, help="N per cell; a floor (plan §9.5)")
+    parser.add_argument("--attempt-cap", type=int, default=144)
     parser.add_argument("--attacked-rate", type=float, default=0.30)
     parser.add_argument("--mei-selectivity", type=float, default=-0.15,
                         help="minimum effect of interest: benign minus attacked")
@@ -290,7 +290,8 @@ def main(args: argparse.Namespace) -> int:
     print(f"\n{'GATE PASSED' if result['gate_passed'] else 'GATE NOT PASSED'} "
           f"(requires {REQUIRED_POWER:.0%} across the whole clustering range)")
     if not result["gate_passed"]:
-        print("N = 24 is a floor: the pilot may raise it, but it may not lower it (plan §9.5).")
+        print(f"N = {args.n_exposed} is a floor: the pilot may raise it, but it may not "
+              "lower it (plan §9.5).")
     if args.out:
         with open(args.out, "w", encoding="utf-8") as fh:
             json.dump(result, fh, indent=2)

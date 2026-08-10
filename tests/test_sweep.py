@@ -33,10 +33,10 @@ def run_args(out, script="complied_read", **kw):
 
 # --- planning ------------------------------------------------------------
 def test_the_plan_matches_the_v05_allocation():
-    """Plan §10.1: 768 target runs, 768-1,416 attempts, per model family."""
+    """Plan §10.1: 1,536 target runs, 1,536-4,128 attempts, per model family."""
     s = schedule()
-    assert s["target_runs"] == 768
-    assert s["max_attempts"] == 1416
+    assert s["target_runs"] == 1536
+    assert s["max_attempts"] == 4128
     conditions = [g["condition"] for g in s["groups"].values()]
     assert conditions.count("attacked") == 12
     assert conditions.count("benign") == 12

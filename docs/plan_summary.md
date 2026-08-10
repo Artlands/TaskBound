@@ -173,8 +173,8 @@ and/or required end state. Criteria must accept **five hand-written positive
 answers** and reject **five plausible negative fixtures**. This catches both
 wording brittleness and an oracle that always returns true.
 
-**Exposure governs the design**, not just a footnote: cells recruit to 24
-*exposed* runs (cap 48 attempted) using a pre-generated attempt order, every
+**Exposure governs the design**, not just a footnote: cells recruit to 48
+*exposed* runs (cap 144 attempted) using a pre-generated attempt order, every
 attempt is retained, the primary rate is exposure-conditioned with its
 unconditioned twin beside it, and exposure rate is reported per entry point.
 
@@ -207,13 +207,13 @@ The section most worth checking.
 | Per-cell significance claims | **No** — sixteen cells will produce outliers |
 | Cross-action realization comparison | **No** — R3 forbids it |
 
-**Precision.** N = 24 per cell is ±19pp on purpose; no claim rests on one cell.
+**Precision.** N = 48 per cell is ±14pp on purpose; no claim rests on one cell.
 Intervals come from a pre-registered regularized mixed model with the full
 condition × entry point × action interaction, host fixed effects, and random
 effects for host-cell, request family, paraphrase, injection text, and placement.
 Exposure is modeled separately over all attempts. A simulation names minimum
 effects of interest and must show 80% power across conservative clustering
-values; N = 24 is a floor, not a pilot-tunable target.
+values; N = 48 is a floor, not a pilot-tunable target.
 
 **Two levers for after-the-fact choice are removed.** Realism and attacker write
 preconditions are approved by two HPC reviewers before results and never used to
@@ -225,7 +225,7 @@ attempt schedule, and headline rule. *[§9]*
 
 | | Target per family | Three-family target | Three-family hard cap |
 |---|---:|---:|---:|
-| `v0.5` | 768 | 2,304 | 4,248 |
+| `v0.5` | 1,536 | 4,608 | 12,384 |
 | `v1.0` public + H4 + mode bridge | 3,096 | 9,288 | 17,064 |
 | `v1.1` three-arm public-host comparison | 5,976 | 17,928 | 32,616 |
 

@@ -208,7 +208,7 @@ flowchart LR
 | Near-miss completion | Whether apparent security comes from refusing everything |
 
 Attacked and benign injections each have three meaning-preserving paraphrases.
-The 24 exposed runs in a cell are split across them rather than multiplying the
+The 48 exposed runs in a cell are split across them rather than multiplying the
 sample size. If wording variance dominates cell variance, wording becomes the
 headline result instead of the factorial comparison.
 
@@ -342,7 +342,7 @@ It does **not** support:
 - **Release:** a named scope that licenses a specific set of claims.
 - **Defense arm:** a fresh set of runs under one defense implementation.
 
-Injected cells recruit until they reach 24 exposed runs, with at most 48
+Injected cells recruit until they reach 48 exposed runs, with at most 144
 attempts. All attempts remain in the results. This produces the following planned
 scale across three model families:
 

@@ -32,7 +32,7 @@ itself is standard library only, so offline runs need none of them.
 Check the install:
 
 ```sh
-.venv/bin/python -m pytest tests -q          # 147 tests, no network, no spend
+.venv/bin/python -m pytest tests -q          # 161 tests, no network, no spend
 .venv/bin/python -m taskbound.runner validate
 ```
 
@@ -238,11 +238,11 @@ never a decision made with results visible.
 
 ```sh
 .venv/bin/python -m taskbound.runner sweep plan \
-  --host hosts/h1_failed_job --out schedules/v05_seed1.json --seed 1
-# 32 groups, 768 target runs, 1416 maximum attempts
+  --host hosts/h1_failed_job --out schedules/v05_seed1_a3844135.json --seed 1
+# 32 groups, 1536 target runs, 4128 maximum attempts
 
 .venv/bin/python -m taskbound.runner sweep run \
-  --schedule schedules/v05_seed1.json --out results \
+  --schedule schedules/v05_seed1_a3844135.json --out results \
   --agent anthropic --model claude-opus-5 \
   --canary-seed "$TB_CANARY_SEED" \
   --spend-ceiling 250 --price-in 5 --price-cached 0.5 --price-out 25 \
@@ -251,9 +251,12 @@ never a decision made with results visible.
 
 What the driver does that a shell loop cannot:
 
-- **Recruits to exposure.** Injected cells run until 24 exposed, in blocks of
-  three so the three paraphrases stay balanced wherever it stops, capped at 48
-  attempts. A cell that hits the cap is reported at the precision it reached,
+- **Recruits to exposure.** Injected cells run until 48 exposed, in blocks of
+  three so the three paraphrases stay balanced wherever it stops, capped at 144
+  attempts. The cap is 3N rather than 2N because E3's exposure is around 0.40:
+  at 2N its cells stop short of target, and the entry-point contrast is then
+  read off the arm that got starved. A cell that hits the cap is reported at
+  the precision it reached,
   with both denominators, and is named in the sweep manifest.
 - **Interleaves.** Conditions and cells are shuffled into seeded blocks, so
   provider drift halfway through cannot align with one condition.
@@ -476,22 +479,47 @@ benchmark and a reported one, and none of them is code.
    accurate as it stands; the fix is re-authoring, not relabelling. The
    validator enforces this once `preregistration.json` exists, and warns until
    then.
-4. **The power gate does not currently pass.** Over 24 simulated sweeps per
-   clustering setting, at an attacked rate near 0.30 and N = 24:
+4. **The power gate does not currently pass, and cannot be settled before the
+   sizing pilot.** At the original N = 24 the worst-case powers were 1.00
+   susceptibility, 0.71 selectivity, 0.29 entry-point, 0.04 induced-action.
+   N has since been raised to 48, which fixes selectivity outright:
 
-   | Estimand | Worst-case power | Effect simulated |
-   |---|---|---|
-   | attack susceptibility | 1.00 | — |
-   | scope selectivity | 0.75 | 15pp |
-   | entry-point effect | 0.29 | 12pp |
-   | induced-action effect | 0.21 | 10pp |
+   | Estimand | N = 24 | N = 48 | Effect simulated |
+   |---|---|---|---|
+   | attack susceptibility | 1.00 | 1.00 | — |
+   | scope selectivity | 0.71 | **1.00** | 15pp |
+   | entry-point effect | 0.29 | 0.42 | 12pp |
+   | induced-action effect | 0.04 | 0.08 | 10pp |
 
-   Susceptibility clears the 80% bar outright, selectivity sits just under it,
-   and both main effects are nowhere near — which is what the plan's own
-   planning table implies (§9.5: about ±10–14pp on the entry-point contrast).
-   Before signing, either the minimum effects of interest are set larger and
-   justified, or N is raised, or the main effects are declared exploratory and
-   the release stops claiming them. See `preregistration.draft.json`.
+   Selectivity was the one N-limited estimand: that contrast is paired within
+   cell and paraphrase, so the clustering terms cancel and only binomial noise
+   is left. The two main effects are **not** sample-limited and raising N
+   further does not rescue them. Their standard errors are floored by
+   between-cell variance — there are only three or four cells to average over
+   per level — and, for the induced-action contrast, by between-paraphrase
+   variance, since A4−A1 is unpaired across request families and so eats the
+   full `request_family:paraphrase` component with three paraphrases per
+   family. At high clustering the action contrast's SE moves from 0.955 at
+   N = 24 to 0.883 at N = ∞.
+
+   Raising the declared minimum effects to 20pp and 25pp gets the main effects
+   to 0.93/0.95 at low clustering and 0.82/0.72 at moderate, but only 0.68/0.50
+   at high — and it drops selectivity back to 0.78–0.90, because a more
+   heterogeneous simulated truth widens the standardized contrast. The
+   estimands are not independent knobs; any change to the minimum effects has
+   to be re-simulated as a set.
+
+   Which of those regimes applies is the thing nobody has measured.
+   `CLUSTERING_RANGE` in `taskbound/power.py` is a placeholder, and the sizing
+   pilot replaces it with measured variance components before the gate is
+   re-run (`docs/pilot_protocol.md` §Stage 2). Deciding the minimum effects
+   against the placeholder would be fitting the design to a number that is
+   about to be replaced. See `preregistration.draft.json`.
+
+   One caveat on the estimand that does pass: `attack_susceptibility` is scored
+   as "the interval excludes zero" (`power.py:181`), which at an attacked rate
+   near 0.30 is close to tautological. It clears the bar without being
+   informative, and deserves a real threshold before signing.
 5. **The pre-registration is unsigned**, and is deliberately named
    `preregistration.draft.json` so the validator does not treat it as the
    signed article. Every item it marks `PENDING` is an item that, chosen after
