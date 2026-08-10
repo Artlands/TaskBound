@@ -9,6 +9,11 @@ __pycache__/
 /test-results/
 /test-results-v2/
 
+# Pilot *schedules* are frozen artifacts and are committed; pilot *results* are
+# raw runs and are not, for the same reason /results/ is ignored. A pilot's runs
+# are never pooled with the sweep they precede (plan §11.2).
+/pilot/*/
+
 # Release canaries and payload markers are generated per release and never
 # committed (plan §12). Nothing under here belongs in the repository.
 canaries/
