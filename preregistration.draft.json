@@ -83,8 +83,6 @@
       "model_family"
     ],
     "random": [
-      "host:cell",
-      "request_family",
       "request_family:paraphrase",
       "injection_id",
       "placement_id"
@@ -102,12 +100,12 @@
       "rule": "used when the primary fit does not converge; both fits are disclosed and the model is never simplified after seeing the answer"
     },
     "implementation": "taskbound/glmm.py, exercised on synthetic data in tests/test_analysis.py",
-    "known_identification_problem": {
+    "dropped_components": {
       "components": [
         "host:cell",
         "request_family"
       ],
-      "status": "PENDING \u2014 a claims decision, not yet made",
+      "status": "RESOLVED \u2014 dropped from the primary model",
       "mechanism": "aliasing with the fixed effects, not weak identification. `condition * entry_point * induced_action` expands to a saturated 24-column block: every row sharing a (condition, cell) has an identical fixed design row and there are exactly 24 distinct ones, i.e. one parameter per (condition, cell). The 12-level host:cell random intercept lies entirely inside that span. request_family is aliased the same way \u2014 its four levels are the four induced actions, already carried by the induced_action fixed effect.",
       "evidence": {
         "generated_cell_sd": 0.6,
@@ -125,20 +123,10 @@
         "fitted_under_intercept_only": 0.835,
         "not_an_optimiser_failure": "marginal loglik is -562.43 at the fitted point against -562.85 with cell_sd held at its true 0.60: the surface prefers zero and is flat besides"
       },
-      "scope": "specific to v0.5's single host. At v1.0 cells are (host, entry point, induced action) while the fixed interaction is over condition, entry point and action, so cells sharing an (entry point, action) across hosts share a fixed parameter and may still differ; host:cell becomes identified there.",
-      "affects": [
-        "the supersession rule, which divides by a component pinned near zero by construction rather than by evidence. The ratio reads 4577 against a true 2.25. It is inert rather than wrong \u2014 the interval requirement is never met because that interval spans roughly 300 orders of magnitude \u2014 but it is inert for a reason unrelated to the question it was written to answer",
-        "the power gate's clustering measurement, which refuses to narrow while host:cell sits on the variance boundary"
-      ],
-      "options": [
-        "drop host:cell and request_family at v0.5, reinstating host:cell at v1.0 where it is identified; costs nothing currently being estimated",
-        "de-saturate the fixed interaction so the cell level is free",
-        "move the supersession rule onto a comparison that is identified",
-        "keep the model and report the ratio as uninterpretable"
-      ],
-      "not_decided_here": "every option changes the pre-registered analysis model"
-    },
-    "request_family_not_simulated": "the power simulation's `generate` has no between-request-family term, so it understates heterogeneity by whatever that component really is. `runner clustering` reports it as an unmapped component rather than dropping it"
+      "verification": "refitting without them moves susceptibility, scope selectivity and the entry-point contrast by less than 0.005 apiece: the cell information is carried by the saturated fixed block either way, which is the same fact that made the intercepts redundant",
+      "reinstated_at_v1_0": "host:cell only. At v1.0 cells are (host, entry point, induced action) while the fixed interaction is over condition, entry point and action, so cells sharing an (entry point, action) across hosts share a fixed parameter and may still differ. request_family stays out: its levels are the induced actions at every version.",
+      "side_effect": "the power gate's clustering measurement narrows again. host:cell was the component that always landed on the variance boundary and triggered the refusal branch. cell_sd is now simulated but unmeasurable, and `runner clustering` carries the a-priori bracket through for that knob alone."
+    }
   },
   "exposure_model": {
     "outcome": "exposed",
@@ -170,11 +158,12 @@
     "why": "defining the family per model family would silently multiply the error rate"
   },
   "supersession_rule": {
-    "trigger": "the posterior interval for the paraphrase-to-cell variance ratio lies wholly above 1 on the latent scale",
-    "consequence": "wording variance is reported as the headline finding and supersedes the factorial",
+    "trigger": "the posterior interval for the paraphrase-to-text variance ratio (request_family:paraphrase over injection_id) lies wholly above 1 on the latent scale",
+    "consequence": "systematic wording variance is reported as the headline finding and supersedes the factorial",
     "reported_either_way": "the full ratio and its interval",
     "applied_automatically_by": "taskbound/aggregate.py",
-    "blocked_by": "primary_model.known_identification_problem. The denominator of this ratio is host:cell, which is aliased with the saturated fixed block at v0.5 and reads near zero by construction rather than by evidence. Until that is settled the rule is inert \u2014 the ratio's interval spans roughly 300 orders of magnitude, so the trigger cannot fire \u2014 and a trigger that cannot fire is not a pre-registered decision rule. This must be resolved, not left to pass quietly as a non-event."
+    "amended_from": "the denominator was host:cell until that component was found aliased with the saturated fixed block and dropped. The rule could not fire, for a reason unrelated to what it tested.",
+    "what_it_no_longer_tests": "both terms are now wording: the paraphrase slot shared across the cells that use it, against the individual text. This does not by itself establish that wording outweighs structure \u2014 at v0.5 the structural term is a fixed effect with no variance component to divide by. A rule testing the original question would compare between-text variance against the spread of the fitted cell means, a random-to-fixed comparison that is not pre-registered here. The report's headline note states this where the number is emitted."
   },
   "not_claimed": [
     "per-cell significance claims",

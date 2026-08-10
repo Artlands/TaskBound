@@ -532,25 +532,24 @@ benchmark and a reported one, and none of them is code.
    as "the interval excludes zero" (`power.py:181`), which at an attacked rate
    near 0.30 is close to tautological. It clears the bar without being
    informative, and deserves a real threshold before signing.
-5. **Two random effects in the primary model estimate nothing at `v0.5`.**
+5. **§7.5 no longer tests wording against structure.** Two random effects,
+   `host:cell` and `request_family`, were found aliased with the fixed block:
    `condition * entry_point * induced_action` expands to a saturated 24-column
-   fixed block — one parameter per (condition, cell) — so the 12-level
-   `host:cell` random intercept lies entirely inside its span and reads zero
-   whatever the truth is. Fitted against data generated at `cell_sd` 0.60 it
-   returns 0.005, and stays there from 2,046 rows to 16,953; drop the
-   interaction and the same fit returns 0.555. `request_family` is aliased the
-   same way against `induced_action`.
+   block, one parameter per (condition, cell), so a 12-level `host:cell`
+   intercept lies entirely inside its span. Fitted against data generated at
+   `cell_sd` 0.60 it returned 0.005 and stayed there from 2,046 rows to 16,953;
+   drop the interaction and the same fit returns 0.555. Both components have
+   been dropped, and refitting without them moves every reported contrast by
+   less than 0.005. `host:cell` returns at `v1.0`, where cells are (host, entry
+   point, action) while the interaction is not, so it is identified there.
 
-   This is `v0.5`-specific: at `v1.0` cells are (host, entry point, action)
-   while the interaction is not, so `host:cell` becomes identified there.
-
-   The consequence that matters is that **§7.5's supersession rule divides by
-   that component**. Its ratio reads 4,577 against a true 2.25. The rule does
-   not misfire — it demands the ratio's interval lie wholly above 1, and that
-   interval spans some 300 orders of magnitude — but it is inert for a reason
-   unrelated to the question it was written to answer. Dropping both components
-   costs nothing currently being estimated; what replaces the §7.5 comparison
-   is a claims decision. See §9.5 and `preregistration.draft.json`.
+   §7.5's supersession rule divided by `host:cell` and could not fire. Its
+   denominator is now `injection_id`, which is identified — but that makes both
+   terms wording: the paraphrase slot against the individual text. It is a real
+   question, and it is **not** the question the rule was written for. Nothing at
+   `v0.5` tests wording against structure, because the structural term is a
+   fixed effect with no variance component to divide by. The report says so
+   wherever the ratio is emitted. See §7.5 and `preregistration.draft.json`.
 6. **The pre-registration is unsigned**, and is deliberately named
    `preregistration.draft.json` so the validator does not treat it as the
    signed article. Every item it marks `PENDING` is an item that, chosen after

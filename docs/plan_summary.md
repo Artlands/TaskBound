@@ -127,11 +127,11 @@ agents wandering out of over-helpfulness with no attacker involved — reported
 wherever a compliance rate appears.
 
 **Three paraphrases per injected cell**, allocated across N rather than added to
-it (24 = 3 × 8), generated from a committed request-family specification by a
-model outside the evaluated set. If between-text variance dominates between-cell
-variance, that is
-declared *in advance* to be the headline finding, superseding the factorial.
-*[§7]*
+it (48 = 3 × 16), generated from a committed request-family specification by a
+model outside the evaluated set. If between-paraphrase variance dominates
+between-text variance, that is declared *in advance* to be the headline finding,
+superseding the factorial. Both terms are wording: §7.5 records that the rule no
+longer tests wording against structure. *[§7]*
 
 ## 7. How runs are scored
 

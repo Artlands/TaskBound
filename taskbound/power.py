@@ -46,16 +46,22 @@ CLUSTERING_RANGE = [
 REQUIRED_POWER = 0.80
 
 # The fitted random effects that correspond to the simulation's clustering
-# knobs. `request_family` is fitted but has no counterpart in `generate`, so it
-# is reported as unmapped rather than silently dropped: a large one would mean
-# the simulation understates between-family heterogeneity.
+# knobs. Three of the four map; `cell_sd` no longer does, because `host:cell`
+# was dropped from the primary model as aliased with the fixed block (§9.5).
 COMPONENT_TO_KNOB = {
     "request_family:paraphrase": "paraphrase_sd",
-    "host:cell": "cell_sd",
     "injection_id": "injection_sd",
     "placement_id": "placement_sd",
 }
 KNOBS = ("paraphrase_sd", "cell_sd", "injection_sd", "placement_sd")
+
+# `generate` still draws a per-cell effect, because between-cell heterogeneity is
+# real in the data-generating process even though the fitted model absorbs it
+# into fixed effects. It is therefore simulated but no longer measurable, and a
+# pilot cannot narrow it: the a-priori bracket is carried through for this knob
+# while the other three narrow to what was measured. Reporting a measured
+# `cell_sd` would be reporting a number no fit produced.
+UNMEASURABLE_KNOBS = ("cell_sd",)
 
 # A standard deviation this large on the logit scale is not a measurement, it is
 # a flat likelihood: the profiled surface has no curvature in that direction and
@@ -166,8 +172,26 @@ def measure_clustering(
         result["unmapped_components"] = unmapped
         return result
 
-    def rung(label: str, pick) -> dict[str, Any]:
-        return {"label": label, **{k: pick(components[k]) for k in KNOBS}}
+    # The unmeasurable knobs keep their a-priori values, rung for rung, so the
+    # gate still spans the bracket nobody has narrowed instead of pretending a
+    # measurement exists for them.
+    for knob in UNMEASURABLE_KNOBS:
+        components[knob] = {
+            "estimate": None,
+            "interval": [None, None],
+            "measurable": False,
+            "note": "no fitted component maps to this knob since host:cell was "
+                    "dropped (§9.5); the a-priori range is carried through",
+        }
+
+    def rung(label: str, index: int, pick) -> dict[str, Any]:
+        values = {}
+        for knob in KNOBS:
+            if knob in UNMEASURABLE_KNOBS:
+                values[knob] = CLUSTERING_RANGE[index][knob]
+            else:
+                values[knob] = pick(components[knob])
+        return {"label": label, **values}
 
     return {
         "measured": True,
@@ -176,10 +200,11 @@ def measure_clustering(
         "source": source,
         "components": components,
         "unmapped_components": unmapped,
+        "unmeasurable_knobs": list(UNMEASURABLE_KNOBS),
         "range": [
-            rung("measured_low", lambda c: c["interval"][0]),
-            rung("measured", lambda c: c["estimate"]),
-            rung("measured_high", lambda c: c["interval"][1]),
+            rung("measured_low", 0, lambda c: c["interval"][0]),
+            rung("measured", 1, lambda c: c["estimate"]),
+            rung("measured_high", 2, lambda c: c["interval"][1]),
         ],
     }
 
@@ -463,6 +488,9 @@ def clustering_main(args: argparse.Namespace) -> int:
         print(f"  {'component':<15} {'estimate':>9}  {int(args.level * 100)}% interval")
         for knob in KNOBS:
             c = result["components"][knob]
+            if c.get("measurable") is False:
+                print(f"  {knob:<15} {'—':>9}  a-priori range retained ({c['note'].split(';')[0]})")
+                continue
             low, high = c["interval"]
             print(f"  {knob:<15} {c['estimate']:>9.3f}  [{low:.3f}, {high:.3f}]")
         unmapped = result.get("unmapped_components") or {}

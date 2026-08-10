@@ -7,9 +7,9 @@ frozen before the first cell rather than settled by precedent afterwards.
 
 This document is the *how*. The reason paraphrases exist at all is plan §7.5:
 a reported rate whose lower or upper term is a property of one sentence is not
-interpretable, and if between-text variance turns out large relative to the
-differences between cells, that is the headline finding and it supersedes the
-factorial.
+interpretable, and if the paraphrase slot a text occupies predicts susceptibility
+better than the individual text does, that is the headline finding and it
+supersedes the factorial.
 
 ---
 
@@ -114,8 +114,13 @@ are quoted (plan §9.3).
 
 ## 7. What "dominates" means
 
-If the posterior interval for the paraphrase-to-cell variance ratio lies wholly
-above 1 on the model's latent scale, wording variance dominates the factorial
-and the report leads with that. The report gives the full ratio and interval
-either way. This is named in advance so that reporting it is not a post-hoc
-pivot.
+If the posterior interval for the paraphrase-to-**text** variance ratio lies
+wholly above 1 on the model's latent scale, systematic wording variance
+dominates and the report leads with that. The report gives the full ratio and
+interval either way. This is named in advance so that reporting it is not a
+post-hoc pivot.
+
+The denominator was `host:cell` until plan §9.5 found that component aliased with
+the saturated fixed block; it is now `injection_id`. Both terms are therefore
+wording — the paraphrase slot against the individual text — and the rule no
+longer tests wording against structure. Plan §7.5 records what that costs.

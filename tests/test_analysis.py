@@ -28,12 +28,14 @@ def synthetic(
     entry_effect=(0.0, -0.9, -1.4),
     paraphrase_sd: float = 0.5,
     cell_sd: float = 0.5,
+    injection_sd: float = 0.0,
     exposure=(1.0, 0.6, 0.4),
 ) -> list[dict]:
     """A frame shaped exactly like a v0.5 sweep, from known parameters."""
     rng = random.Random(seed)
     family_effect: dict[str, float] = {}
     cell_effect: dict[str, float] = {}
+    injection_effect: dict[str, float] = {}
     rows = []
     for action in ACTIONS:
         for entry_index, entry in enumerate(ENTRIES):
@@ -43,6 +45,12 @@ def synthetic(
                 key = f"h1_{action}|{paraphrase}"
                 family_effect.setdefault(key, rng.gauss(0, paraphrase_sd))
                 for condition in ("attacked", "benign"):
+                    injection = f"{cell}_{condition}_{paraphrase}"
+                    # Drawing at sd 0 would still consume from the stream and
+                    # shift every dataset the other tests were written against.
+                    injection_effect.setdefault(
+                        injection, rng.gauss(0, injection_sd) if injection_sd else 0.0
+                    )
                     for replicate in range(per_cell):
                         eta = (
                             attacked_logit
@@ -50,6 +58,7 @@ def synthetic(
                             + entry_effect[entry_index]
                             + family_effect[key]
                             + cell_effect[cell]
+                            + injection_effect[injection]
                         )
                         exposed = rng.random() < exposure[entry_index]
                         rows.append({
@@ -136,12 +145,13 @@ def test_the_formula_expands_the_way_the_plan_writes_it():
     assert len(terms) == 7
 
 
-def test_host_cell_is_aliased_with_the_saturated_fixed_block_at_v05():
+def test_the_fixed_block_is_saturated_which_is_why_two_components_were_dropped():
     """§9.5: at one host the fixed effects already spend one parameter per
-    (condition, cell), so the host:cell random intercept has nothing left to
-    explain and estimates zero regardless of the truth. Recorded as a test so
-    that a change to either block shows up here rather than in a variance
-    component that quietly reads zero."""
+    (condition, cell). That is what aliased `host:cell` — and, against
+    `induced_action`, `request_family` — so both were removed from the primary
+    model. The saturation is asserted here so that a change to the fixed block
+    shows up as a failing test rather than as a variance component that quietly
+    reads zero again."""
     rows = [r for r in synthetic(11, exposure=(1.0, 1.0, 1.0)) if r["exposed"]]
     design = glmm.build_design(
         rows, "compliant", aggregate.PRIMARY_FIXED, aggregate.PRIMARY_RANDOM
@@ -152,9 +162,16 @@ def test_host_cell_is_aliased_with_the_saturated_fixed_block_at_v05():
         by_combination.setdefault((row["condition"], row["cell"]), set()).add(tuple(fixed_row))
 
     # One fixed-effect row per (condition, cell), and as many of them as there
-    # are columns: a saturated block, which is what makes the aliasing exact.
+    # are columns: a saturated block, which is what made the aliasing exact.
     assert all(len(v) == 1 for v in by_combination.values())
     assert len({next(iter(v)) for v in by_combination.values()}) == design.p
+
+    # The two aliased components are gone; what remains is identified.
+    assert "host:cell" not in aggregate.PRIMARY_RANDOM
+    assert "request_family" not in aggregate.PRIMARY_RANDOM
+    assert aggregate.PRIMARY_RANDOM == [
+        "request_family:paraphrase", "injection_id", "placement_id"
+    ]
 
 
 def test_ignoring_clustering_reports_a_precision_the_design_does_not_have():
@@ -247,19 +264,21 @@ def test_compliance_is_conditioned_on_exposure():
     assert deployment["rate"] < attacked["rate"]
 
 
-def test_the_supersession_rule_fires_on_wording_dominated_data():
-    """§7.5: if between-paraphrase variance dominates, that is the headline."""
-    result = report(11, paraphrase_sd=1.6, cell_sd=0.05, exposure=(1.0, 1.0, 1.0))
+def test_the_supersession_rule_fires_when_the_paraphrase_slot_beats_the_text():
+    """§7.5, as amended: the comparison is between-paraphrase against
+    between-text, both of them wording. The structural term is a fixed effect
+    at v0.5 and has no variance component left to divide by."""
+    result = report(11, paraphrase_sd=1.6, injection_sd=0.05, exposure=(1.0, 1.0, 1.0))
     variance = result["variance_decomposition"]
     assert variance["available"]
-    assert variance["paraphrase_to_cell_ratio"] > 1
+    assert variance["paraphrase_to_text_ratio"] > 1
     if variance["supersedes_factorial"]:
         assert result["notes"][0].startswith("HEADLINE:")
 
 
-def test_the_supersession_rule_stays_quiet_on_structure_dominated_data():
-    result = report(12, paraphrase_sd=0.05, cell_sd=1.4, exposure=(1.0, 1.0, 1.0))
-    assert result["variance_decomposition"]["paraphrase_to_cell_ratio"] < 1
+def test_the_supersession_rule_stays_quiet_when_the_text_beats_the_slot():
+    result = report(12, paraphrase_sd=0.05, injection_sd=1.4, exposure=(1.0, 1.0, 1.0))
+    assert result["variance_decomposition"]["paraphrase_to_text_ratio"] < 1
     assert not any(n.startswith("HEADLINE:") for n in result["notes"])
 
 

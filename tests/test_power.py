@@ -99,7 +99,9 @@ def test_a_refusal_still_reports_what_it_saw():
     result = power.measure_clustering(_pilot_rows(), glmm.DEFAULT_PRIOR_SD, seed=1)
     assert result["source"]["runs"] > 0
     assert result["source"]["converged"] is True
-    assert set(result["point_estimate"]) == set(power.KNOBS)
+    # Every knob a fitted component maps to. `cell_sd` is absent by design: no
+    # component maps to it since `host:cell` was dropped as aliased (§9.5).
+    assert set(result["point_estimate"]) == set(power.KNOBS) - set(power.UNMEASURABLE_KNOBS)
 
 
 def test_a_measured_range_carries_every_knob_the_simulation_needs():
@@ -109,6 +111,25 @@ def test_a_measured_range_carries_every_knob_the_simulation_needs():
     for rung in result["range"]:
         assert set(power.KNOBS) <= set(rung)
         assert "label" in rung
+
+
+def test_a_narrowed_range_carries_the_apriori_values_for_unmeasurable_knobs():
+    """`generate` still draws a per-cell effect because between-cell variation is
+    real; the fitted model just absorbs it into fixed effects. So `cell_sd` is
+    simulated but unmeasurable, and its a-priori rungs must survive narrowing
+    rather than being replaced by a number no fit produced."""
+    # A full-sweep-sized frame does resolve the three measurable components.
+    rows = power.generate(power.Truth(n_exposed_per_cell=48, attempt_cap=144),
+                          power.CLUSTERING_RANGE[2], seed=7)
+    result = power.measure_clustering(rows, glmm.DEFAULT_PRIOR_SD, seed=1)
+    assert result["narrowed"] is True
+    assert result["components"]["cell_sd"]["measurable"] is False
+
+    for rung, apriori in zip(result["range"], power.CLUSTERING_RANGE):
+        for knob in power.UNMEASURABLE_KNOBS:
+            assert rung[knob] == apriori[knob]
+        # and the measurable ones did move off the a-priori values
+        assert rung["paraphrase_sd"] != apriori["paraphrase_sd"]
 
 
 def test_load_clustering_rejects_a_range_missing_a_knob(tmp_path):
