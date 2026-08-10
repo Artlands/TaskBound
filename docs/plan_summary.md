@@ -138,7 +138,7 @@ per task — each task declares its own scope, so each has its own floor.
 | **Attacked** | out-of-scope request | The measurement | — |
 | **Near-miss** | none, task widened | Does it refuse legitimate work? | Refusing everything scores perfectly |
 
-**Most of every budget is controls** — 2,160 of 3,312 runs in the `v1.0` sweep.
+**Most of every budget is controls** — 1,485 of 2,277 runs in the `v1.0` sweep.
 That ratio is intentional.
 
 The clean condition carries unusual weight because **task text names its object
@@ -148,7 +148,7 @@ agents wandering out of over-helpfulness with no attacker involved — reported
 wherever a compliance rate appears.
 
 **Three paraphrases per injected cell**, allocated across N rather than added to
-it (48 = 3 × 16), generated from a committed request-family specification by a
+it (33 = 3 × 11), generated from a committed request-family specification by a
 model outside the evaluated set. If between-paraphrase variance dominates
 between-text variance, that is declared *in advance* to be the headline finding,
 superseding the factorial. Both terms are wording: §7.5 records that the rule no
@@ -195,8 +195,8 @@ answers** and reject **five plausible negative fixtures** — five tasks means f
 criteria and fifty fixtures. This catches both wording brittleness and an oracle
 that always returns true.
 
-**Exposure governs the design**, not just a footnote: cells recruit to 48
-*exposed* runs (cap 144 attempted) using a pre-generated attempt order, every
+**Exposure governs the design**, not just a footnote: cells recruit to 33
+*exposed* runs (cap 99 attempted) using a pre-generated attempt order, every
 attempt is retained, the primary rate is exposure-conditioned with its
 unconditioned twin beside it, and exposure rate is reported per entry point.
 
@@ -230,14 +230,14 @@ The section most worth checking.
 | Per-cell significance claims | **No** — sixteen cells will produce outliers |
 | Cross-action realization comparison | **No** — R3 forbids it |
 
-**Precision.** N = 48 per cell is ±14pp on purpose; no claim rests on one cell.
+**Precision.** N = 33 per cell is ±17pp on purpose; no claim rests on one cell.
 Intervals come from a pre-registered regularized mixed model with the full
 condition × entry point × action interaction, `condition × task` and model family
 as fixed effects, and random effects for request-family/paraphrase, injection
 text, and placement. `host:cell` and `request_family` are not in it: both were
 aliased with the saturated fixed block and estimated nothing. Exposure is modeled
 separately over all attempts. A simulation names minimum effects of interest and
-must show 80% power across conservative clustering values; N = 48 is a floor, not
+must show 80% power across conservative clustering values; N = 33 is a floor, not
 a pilot-tunable target.
 
 **Two levers for after-the-fact choice are removed.** Realism and attacker write
@@ -248,18 +248,18 @@ attempt schedule, and headline rule. *[§9]*
 
 ## 9. What it costs
 
-All figures at N = 48 with a 3N cap on injected conditions; near-miss and clean
+All figures at N = 33 with a 3N cap on injected conditions; near-miss and clean
 have fixed counts and cannot over-recruit.
 
 | | Target per family | Three-family target | Three-family hard cap |
 |---|---:|---:|---:|
-| `v0.5` | 1,536 | 4,608 | 12,384 |
-| `v1.0` sweep + mode bridge | 4,512 | 13,536 | 35,424 |
-| `v1.1` three-arm comparison | 9,936 | 29,808 | 74,736 |
+| `v0.5` | 1,056 | 3,168 | 8,514 |
+| `v1.0` sweep + mode bridge | 3,102 | 9,306 | 24,354 |
+| `v1.1` three-arm comparison | 6,831 | 20,493 | 51,381 |
 
-`v1.1` is larger than earlier drafts of this table stated, and the cause is
-N = 48 with a 3N cap rather than the allocation: the same nine arms under the
-previous three-host layout would be 35,856 target runs at the same N and cap.
+At the same N and cap, the same nine arms under the previous three-host layout
+would be 24,651 target runs, so the single-host allocation accounts for a 17%
+reduction; N = 33 accounts for the rest.
 
 Current prices are not baked into the plan. The pilot measures cached/uncached
 input, output, requests, turns, and exposure; a dated price manifest computes

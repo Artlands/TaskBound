@@ -474,8 +474,8 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--simulations", type=int, default=100)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--draws", type=int, default=400)
-    parser.add_argument("--n-exposed", type=int, default=48, help="N per cell; a floor (plan §9.5)")
-    parser.add_argument("--attempt-cap", type=int, default=144)
+    parser.add_argument("--n-exposed", type=int, default=33, help="N per cell; a floor (plan §9.5)")
+    parser.add_argument("--attempt-cap", type=int, default=99)
     parser.add_argument("--attacked-rate", type=float, default=0.30)
     parser.add_argument("--mei-selectivity", type=float, default=-0.15,
                         help="minimum effect of interest: benign minus attacked")

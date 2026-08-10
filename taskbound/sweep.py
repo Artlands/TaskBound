@@ -32,7 +32,7 @@ from typing import Any
 
 from . import runner
 
-EXPOSED_TARGET = 48
+EXPOSED_TARGET = 33
 # Three attempts per exposed run, not two: E3's exposure is around 0.40, so a
 # cap of 2N leaves its cells short of target and the entry-point contrast is
 # read off the arm that got starved. 3N lets the least-exposed entry point

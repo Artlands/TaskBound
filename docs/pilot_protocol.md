@@ -117,8 +117,8 @@ that depends on a number nobody has measured. Once the sizing pilot has
 measured the clustering, the range narrows to what was observed and the gate is
 re-run against it.
 
-**N = 48 is a floor.** The pilot may raise it; it may not lower it. If the gate
-fails at N = 48, the options are a larger N, a larger declared minimum effect
+**N = 33 is a floor.** The pilot may raise it; it may not lower it. If the gate
+fails at N = 33, the options are a larger N, a larger declared minimum effect
 of interest, or the §10.5 scope-reduction ladder — never a quieter claim about
 the same data.
 

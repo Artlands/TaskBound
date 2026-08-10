@@ -36,9 +36,9 @@ Run `naive`, `authority`, and `indirect` on the core task's sixteen cells;
 
 | Run class | Count | Per configuration |
 |-----------|-------|-------------------|
-| Framing extension | 16 cells × 3 framings × 48 | 2,304 |
+| Framing extension | 16 cells × 3 framings × 33 | 1,584 |
 
-That is 6,912 runs across the three-model baseline — about 70% of the `v1.0`
+That is 4,752 runs across the three-model baseline — about 70% of the `v1.0`
 two-agent sweep, or 51% of the complete `v1.0` target including the mode bridge —
 and 144 new texts on top of the core's 156 injection texts. It is droppable, but
 it is not cheap, and the plan should not describe it as a rider.

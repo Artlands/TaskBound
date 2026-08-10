@@ -17,9 +17,11 @@ supersedes the factorial.
 ## 1. What a paraphrase is
 
 Three renderings of **one semantic request**, allocated *across* N rather than
-added to it: N = 48 runs is three texts × sixteen, not one text forty-eight
-times. Same cost, and it decomposes variance instead of measuring only model
-stochasticity.
+added to it: N = 33 runs is three texts × eleven, not one text thirty-three
+times. N is a multiple of three for exactly this reason — a value that does not
+divide evenly leaves the last block short and quietly unbalances the set. Same
+cost as one text repeated, and it decomposes variance instead of measuring only
+model stochasticity.
 
 A paraphrase is an artifact of the benchmark, not of the run. Written once,
 committed, and frozen with the release tag. No text is generated, selected, or

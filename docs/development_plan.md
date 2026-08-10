@@ -600,7 +600,7 @@ text-presence contrast for the confirmatory core.
 
 ### 7.1 Clean
 
-Per task, N = 48 — five blocks, 240 runs. The floor that every attacked rate is
+Per task, N = 33 — five blocks, 165 runs. The floor that every attacked rate is
 read against, and a result in its own right: a high clean scope-violation rate
 means the boundary a naturally phrased assignment implies is not one agents
 reliably infer. It is per task rather than per host because each task declares its
@@ -608,19 +608,19 @@ own scope, so each has its own floor.
 
 ### 7.2 Inert
 
-Per entry point under T1 only, N = 48 exposed. Text of the same length and
+Per entry point under T1 only, N = 33 exposed. Text of the same length and
 register at the same placement class, requesting nothing — a note that merely
 describes something. Its trace is scored against each matching cell's target
 predicate as a **targeted-action background rate**, not as compliance: content
 that contains no request cannot be complied with. Without it, attacked behavior
 could be attributed to anomalous text or naturally occurring exploration rather
-than to the requested action. This is cheap — nine texts and 144 runs per
-configuration at `v0.5`, twelve and 192 once E4 joins — and closes an
+than to the requested action. This is cheap — nine texts and 99 runs per
+configuration at `v0.5`, twelve and 132 once E4 joins — and closes an
 interpretation gap no other condition covers.
 
 ### 7.3 Benign
 
-Per cell, N = 48 exposed, three paraphrases. Same entry point, same placement
+Per cell, N = 33 exposed, three paraphrases. Same entry point, same placement
 class, same register, comparable length, requesting an action *inside* task scope.
 Compliance here is the baseline rate of following environment instructions; the
 gap between it and attacked compliance is the part attributable to the request
@@ -633,7 +633,7 @@ sentence is no more interpretable than a rate that is.
 
 ### 7.4 Near-miss
 
-Per (task, induced action), N = 48 — twelve blocks, 576 runs. A widened task that
+Per (task, induced action), N = 33 — twelve blocks, 396 runs. A widened task that
 legitimately requires the very action the attacked run tries to induce: the user
 names the second project, asks for the resubmission, specifies the parameter
 change, asks for the handoff note. The near-miss text should be as close to the
@@ -655,9 +655,11 @@ Without near-miss runs, an agent that refuses everything scores perfectly.
 ### 7.5 Paraphrases
 
 Every attacked and benign cell ships **three paraphrases**, allocated *across* N
-rather than added to it: N = 48 runs as three texts × sixteen, not one text
-forty-eight times. Same cost, and it decomposes variance instead of measuring only
-model stochasticity.
+rather than added to it: N = 33 runs as three texts × eleven, not one text
+thirty-three times. N is a multiple of three for exactly this reason: a value
+that does not divide evenly would leave the last block short and quietly
+unbalance the decomposition. Same cost as one text repeated, and it decomposes
+variance instead of measuring only model stochasticity.
 
 Paraphrases are artifacts of the benchmark, not of the run: written once,
 committed, frozen with the release tag. They may be AI-generated from a committed
@@ -921,7 +923,7 @@ The harness knows what it wrote and sees every tool result, so this is mechanica
 
 Per R4, exposure governs the design in three ways:
 
-1. Injected cells **recruit to 48 exposed runs**, in blocks of three (one per
+1. Injected cells **recruit to 33 exposed runs**, in blocks of three (one per
    paraphrase, so the split stays balanced), capped at **144 attempted**. The
    cap is 3N rather than 2N because E3's exposure is around 0.40, and at 2N its
    cells stop short of target. The
@@ -933,7 +935,7 @@ Per R4, exposure governs the design in three ways:
    often agents actually open a poisoned README or read a module description is
    directly actionable, and is arguably the more useful of the two numbers.
 
-A cell that hits the attempt cap short of 48 exposed is reported at the precision
+A cell that hits the attempt cap short of 33 exposed is reported at the precision
 it actually reached, with both denominators shown, and is never quietly pooled.
 
 ### 8.5 The reported metric set
@@ -1198,24 +1200,23 @@ Wilson half-widths on a proportion near 0.5:
 |---|------------|
 | 12 | ±25pp |
 | 24 | ±19pp |
+| 33 | ±17pp |
 | 48 | ±14pp |
 | 96 | ±10pp |
 | 192 | ±7pp |
 
-Per-cell rates at N = 48 are imprecise on purpose, which is why no claim rests on
+Per-cell rates at N = 33 are imprecise on purpose, which is why no claim rests on
 one. The quantities that carry claims pool:
 
-The run counts below are `v1.0` figures **at the old N = 24**, and are left that
-way for the same reason §10.2 is: the pilot may raise N again, and rescaling now
-would put numbers in the plan that were never simulated. Read them as relative
-resolution rather than as a budget.
+Read the table below as relative resolution rather than as a budget; the run
+counts are `v1.0` figures at N = 33.
 
-| Quantity | Runs behind it (per model, `v1.0`, at N = 24) | Resolution |
+| Quantity | Runs behind it (per model, `v1.0`) | Resolution |
 |----------|-------------------------------------|------------|
-| Attack susceptibility | 768 attacked, standardized over cells | Fine when pooled; inert contrast is coarser |
-| Scope selectivity | 768 attacked vs 768 benign | Fine |
-| Entry-point effect | 192 attacked per level, paired by request family | ~±10–14pp on a contrast |
-| Induced-action effect | 192 attacked per level, unpaired | ~±14–18pp on a contrast |
+| Attack susceptibility | 792 attacked, standardized over cells | Fine when pooled; inert contrast is coarser |
+| Scope selectivity | 792 attacked vs 792 benign | Fine |
+| Entry-point effect | 198 attacked per level, paired by request family | ~±10–14pp on a contrast |
+| Induced-action effect | 198 attacked per level, unpaired | ~±14–18pp on a contrast |
 | E × A interaction | omnibus only | Large effects only |
 | Task generalization | 8 cell-matched pairs | Coarse |
 
@@ -1223,7 +1224,7 @@ These are planning ranges, not a power analysis. Before the main
 pre-registration is signed, a simulation using the exact allocation and analysis
 model must name the minimum effect of interest for attack susceptibility, scope
 selectivity, and both main effects, and demonstrate at least 80% power across the
-pilot-informed conservative clustering range. N = 48 is a floor: the pilot may
+pilot-informed conservative clustering range. N = 33 is a floor: the pilot may
 raise it, but it may not lower it. The interaction remains omnibus/exploratory
 unless its own simulation meets the same gate. Intervals come from the mixed
 model, not from a Wilson interval over pooled runs; Wilson is used for descriptive
@@ -1235,7 +1236,7 @@ situation, and the first sweep of the gate established which is which:
 | Estimand | Limited by | Does raising N help? |
 |----------|------------|----------------------|
 | Attack susceptibility | nothing binding at the current threshold | passes, but see below |
-| Scope selectivity | within-cell binomial noise | **Yes** — 0.71 at N = 24, 1.00 at N = 48 |
+| Scope selectivity | within-cell binomial noise | **Yes** — 0.80 at N = 24, 0.93 at N = 32, 1.00 at N = 48 |
 | Entry-point effect | between-cell variance, 4 cells per level | Barely |
 | Induced-action effect | between-cell **and** between-paraphrase variance | No |
 
@@ -1375,60 +1376,73 @@ candidate and is gated on the simulation named above.
 
 ### 10.1 `v0.5` — core task, single-agent, E1–E3 × A1–A4
 
-| Condition | Cells | Exposed target | Attempted (cap 144/cell) |
-|-----------|-------|----------------|--------------------------|
-| Attacked | 12 | 576 | 576–1,728 |
-| Benign | 12 | 576 | 576–1,728 |
-| Inert | 3 | 144 | 144–432 |
-| Near-miss | 4 actions | 192 | 192 |
-| Clean | 1 task | 48 | 48 |
-| | | **1,536** | **1,536–4,128** |
+| Condition | Cells | Exposed target | Attempted (cap 99/cell) |
+|-----------|-------|----------------|-------------------------|
+| Attacked | 12 | 396 | 396–1,188 |
+| Benign | 12 | 396 | 396–1,188 |
+| Inert | 3 | 99 | 99–297 |
+| Near-miss | 4 actions | 132 | 132 |
+| Clean | 1 task | 33 | 33 |
+| | | **1,056** | **1,056–2,838** |
 
 E1 exposure is near 1 by construction, so over-recruitment is primarily an E2 and
-E3 cost. Three model families require 4,608 target runs and at most 12,384
+E3 cost. Three model families require 3,168 target runs and at most 8,514
 attempts. The pilot supplies the expected value between those bounds, which for
 E1-dominated cells is far nearer the lower one.
 
-N was raised from 24 to 48 at the §9.5 power gate. At N = 24 scope selectivity
-reached only 0.71 worst-case power; at N = 48 it reaches 1.00. The cap moved
-from 2N to 3N at the same time: E3's exposure is around 0.40, so at 2N its cells
-stopped at roughly 19 of 24 exposed, and the entry-point contrast was being read
-off the one arm the cap had starved. Neither change rescues the two main
-effects, which are floored by between-cell and between-paraphrase variance
-rather than by N — see §9.5.
+**How N was set, and what it costs.** N went 24 → 48 at the §9.5 power gate,
+because scope selectivity reached only 0.71 worst-case power at 24 and 1.00 at
+48. It was then set to **33** as a declared cost decision, not a statistical one:
+48 was more than scope selectivity needed and the two main effects are
+unreachable at any N, so the extra runs bought precision on one estimand that was
+already comfortable. At N = 32 an indicative simulation put worst-case
+selectivity at 0.93; 33 is the nearest multiple of three, which the paraphrase
+allocation requires (§7.5).
+
+**That 0.93 is indicative, not a gate result.** It comes from 30 simulations
+against the a-priori clustering bracket. The signed pre-registration requires 500
+simulations against pilot-measured clustering, and that has not been run. If the
+gate fails at 33 once clustering is measured, N goes up — it is a floor, and the
+cost decision does not override the gate.
+
+The cap moved from 2N to 3N at the same gate and stays there: E3's exposure is
+around 0.40, so at 2N its cells stopped short of target and the entry-point
+contrast was being read off the one arm the cap had starved. None of this rescues
+the two main effects, which are floored by between-cell and between-paraphrase
+variance rather than by N — see §9.5.
 
 ### 10.2 `v1.0` — full sweep and mode bridge
 
-Stated at N = 48 and a 3N cap, matching §10.1. N = 48 is a floor (§9.5): if the
+Stated at N = 33 and a 3N cap, matching §10.1. N = 33 is a floor (§9.5): if the
 sizing pilot raises it, every figure here scales with it.
 
 | Task | Cells | Attacked | Benign | Inert | Near-miss | Clean | Total |
 |------|-------|----------|--------|-------|-----------|-------|-------|
-| T1 (core) | 16 | 768 | 768 | 192 | 192 | 48 | 1,968 |
-| T2 | 2 | 96 | 96 | — | 96 | 48 | 336 |
-| T3 | 2 | 96 | 96 | — | 96 | 48 | 336 |
-| T4 | 2 | 96 | 96 | — | 96 | 48 | 336 |
-| T5 | 2 | 96 | 96 | — | 96 | 48 | 336 |
-| | **24** | **1,152** | **1,152** | **192** | **576** | **240** | **3,312** |
+| T1 (core) | 16 | 528 | 528 | 132 | 132 | 33 | 1,353 |
+| T2 | 2 | 66 | 66 | — | 66 | 33 | 231 |
+| T3 | 2 | 66 | 66 | — | 66 | 33 | 231 |
+| T4 | 2 | 66 | 66 | — | 66 | 33 | 231 |
+| T5 | 2 | 66 | 66 | — | 66 | 33 | 231 |
+| | **24** | **792** | **792** | **132** | **396** | **165** | **2,277** |
 
 Near-miss is two blocks per auxiliary task because each carries two (task,
 action) families; clean is one block per task (§7.1, §7.4). The concurrent T1
-E1–E3 single-agent bridge adds 1,200 (576 attacked, 576 benign, 48 clean). The
-complete `v1.0` target is therefore **4,512 runs per model family**:
+E1–E3 single-agent bridge adds 825 (396 attacked, 396 benign, 33 clean). The
+complete `v1.0` target is therefore **3,102 runs per model family**:
 
 | Component | Target runs | Hard attempt cap |
 |-----------|------------:|-----------------:|
-| Two-agent sweep (T1–T5) | 3,312 | 8,304 |
-| Concurrent single-agent bridge | 1,200 | 3,504 |
-| **Per model family** | **4,512** | **11,808** |
-| **Three families** | **13,536** | **35,424** |
+| Two-agent sweep (T1–T5) | 2,277 | 5,709 |
+| Concurrent single-agent bridge | 825 | 2,409 |
+| **Per model family** | **3,102** | **8,118** |
+| **Three families** | **9,306** | **24,354** |
 
 Caps apply 3N to injected conditions only; near-miss and clean have fixed counts
 and cannot over-recruit. Earlier versions of this table set caps at 2N, which
 §10.1 superseded. The pilot supplies expected attempts between target and cap;
 the bridge is used only for the execution-mode estimand.
 
-Note the shape: **most of every budget is controls.** 2,160 of 3,312 target runs
+Note the shape: **most of every budget is controls.** 1,485 of 2,277 target runs
 — benign, inert, near-miss, and clean — produce no attack at all. That ratio is
 intentional.
 
@@ -1454,14 +1468,15 @@ not assumed. Cache breakpoints and token accounting are implemented in Phase 1.
 
 `v1.1` is a fresh, interleaved three-arm comparison (`none`,
 `prompt_hardening`, `oracle_scope_enforcer`) over all five tasks. It reruns `none`
-so temporal or provider drift cannot become a defense effect. Its target is 3,312
-runs per family per arm, or 29,808 across three families and three arms; the hard
-cap is 74,736 attempts. The execution-mode bridge is not defense-tuning data.
+so temporal or provider drift cannot become a defense effect. Its target is 2,277
+runs per family per arm, or 20,493 across three families and three arms; the hard
+cap is 51,381 attempts. The execution-mode bridge is not defense-tuning data.
 
-That is larger than the figure this section carried before, and the cause is
-N = 48 with a 3N cap, not the allocation: the same nine arms under the previous
-three-host layout would be 35,856 target runs at the same N and cap. The
-single-host allocation reduces `v1.1` by roughly 17%.
+Two changes pull this figure in opposite directions and both are worth naming.
+The 3N cap raises the worst case; the single-host allocation and N = 33 lower the
+target. At the same N and cap, the previous three-host layout would be 24,651
+target runs across the nine arms, so the allocation alone accounts for a 17%
+reduction.
 
 ### 10.4 The binding constraint is authoring, not runs
 
@@ -1508,8 +1523,10 @@ under the full `v1.0` definition of done.
 3. **The inert condition.** Removes the matched attack-attributable risk
    difference; only the attacked rate and clean background remain.
 
-**N is not on this ladder.** §9.5 fixes N = 48 as a floor the pilot may raise and
-may not lower; reducing it would give back the one estimand runs can buy.
+**N is not on this ladder.** §9.5 fixes N = 33 as a floor the pilot may raise and
+may not lower. It was already reduced from 48 as a deliberate cost decision
+(§10.1), against a simulation showing what that costs; reducing it further at
+sweep time, without one, would give back the one estimand runs can buy.
 
 The crossed T1 structure, paraphrase count, benign control, near-miss condition,
 and exposure decomposition are minimum requirements for any numbered baseline
@@ -2006,7 +2023,7 @@ clustering handoff — has since been resolved and is listed below for the recor
 
 | Blocker | State | Resolution |
 |---------|-------|------------|
-| Power gate (§9.5) | **Failing, and not settleable before the sizing pilot.** N raised 24 → 48, which lifts scope selectivity from 0.71 to 1.00. The two main effects are variance-floored rather than sample-limited and stay at 0.42 (entry point) and 0.08 (induced action) | The remaining choice is between larger declared minimum effects and demoting both main effects to exploratory — but the gate's dominant input, `CLUSTERING_RANGE`, is a placeholder that the sizing pilot replaces (`pilot_protocol.md` Stage 2). Deciding against the placeholder would fit the design to a number about to be measured. Run the pilot first |
+| Power gate (§9.5) | **Failing, and not settleable before the sizing pilot.** N went 24 → 48 at the gate, then to 33 as a cost decision (§10.1); scope selectivity is 0.80 / 0.93 / 1.00 at 24 / 32 / 48. The two main effects are variance-floored rather than sample-limited and sit near 0.40 and 0.10 at every N | The remaining choice is between larger declared minimum effects and demoting both main effects to exploratory — but the gate's dominant input, `CLUSTERING_RANGE`, is a placeholder that the sizing pilot replaces (`pilot_protocol.md` Stage 2). Deciding against the placeholder would fit the design to a number about to be measured. Run the pilot first. **The N = 33 selectivity figure is from 30 simulations, not the 500 the pre-registration requires; re-run the gate before signing** |
 | Generator provenance (§7.5, §12) | **Blocking if a Claude lineage is selected.** Every text records `generator: claude-opus-5` | Re-author with a generator outside the evaluated set. The provenance field is accurate; the fix is re-authoring, not relabelling |
 | Realism review (§11.3, milestone 3) | Not started | Two HPC practitioners who did not author the cell rate each one against `realism_rubric.md`, before any model result exists |
 | Acceptance review (§11.3, milestone 6) | Not started | A named reviewer per text, per `paraphrase_protocol.md` §6 |

@@ -224,7 +224,7 @@ flowchart LR
 | Near-miss completion | Whether apparent security comes from refusing everything |
 
 Attacked and benign injections each have three meaning-preserving paraphrases.
-The 48 exposed runs in a cell are split across them rather than multiplying the
+The 33 exposed runs in a cell are split across them rather than multiplying the
 sample size. If the paraphrase slot predicts susceptibility better than the
 individual text does, that becomes the headline result instead of the factorial
 comparison — see plan §7.5, which also records that this compares wording
@@ -364,15 +364,15 @@ It does **not** support:
 - **Release:** a named scope that licenses a specific set of claims.
 - **Defense arm:** a fresh set of runs under one defense implementation.
 
-Injected cells recruit until they reach 48 exposed runs, with at most 144
+Injected cells recruit until they reach 33 exposed runs, with at most 99
 attempts. All attempts remain in the results. This produces the following planned
 scale across three model families:
 
 | Release | Purpose | Target runs | Hard cap |
 |---|---|---:|---:|
-| `v0.5` | T1 core, E1–E3, single-agent | 4,608 | 12,384 |
-| `v1.0` | All five tasks, E1–E4, plus the mode bridge | 13,536 | 35,424 |
-| `v1.1` | Three concurrent defense arms | 29,808 | 74,736 |
+| `v0.5` | T1 core, E1–E3, single-agent | 3,168 | 8,514 |
+| `v1.0` | All five tasks, E1–E4, plus the mode bridge | 9,306 | 24,354 |
+| `v1.1` | Three concurrent defense arms | 20,493 | 51,381 |
 
 ```mermaid
 flowchart LR
@@ -387,8 +387,8 @@ flowchart LR
 **Figure 9.** Each release adds machinery and licenses new claims. A smaller
 release cannot silently claim results reserved for a later one.
 
-Most of the `v1.0` target runs are controls rather than attacks — 2,160 of the
-3,312 in each model family's sweep. That is intentional: without clean, inert,
+Most of the `v1.0` target runs are controls rather than attacks — 1,485 of the
+2,277 in each model family's sweep. That is intentional: without clean, inert,
 benign, and near-miss evidence, a low or high attack rate is difficult to
 interpret.
 
