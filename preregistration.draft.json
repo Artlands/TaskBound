@@ -155,7 +155,8 @@
       "model_family_heterogeneity"
     ],
     "one_family_spanning_all_model_families": true,
-    "why": "defining the family per model family would silently multiply the error rate"
+    "why": "defining the family per model family would silently multiply the error rate",
+    "members_not_estimable_at_this_version": "dropped from the correction and listed as `not_tested` in the report rather than counted as tested. At v0.5 that is scope_selectivity, paraphrase_variance_ratio, host_generalization, exposure_by_entry_point and model_family_heterogeneity: none yields a p-value, either because the quantity is reported as an interval or because it needs more than one host or model family. A family that shrinks is a *weaker* correction, so the count tested and the members dropped are printed next to the adjusted values, not left in the JSON alone."
   },
   "supersession_rule": {
     "trigger": "the posterior interval for the paraphrase-to-text variance ratio (request_family:paraphrase over injection_id) lies wholly above 1 on the latent scale",

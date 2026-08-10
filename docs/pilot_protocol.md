@@ -71,6 +71,13 @@ It measures four things, in this order of importance:
    grouping factor, so the rungs are the ends and centre of each component's
    interval and the gate still runs across all three.
 
+   Three of the simulation's four clustering knobs are measured this way. The
+   fourth, `cell_sd`, is **not measurable**: the simulation still draws a
+   per-cell effect, because between-cell heterogeneity is real, but the fitted
+   model absorbs it into the saturated fixed block and `host:cell` was dropped
+   for exactly that reason (plan §9.5). Its a-priori rungs are carried through
+   unchanged rather than replaced by a number no fit produced.
+
    **It may refuse.** If a component sits at the fit's lower variance boundary,
    or the profiled surface has no usable curvature, the measurement is a floor
    artifact rather than a number, and the command returns the a-priori bracket

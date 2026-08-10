@@ -14,7 +14,13 @@ supplies: a design that has power at a paraphrase sd of 0.3 and none at 0.8 is
 a design whose power claim depends on a number nobody has measured yet, which
 is why the gate is "across the range" rather than "at our best guess".
 
-    python -m taskbound.runner power --simulations 200 --out power.json
+    python -m taskbound.runner clustering --results pilot/sizing --out pilot/clustering.json
+    python -m taskbound.runner power --simulations 200 --clustering pilot/clustering.json
+
+Both commands live here, because the range and the gate evaluated across it are
+one argument. `clustering` may refuse to narrow — see `measure_clustering` — and
+`power` records which range it used under `clustering_provenance`, so a pass at
+measured clustering is never mistaken for a pass at an assumed one.
 
 Every simulation is a full mixed-effects fit, so this is minutes-to-hours work
 rather than seconds. It runs once, before signing.
@@ -89,9 +95,12 @@ def measure_clustering(
 
     When the profiled surface has no usable curvature — components pinned at
     their lower boundary, or a non-positive-definite Hessian — no interval can
-    be drawn, and the function **refuses to narrow the range**. It returns the
-    a-priori upper bracket instead and says why. A pilot that could not resolve
-    the clustering must not be able to make the gate easier to pass.
+    be drawn, and the function **refuses to narrow the range**. It returns
+    `CLUSTERING_RANGE` unchanged, rung for rung, and says why. A pilot that could
+    not resolve the clustering must not be able to make the gate easier to pass.
+
+    Every branch returns the same keys, `point_estimate` among them, so a caller
+    need not know which one produced the result.
     """
     analysis = aggregate.analysis_rows(rows)
     primary = aggregate.fit_primary(analysis, prior_sd)
@@ -107,7 +116,7 @@ def measure_clustering(
     }
 
     if primary["used_fallback"] or not getattr(fit, "log_sd", None):
-        return _unnarrowed(source, "the fallback fit has no variance components")
+        return _unnarrowed(source, "the fallback fit has no variance components", None)
 
     point = {knob: fit.sd.get(name, 0.0) for name, knob in COMPONENT_TO_KNOB.items()}
     unmapped = {n: v for n, v in fit.sd.items() if n not in COMPONENT_TO_KNOB}
@@ -124,8 +133,7 @@ def measure_clustering(
             "these components sit at the fit's lower variance boundary: "
             + ", ".join(sorted(pinned))
             + " — the pilot did not resolve them, so their point estimates are "
-              "floor artifacts rather than measurements")
-        result["point_estimate"] = point
+              "floor artifacts rather than measurements", point)
         result["unmapped_components"] = unmapped
         return result
 
@@ -133,8 +141,7 @@ def measure_clustering(
     if drawn is None:
         result = _unnarrowed(
             source, "the profiled surface has no usable curvature, so no interval "
-                    "can be drawn around the measured components")
-        result["point_estimate"] = point
+                    "can be drawn around the measured components", point)
         result["unmapped_components"] = unmapped
         return result
 
@@ -166,8 +173,7 @@ def measure_clustering(
             source,
             "the sizing pilot did not resolve " + ", ".join(unresolved)
             + f" (interval reaches the {SD_CEILING} ceiling, i.e. a flat likelihood); "
-              "a larger pilot is needed before the range can narrow")
-        result["point_estimate"] = point
+              "a larger pilot is needed before the range can narrow", point)
         result["components"] = components
         result["unmapped_components"] = unmapped
         return result
@@ -184,11 +190,18 @@ def measure_clustering(
                     "dropped (§9.5); the a-priori range is carried through",
         }
 
-    def rung(label: str, index: int, pick) -> dict[str, Any]:
+    # The a-priori values for an unmeasurable knob, taken as the ends and middle
+    # of whatever CLUSTERING_RANGE holds rather than by position, so this does
+    # not silently mis-pair if the bracket is ever reordered or resized.
+    def apriori(knob: str) -> tuple[float, float, float]:
+        values = sorted(c[knob] for c in CLUSTERING_RANGE)
+        return values[0], values[len(values) // 2], values[-1]
+
+    def rung(label: str, which: int, pick) -> dict[str, Any]:
         values = {}
         for knob in KNOBS:
             if knob in UNMEASURABLE_KNOBS:
-                values[knob] = CLUSTERING_RANGE[index][knob]
+                values[knob] = apriori(knob)[which]
             else:
                 values[knob] = pick(components[knob])
         return {"label": label, **values}
@@ -197,6 +210,7 @@ def measure_clustering(
         "measured": True,
         "narrowed": True,
         "level": level,
+        "point_estimate": point,
         "source": source,
         "components": components,
         "unmapped_components": unmapped,
@@ -209,12 +223,19 @@ def measure_clustering(
     }
 
 
-def _unnarrowed(source: dict[str, Any], reason: str) -> dict[str, Any]:
-    """The refusal branch: keep the a-priori bracket and say so."""
+def _unnarrowed(source: dict[str, Any], reason: str,
+                point: dict[str, float] | None = None) -> dict[str, Any]:
+    """The refusal branch: keep the a-priori bracket and say so.
+
+    Every refusal returns the same shape, `point_estimate` included, so a caller
+    reading the result does not have to know which branch produced it. It is
+    None only when the fit produced no components to report.
+    """
     return {
         "measured": False,
         "narrowed": False,
         "reason": reason,
+        "point_estimate": point,
         "source": source,
         "range": [dict(c) for c in CLUSTERING_RANGE],
         "note": "the a-priori CLUSTERING_RANGE is retained unchanged; the gate is "
@@ -537,15 +558,18 @@ def main(args: argparse.Namespace) -> int:
         print("  a-priori clustering bracket (no pilot measurement supplied)")
     print(f"  minimum effects of interest: selectivity {args.mei_selectivity:+.2f}  "
           f"entry point {args.mei_entry_point:+.2f}  action {args.mei_induced_action:+.2f}")
-    header = f"  {'clustering':<10} {'conv':>5}  " + "  ".join(
+    # Measured rung labels are longer than the a-priori ones, so the column is
+    # sized for the widest label actually present rather than for "moderate".
+    width = max(10, *(len(label) for label in result["by_clustering"]))
+    header = f"  {'clustering':<{width}} {'conv':>5}  " + "  ".join(
         f"{name[:14]:>14}" for name in result["worst_case_power"])
     print(header)
     for label, block in result["by_clustering"].items():
-        row = f"  {label:<10} {block['converged']:>3}/{block['simulations']:<3} " + "  ".join(
+        row = f"  {label:<{width}} {block['converged']:>3}/{block['simulations']:<3} " + "  ".join(
             f"{'—' if v is None else format(v, '.2f'):>14}" for v in block["power"].values())
         print(row)
     print("  " + "-" * (len(header) - 2))
-    print(f"  {'worst case':<10} {'':>5}  " + "  ".join(
+    print(f"  {'worst case':<{width}} {'':>5}  " + "  ".join(
         f"{'—' if v is None else format(v, '.2f'):>14}" for v in result["worst_case_power"].values()))
     print(f"\n{'GATE PASSED' if result['gate_passed'] else 'GATE NOT PASSED'} "
           f"(requires {REQUIRED_POWER:.0%} across the whole clustering range)")

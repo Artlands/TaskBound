@@ -963,9 +963,17 @@ def print_report(report: dict[str, Any]) -> None:
               f"  p={'—' if p is None else format(p, '.3f')}   (omnibus only, no per-cell claims)")
     multiplicity = report.get("multiplicity")
     if multiplicity and multiplicity["adjusted"]:
-        print("\n  Holm-adjusted over the one declared secondary family:")
+        tested, family = len(multiplicity["tested"]), len(multiplicity["family"])
+        print(f"\n  Holm-adjusted over the one declared secondary family "
+              f"({tested} of {family} members testable):")
         for key, value in sorted(multiplicity["adjusted"].items(), key=lambda kv: kv[1]):
             print(f"    {key:<28} {value:.3f}")
+        if multiplicity["not_tested"]:
+            # A family that shrinks is a *weaker* correction, so which members
+            # dropped out belongs next to the adjusted values rather than only
+            # in the JSON.
+            print(f"    not testable at this version, and so not corrected for: "
+                  f"{', '.join(multiplicity['not_tested'])}")
 
     print("\n=== 3. Variance decomposition ================================")
     variance = report.get("variance_decomposition", {})

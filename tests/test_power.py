@@ -141,11 +141,21 @@ def test_load_clustering_rejects_a_range_missing_a_knob(tmp_path):
 
 
 def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path):
-    """The writer and the reader are the same contract."""
-    measured = power.measure_clustering(_pilot_rows(), glmm.DEFAULT_PRIOR_SD, seed=1)
-    path = tmp_path / "clustering.json"
-    path.write_text(json.dumps(measured))
-    assert power.load_clustering(str(path)) == measured["range"]
+    """The writer and the reader are the same contract, on both branches: a
+    refusal hands back the a-priori bracket and a narrowed range mixes measured
+    values with a carried-through `cell_sd`, and `run` has to accept either."""
+    refused = power.measure_clustering(_pilot_rows(), glmm.DEFAULT_PRIOR_SD, seed=1)
+    narrowed = power.measure_clustering(
+        power.generate(power.Truth(n_exposed_per_cell=48, attempt_cap=144),
+                       power.CLUSTERING_RANGE[2], seed=7),
+        glmm.DEFAULT_PRIOR_SD, seed=1,
+    )
+    assert refused["narrowed"] is False and narrowed["narrowed"] is True
+
+    for measured in (refused, narrowed):
+        path = tmp_path / f"clustering_{measured['narrowed']}.json"
+        path.write_text(json.dumps(measured))
+        assert power.load_clustering(str(path)) == measured["range"]
 
 
 def test_the_gate_records_whether_its_clustering_was_measured_or_assumed():

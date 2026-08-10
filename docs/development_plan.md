@@ -1135,7 +1135,12 @@ Wilson half-widths on a proportion near 0.5:
 Per-cell rates at N = 48 are imprecise on purpose, which is why no claim rests on
 one. The quantities that carry claims pool:
 
-| Quantity | Runs behind it (per model, `v1.0`) | Resolution |
+The run counts below are `v1.0` figures **at the old N = 24**, and are left that
+way for the same reason §10.2 is: the pilot may raise N again, and rescaling now
+would put numbers in the plan that were never simulated. Read them as relative
+resolution rather than as a budget.
+
+| Quantity | Runs behind it (per model, `v1.0`, at N = 24) | Resolution |
 |----------|-------------------------------------|------------|
 | Attack susceptibility | 768 attacked, standardized over cells | Fine when pooled; inert contrast is coarser |
 | Scope selectivity | 768 attacked vs 768 benign | Fine |
@@ -1220,20 +1225,20 @@ different hosts would share a fixed parameter and could still differ —
 `host:cell` becomes identified there. It is `v0.5`, with one host, where it is
 exactly redundant.
 
-Two consequences:
+Two consequences followed, both since repaired:
 
-1. **§7.5's supersession rule cannot do its job at `v0.5`.** It compares
+1. **§7.5's supersession rule could not do its job.** It compared
    between-paraphrase variance against between-cell variance, and the
-   denominator is pinned near zero by construction rather than by evidence, so
-   the ratio is large whatever the data say — 4,577 on the table above, against a
-   true value of 2.25. It does not currently misfire, but only because it demands
-   the ratio's *interval* lie wholly above 1 and that interval spans some 300
-   orders of magnitude. The rule is inert, and inert for a reason that has
+   denominator was pinned near zero by construction rather than by evidence, so
+   the ratio was large whatever the data said — 4,577 on the table above, against
+   a true value of 2.25. It never misfired, but only because it demands the
+   ratio's *interval* lie wholly above 1 and that interval spanned some 300
+   orders of magnitude. The rule was inert, and inert for a reason that had
    nothing to do with the question it was written to answer.
-2. **The clustering measurement will usually refuse to narrow**, because
-   `host:cell` lands on the variance boundary. That is the correct behaviour and
-   it is implemented, but it means the pilot cannot discharge the power gate the
-   way this section assumes it will until the specification is settled.
+2. **The clustering measurement refused to narrow**, because `host:cell` landed
+   on the variance boundary every time. That was the correct behaviour, but it
+   meant the pilot could not discharge the power gate the way this section
+   assumes it will.
 
 Both consequences are now historical — see **Resolved** below — but they are
 kept here because they are the evidence for the amendment, and a reader checking
@@ -1595,10 +1600,10 @@ spreadsheet work:
 2. **Factor effects** — entry-point and induced-action main effects, the
    interaction omnibus, with Holm-corrected intervals and the paired/unpaired
    status of each contrast on its face.
-3. **Variance decomposition** — between-paraphrase against between-cell against
+3. **Variance decomposition** — between-paraphrase against between-text against
    between-placement, with the §7.5 supersession rule applied automatically.
 4. **Exposure** — per entry point, per host, with both denominators.
-5. **Full grid** — all 16 cells descriptively, marked "no per-cell claims."
+5. **Full grid** — every populated cell descriptively, marked "no per-cell claims."
 
 **Phase 6 — Defenses (`v1.1`).** Two hooks: a **context hook** transforming what
 reaches the agent, and an **action hook** sitting between the agent and the backend

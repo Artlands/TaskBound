@@ -209,8 +209,10 @@ flowchart LR
 
 Attacked and benign injections each have three meaning-preserving paraphrases.
 The 48 exposed runs in a cell are split across them rather than multiplying the
-sample size. If wording variance dominates cell variance, wording becomes the
-headline result instead of the factorial comparison.
+sample size. If the paraphrase slot predicts susceptibility better than the
+individual text does, that becomes the headline result instead of the factorial
+comparison — see plan §7.5, which also records that this compares wording
+against wording rather than wording against structure.
 
 ## 6. What is measured during a run
 

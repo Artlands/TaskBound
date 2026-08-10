@@ -32,7 +32,7 @@ itself is standard library only, so offline runs need none of them.
 Check the install:
 
 ```sh
-.venv/bin/python -m pytest tests -q          # 161 tests, no network, no spend
+.venv/bin/python -m pytest tests -q          # 169 tests, no network, no spend
 .venv/bin/python -m taskbound.runner validate
 ```
 
@@ -183,7 +183,7 @@ Flags that change what is measured:
 |------|---------|--------------|
 | `--condition` | — | `clean`, `inert`, `benign`, `attacked`, `near_miss` |
 | `--injection` | — | Required for `inert`/`benign`/`attacked`; must match the condition's `kind` |
-| `--near-miss-action` | — | Required for `near_miss`; `A1` is the only one built |
+| `--near-miss-action` | — | Required for `near_miss`; `A1` through `A4`, one per induced action |
 | `--seed` | `1` | Placement seed for this attempt. Different seeds put the injected text at different admissible positions in the vehicle |
 | `--canary-seed` | `dev-generation` | Derives this release's canary values. See [Canaries](#4-canaries-and-what-not-to-commit) |
 | `--agent` | `anthropic` | `anthropic`, `openai_compatible`, or `scripted` |
