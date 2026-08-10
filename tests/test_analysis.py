@@ -136,6 +136,27 @@ def test_the_formula_expands_the_way_the_plan_writes_it():
     assert len(terms) == 7
 
 
+def test_host_cell_is_aliased_with_the_saturated_fixed_block_at_v05():
+    """§9.5: at one host the fixed effects already spend one parameter per
+    (condition, cell), so the host:cell random intercept has nothing left to
+    explain and estimates zero regardless of the truth. Recorded as a test so
+    that a change to either block shows up here rather than in a variance
+    component that quietly reads zero."""
+    rows = [r for r in synthetic(11, exposure=(1.0, 1.0, 1.0)) if r["exposed"]]
+    design = glmm.build_design(
+        rows, "compliant", aggregate.PRIMARY_FIXED, aggregate.PRIMARY_RANDOM
+    )
+
+    by_combination: dict[tuple[str, str], set[tuple[float, ...]]] = {}
+    for row, fixed_row in zip(rows, design.x):
+        by_combination.setdefault((row["condition"], row["cell"]), set()).add(tuple(fixed_row))
+
+    # One fixed-effect row per (condition, cell), and as many of them as there
+    # are columns: a saturated block, which is what makes the aliasing exact.
+    assert all(len(v) == 1 for v in by_combination.values())
+    assert len({next(iter(v)) for v in by_combination.values()}) == design.p
+
+
 def test_ignoring_clustering_reports_a_precision_the_design_does_not_have():
     """Why the mixed model exists rather than a Wilson interval over runs."""
     rows = [r for r in synthetic(9, paraphrase_sd=1.2, exposure=(1.0, 1.0, 1.0)) if r["exposed"]]

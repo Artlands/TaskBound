@@ -628,6 +628,15 @@ post-hoc pivot. “Dominates” is operationalized in the pre-registration as th
 posterior interval for the paraphrase-to-cell variance ratio lying wholly above
 1 on the model's latent scale; the report also gives the full ratio and interval.
 
+> **This rule is currently inert and must be repaired before signing.** Its
+> denominator is `host:cell`, which §9.5 shows is aliased with the saturated
+> fixed block at `v0.5` and reads near zero by construction rather than by
+> evidence. The ratio is therefore large whatever the data say, and the interval
+> requirement — the thing that stops it firing spuriously — is met only because
+> that interval is uninformative. A trigger that cannot fire is not a
+> pre-registered decision rule, and it should not be allowed to pass as a
+> non-event.
+
 ---
 
 ## 8. Measurement
@@ -1146,9 +1155,9 @@ scored as "the standardized interval excludes zero", which at an attacked rate
 near 0.30 is close to tautological. A real threshold belongs in the signed
 pre-registration.
 
-**`host:cell` is not recovered by the primary model, and this is not a sample
-size problem.** Fitting the pre-registered model to data generated at a known
-`cell_sd` of 0.60 returns essentially zero, and stays there as the data grow:
+**`host:cell` is aliased with the fixed effects at `v0.5` and estimates nothing.**
+Fitting the pre-registered model to data generated at a known `cell_sd` of 0.60
+returns essentially zero, and stays there however much data it is given:
 
 | Rows | fitted `cell_sd` (true 0.60) | fitted `paraphrase_sd` (true 0.90) | fitted `injection_sd` (true 0.35) |
 |-----:|---:|---:|---:|
@@ -1156,33 +1165,70 @@ size problem.** Fitting the pre-registered model to data generated at a known
 | 6,369 | 0.002 | 0.763 | 0.364 |
 | 16,953 | 0.004 | 0.468 | 0.338 |
 
-`injection_id` converges on its true value; `host:cell` does not move. Every
-injection text belongs to exactly one cell, so the two are nested, and with six
-injections per cell the fit cannot separate "this cell is more susceptible" from
-"these six texts happen to be more effective" — it puts the variance in the
-injection level, where `injection_sd` is correspondingly overestimated at the
-smallest sample.
+This is not a sample-size problem and not an optimiser failure — at the fitted
+point the marginal log-likelihood is −562.43 against −562.85 with `cell_sd` held
+at its true 0.60, so the surface genuinely prefers zero and is flat besides. The
+cause is structural. `condition * entry_point * induced_action` expands to a
+**saturated** 24-column fixed block, which is exactly one parameter per
+(condition, cell): every row sharing a (condition, cell) has an identical fixed
+design row, and there are 24 distinct ones. The 12-level `host:cell` random
+intercept lies entirely inside that span, so there is nothing left for it to
+explain. Removing the interaction confirms it:
 
-Three consequences, in descending order of how much they matter:
+| Fixed effects | fitted `host:cell` |
+|---|---:|
+| `condition * entry_point * induced_action` (24 columns) | 0.005 |
+| `condition + entry_point + induced_action` (7 columns) | **0.555** |
+| intercept only (1 column) | 0.835 |
 
-1. **§7.5's paraphrase-to-cell ratio is not trustworthy as a point estimate.**
-   On the data above it reads 4,577 against a true value of 2.25. The
-   supersession rule does not misfire, but only because it requires the ratio's
-   *interval* to lie wholly above 1 and that interval spans some 300 orders of
-   magnitude — the rule is protected by accident rather than by design.
+`request_family` is aliased the same way and for the same reason: its four levels
+are the four induced actions, which `induced_action` already carries as a fixed
+effect. `request_family:paraphrase`, `injection_id` and `placement_id` are not
+aliased and do estimate.
+
+The aliasing is specific to `v0.5`'s single host. At `v1.0` cells are (host,
+entry point, induced action) while the fixed interaction is still over condition,
+entry point and action, so two cells sharing an (entry point, action) across
+different hosts would share a fixed parameter and could still differ —
+`host:cell` becomes identified there. It is `v0.5`, with one host, where it is
+exactly redundant.
+
+Two consequences:
+
+1. **§7.5's supersession rule cannot do its job at `v0.5`.** It compares
+   between-paraphrase variance against between-cell variance, and the
+   denominator is pinned near zero by construction rather than by evidence, so
+   the ratio is large whatever the data say — 4,577 on the table above, against a
+   true value of 2.25. It does not currently misfire, but only because it demands
+   the ratio's *interval* lie wholly above 1 and that interval spans some 300
+   orders of magnitude. The rule is inert, and inert for a reason that has
+   nothing to do with the question it was written to answer.
 2. **The clustering measurement will usually refuse to narrow**, because
    `host:cell` lands on the variance boundary. That is the correct behaviour and
-   it is implemented, but it means the pilot may not be able to discharge the
-   power gate the way §9.5 assumes it will.
-3. **`request_family` is fitted but not simulated.** `generate` has no
-   between-request-family term at all, so the simulation understates
-   heterogeneity by however large that component really is. `runner clustering`
-   reports it as an unmapped component rather than dropping it silently.
+   it is implemented, but it means the pilot cannot discharge the power gate the
+   way this section assumes it will until the specification is settled.
 
-None of this is fixed here, because every available fix — dropping `host:cell`,
-reparameterising the nesting, or moving the supersession rule onto a different
-comparison — changes the pre-registered analysis model and is a claims decision
-rather than a code one.
+Separately, `request_family` is fitted but **not simulated**: `generate` has no
+between-request-family term, so the power simulation understates heterogeneity by
+whatever that component really is. `runner clustering` reports it as an unmapped
+component rather than dropping it silently.
+
+"Costs nothing" is checked rather than assumed. Refitting the same data with
+`host:cell` and `request_family` removed moves every reported quantity by less
+than 0.005 on the probability scale:
+
+| Contrast | 5 random effects | aliased two dropped |
+|---|---|---|
+| Susceptibility | +0.2799 [+0.2282, +0.3482] | +0.2805 [+0.2280, +0.3572] |
+| Scope selectivity | −0.1121 [−0.1728, −0.0456] | −0.1116 [−0.1749, −0.0482] |
+| Entry point E3−E1 | −0.3251 [−0.4258, −0.1972] | −0.3300 [−0.4423, −0.1920] |
+
+The cell information is carried by the saturated fixed block either way, which is
+the same fact that makes the random intercepts redundant.
+
+Not fixed here. Dropping the two aliased components is the obvious repair, but it
+changes the pre-registered model, and what replaces §7.5's comparison is a claims
+decision.
 
 ---
 
@@ -1798,7 +1844,9 @@ artifact has been reviewed, run, or reported.
 | 13 | Defense interface and both hooks | **Not started** | `--defense` is recorded per run and only `none` exists |
 | 14 | `v1.1` defense arms | **Not started** | — |
 
-**What blocks milestone 8.** Four things, none of them code:
+**What blocks milestone 8.** Five things. Four are not code; the fifth is a
+specification error in the analysis model, found by building the pilot's
+clustering handoff and checked in §9.5:
 
 | Blocker | State | Resolution |
 |---------|-------|------------|
@@ -1806,6 +1854,7 @@ artifact has been reviewed, run, or reported.
 | Generator provenance (§7.5, §12) | **Blocking if a Claude lineage is selected.** Every text records `generator: claude-opus-5` | Re-author with a generator outside the evaluated set. The provenance field is accurate; the fix is re-authoring, not relabelling |
 | Realism review (§11.3, milestone 3) | Not started | Two HPC practitioners who did not author the cell rate each one against `realism_rubric.md`, before any model result exists |
 | Acceptance review (§11.3, milestone 6) | Not started | A named reviewer per text, per `paraphrase_protocol.md` §6 |
+| Primary model specification (§9.1, §9.5) | **`host:cell` and `request_family` are aliased with the fixed effects at `v0.5` and estimate nothing.** §7.5's supersession rule divides by the first of them and is consequently inert | Drop both at `v0.5`, reinstating `host:cell` at `v1.0` where it is identified — this costs nothing currently being estimated — and decide what §7.5's comparison becomes. A claims decision, and a new milestone-8 blocker rather than one the pilot resolves |
 
 The oracle audit gate (§8.7) is implemented and cannot be *evaluated* until a
 sweep exists to sample; it is a milestone 8 exit condition rather than an entry

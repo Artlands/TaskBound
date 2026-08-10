@@ -103,16 +103,36 @@
     },
     "implementation": "taskbound/glmm.py, exercised on synthetic data in tests/test_analysis.py",
     "known_identification_problem": {
-      "component": "host:cell",
+      "components": [
+        "host:cell",
+        "request_family"
+      ],
       "status": "PENDING \u2014 a claims decision, not yet made",
-      "finding": "fitted against data generated at a known cell_sd of 0.60, the primary model returns 0.005 at 2,046 rows, 0.002 at 6,369 and 0.004 at 16,953: it does not recover with sample size. injection_id converges on its true value over the same range (0.494 -> 0.364 -> 0.338 against a true 0.35). Every injection text belongs to exactly one cell, so the two are nested, and with six injections per cell the fit cannot separate a susceptible cell from six effective texts; the variance goes to the injection level.",
+      "mechanism": "aliasing with the fixed effects, not weak identification. `condition * entry_point * induced_action` expands to a saturated 24-column block: every row sharing a (condition, cell) has an identical fixed design row and there are exactly 24 distinct ones, i.e. one parameter per (condition, cell). The 12-level host:cell random intercept lies entirely inside that span. request_family is aliased the same way \u2014 its four levels are the four induced actions, already carried by the induced_action fixed effect.",
+      "evidence": {
+        "generated_cell_sd": 0.6,
+        "fitted_under_preregistered_fixed_effects": [
+          0.005,
+          0.002,
+          0.004
+        ],
+        "at_rows": [
+          2046,
+          6369,
+          16953
+        ],
+        "fitted_under_additive_fixed_effects": 0.555,
+        "fitted_under_intercept_only": 0.835,
+        "not_an_optimiser_failure": "marginal loglik is -562.43 at the fitted point against -562.85 with cell_sd held at its true 0.60: the surface prefers zero and is flat besides"
+      },
+      "scope": "specific to v0.5's single host. At v1.0 cells are (host, entry point, induced action) while the fixed interaction is over condition, entry point and action, so cells sharing an (entry point, action) across hosts share a fixed parameter and may still differ; host:cell becomes identified there.",
       "affects": [
-        "the supersession rule: the paraphrase-to-cell ratio reads 4577 against a true 2.25 on the data above. It does not misfire, but only because it requires the ratio interval to lie wholly above 1 and that interval spans roughly 300 orders of magnitude \u2014 protection by accident, not by design",
-        "the power gate's clustering measurement, which will usually refuse to narrow because host:cell sits on the variance boundary"
+        "the supersession rule, which divides by a component pinned near zero by construction rather than by evidence. The ratio reads 4577 against a true 2.25. It is inert rather than wrong \u2014 the interval requirement is never met because that interval spans roughly 300 orders of magnitude \u2014 but it is inert for a reason unrelated to the question it was written to answer",
+        "the power gate's clustering measurement, which refuses to narrow while host:cell sits on the variance boundary"
       ],
       "options": [
-        "drop host:cell and let injection_id carry the cell level",
-        "reparameterise the nesting so the cell level is identified",
+        "drop host:cell and request_family at v0.5, reinstating host:cell at v1.0 where it is identified; costs nothing currently being estimated",
+        "de-saturate the fixed interaction so the cell level is free",
         "move the supersession rule onto a comparison that is identified",
         "keep the model and report the ratio as uninterpretable"
       ],
@@ -153,7 +173,8 @@
     "trigger": "the posterior interval for the paraphrase-to-cell variance ratio lies wholly above 1 on the latent scale",
     "consequence": "wording variance is reported as the headline finding and supersedes the factorial",
     "reported_either_way": "the full ratio and its interval",
-    "applied_automatically_by": "taskbound/aggregate.py"
+    "applied_automatically_by": "taskbound/aggregate.py",
+    "blocked_by": "primary_model.known_identification_problem. The denominator of this ratio is host:cell, which is aliased with the saturated fixed block at v0.5 and reads near zero by construction rather than by evidence. Until that is settled the rule is inert \u2014 the ratio's interval spans roughly 300 orders of magnitude, so the trigger cannot fire \u2014 and a trigger that cannot fire is not a pre-registered decision rule. This must be resolved, not left to pass quietly as a non-event."
   },
   "not_claimed": [
     "per-cell significance claims",
