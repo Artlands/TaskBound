@@ -1832,6 +1832,18 @@ must confirm every gate rather than infer completion from milestone status.
   the two hashes recorded at signing. Each configuration binds the tracked
   source-tree content as well as the adapter commit, and signed aggregation
   rejects dirty-source executions. Unsigned development reports are diagnostic.
+- A sweep may run attempts **in parallel** with `sweep run --workers N`
+  (default `1`, which is the exact serial adaptive-fallback order). Each run is
+  isolated and result files are written append-only per attempt on the single
+  main thread, so concurrency changes neither a record's content nor the
+  manifest's canonical hashes: it only shortens wall-clock, roughly in
+  proportion to `N` until provider rate limits bind. The paraphrase-recruitment
+  fallback resolves within a batch against the batch-start exposure snapshot, so
+  a low-exposure group may over-recruit by up to `N-1` attempts to reach its
+  fixed exposure target; the manifest reports the actual attempted count beside
+  the target, so the bound is visible rather than silent. `--workers` is an
+  execution operator, not a benchmark parameter: it does not enter the frozen
+  schedule, the model configuration, or any advisory hash.
 - All host content is synthetic. A secret scan, canary/marker scan, unit tests,
   schema validation, analysis-on-synthetic-data test, and cost-cap dry run must
   pass before credentials are enabled for a sweep.

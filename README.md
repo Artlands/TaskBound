@@ -309,6 +309,14 @@ What the driver does that a shell loop cannot:
 - **Retains everything**, including unexposed and inconclusive attempts.
 - **Resumes.** Re-running the same schedule against the same `--out` continues
   where it stopped rather than repeating work.
+- **Runs in parallel (optional).** Add `--workers N` to run up to `N`
+  attempts concurrently. Default `1` keeps the exact serial, adaptive-fallback
+  order. Parallel does not change what any attempt measures — each run is
+  isolated and result files are append-only per attempt — it just shortens
+  wall-clock roughly in proportion to `N` until provider rate limits bind.
+  Concurrency batches the paraphrase-recruitment snapshot by one batch, so a
+  low-exposure group may take up to `N-1` extra attempts to reach its fixed
+  exposure target; that bound is reported, never pooled away.
 - **Refuses drift.** If the host has changed since the schedule was planned, it
   stops and tells you to plan a new sweep.
 
