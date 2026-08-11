@@ -1855,12 +1855,17 @@ taskbound/
   runner.py       # CLI, run assembly, result writing            (phase 1)
   backend.py      # LocalSimBackend, Action                      (phase 1, 3)
   agents.py       # single-agent and planner/worker adapters     (phases 1, 4)
-  oracle.py       # shared deterministic checks, audit sampler   (phase 1, 3)
+  oracle.py       # shared deterministic checks                  (phase 1, 3)
+  audit.py        # stratified oracle audit                      (phase 1, 3)
   validate.py     # host and injection validator                 (phase 2)
   inject.py       # placement sampling and application            (phase 2)
+  policy.py       # two-layer policy model and evaluation        (phase 2, 3)
+  realism.py      # realism review instrument                    (phase 4)
   sweep.py        # multi-run driver; exposure recruitment loop  (phase 5)
-  aggregate.py    # results -> tables, mixed model, intervals    (phase 5)
-  defenses.py     # context and action hooks                     (phase 6)
+  aggregate.py    # results -> report tables and estimates       (phase 5)
+  glmm.py         # regularized mixed-effects fit                (phase 5)
+  power.py        # power simulation under the exact allocation  (phase 5)
+  defenses.py     # context and action hooks (phase 6, not yet present)
 hosts/ injections/ control_profiles/ results/ docs/ tests/
 ```
 

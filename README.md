@@ -40,7 +40,7 @@ itself is standard library only, so offline runs need none of them.
 Check the install:
 
 ```sh
-.venv/bin/python -m pytest tests -q          # 223 tests, no network, no spend
+.venv/bin/python -m pytest tests -q          # 280 tests, no network, no spend
 .venv/bin/python -m taskbound.runner validate
 ```
 
@@ -50,7 +50,7 @@ it, the near-miss policies against the layer each action crosses, marker and
 canary disjointness, cell and paraphrase coverage, the placement classes, and
 the utility criteria against their calibration fixtures.
 
-The suite takes about a minute; most of it is `tests/test_analysis.py`, which
+The suite takes a few minutes; most of it is `tests/test_analysis.py`, which
 fits the pre-registered mixed-effects model to synthetic data with known
 coefficients rather than asserting on a mock.
 
@@ -527,7 +527,8 @@ taskbound/
   aggregate.py  results -> estimands, Holm, the five tables
   power.py      power simulation under the exact allocation
   realism.py    realism review worksheet and gate                 (phase 4)
-  runner.py     CLI: run, validate, calibrate, sweep, aggregate, audit, power, realism
+  runner.py     CLI: run, validate, calibrate, sweep, power, clustering,
+                aggregate, audit, realism, preflight
 hosts/site_a/            one host: workspace, scheduler, account policy, vehicles
   tasks/<task_id>/       five of these: task.json, task files, policy,
                          manifests, references
