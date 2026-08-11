@@ -14,6 +14,21 @@ import pytest
 from taskbound import glmm, power
 
 
+def _valid_refusal_artifact():
+    return power._unnarrowed(
+        {
+            "runs": 10,
+            "analysis_rows": 8,
+            "settings": {
+                "prior_sd": power.RELEASE_PRIOR_SD,
+                "seed": 1,
+                "level": power.RELEASE_INTERVAL_LEVEL,
+            },
+        },
+        "pilot did not resolve the clustering components",
+    )
+
+
 def test_compact_power_defaults_match_the_release_allocation():
     truth = power.Truth()
     assert truth.n_exposed_per_cell == 9
@@ -108,7 +123,8 @@ def test_only_the_exact_release_configuration_can_pass_the_gate(monkeypatch):
                 "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
     exact = power.run(power.Truth(), simulations=500, seed=1,
-                      clustering_range=power.CLUSTERING_RANGE[:1])
+                      clustering_range=power.CLUSTERING_RANGE,
+                      clustering_provenance=_valid_refusal_artifact())
     diagnostic = power.run(power.Truth(), simulations=499, seed=1,
                            clustering_range=power.CLUSTERING_RANGE[:1])
     assert exact["evaluation_type"] == "release_gate"
@@ -116,6 +132,58 @@ def test_only_the_exact_release_configuration_can_pass_the_gate(monkeypatch):
     assert diagnostic["evaluation_type"] == "diagnostic"
     assert diagnostic["power_requirement_met"] is True
     assert diagnostic["gate_passed"] is False
+
+
+@pytest.mark.parametrize("kwargs,mismatch", [
+    ({"seed": 2}, "seed"),
+    ({"draws": 1}, "draws"),
+    ({"prior_sd": 1.0}, "prior_sd"),
+])
+def test_altered_release_analysis_is_diagnostic(monkeypatch, kwargs, mismatch):
+    detected = {"converged": True, "attack_susceptibility": True,
+                "scope_selectivity": True, "entry_point_effect": True,
+                "induced_action_effect": True}
+    monkeypatch.setattr(power, "one_simulation", lambda *args, **kw: detected)
+    run_kwargs = {name: value for name, value in kwargs.items() if name != "seed"}
+    result = power.run(
+        power.Truth(), simulations=power.RELEASE_SIMULATIONS,
+        seed=kwargs.get("seed", power.RELEASE_SEED),
+        clustering_range=power.CLUSTERING_RANGE,
+        clustering_provenance=_valid_refusal_artifact(), **run_kwargs,
+    )
+    assert result["gate_passed"] is False
+    assert mismatch in result["release_analysis_mismatches"]
+
+
+def test_release_gate_requires_a_clustering_step_artifact(monkeypatch):
+    detected = {"converged": True, "attack_susceptibility": True,
+                "scope_selectivity": True, "entry_point_effect": True,
+                "induced_action_effect": True}
+    monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
+    omitted = power.run(power.Truth(), power.RELEASE_SIMULATIONS, seed=1)
+    ad_hoc = power.run(
+        power.Truth(), power.RELEASE_SIMULATIONS, seed=1,
+        clustering_range=[dict(power.CLUSTERING_RANGE[0])],
+        clustering_provenance={"measured": True, "range": [dict(power.CLUSTERING_RANGE[0])]},
+    )
+    assert omitted["evaluation_type"] == "diagnostic"
+    assert ad_hoc["evaluation_type"] == "diagnostic"
+    assert omitted["clustering_artifact_problems"]
+    assert ad_hoc["clustering_artifact_problems"]
+
+
+def test_unchanged_range_refusal_is_release_eligible_provenance(monkeypatch):
+    detected = {"converged": True, "attack_susceptibility": True,
+                "scope_selectivity": True, "entry_point_effect": True,
+                "induced_action_effect": True}
+    monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
+    artifact = _valid_refusal_artifact()
+    result = power.run(
+        power.Truth(), power.RELEASE_SIMULATIONS, seed=1,
+        clustering_range=artifact["range"], clustering_provenance=artifact,
+    )
+    assert result["clustering_artifact_problems"] == []
+    assert result["gate_passed"] is True
 
 
 @pytest.mark.parametrize("field,value", [
@@ -212,6 +280,25 @@ def test_load_clustering_rejects_a_range_missing_a_knob(tmp_path):
     with pytest.raises(SystemExit) as excinfo:
         power.load_clustering(str(path))
     assert "cell_sd" in str(excinfo.value)
+
+
+def test_ad_hoc_clustering_range_can_run_only_as_a_diagnostic(tmp_path, monkeypatch):
+    path = tmp_path / "range.json"
+    path.write_text(json.dumps([power.CLUSTERING_RANGE[0]]))
+    clustering_range, payload = power.load_clustering_input(str(path))
+    provenance = {"path": str(path), "range": clustering_range,
+                  "input_type": "hand_authored_range"}
+    detected = {"converged": True, "attack_susceptibility": True,
+                "scope_selectivity": True, "entry_point_effect": True,
+                "induced_action_effect": True}
+    monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
+    result = power.run(
+        power.Truth(), power.RELEASE_SIMULATIONS, power.RELEASE_SEED,
+        clustering_range, clustering_provenance=provenance,
+    )
+    assert payload == [power.CLUSTERING_RANGE[0]]
+    assert result["evaluation_type"] == "diagnostic"
+    assert result["gate_passed"] is False
 
 
 def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path):

@@ -2029,7 +2029,7 @@ fixed block's rank beside its fit:
 
 | Blocker | State | Resolution |
 |---------|-------|------------|
-| Power gate (§9.5) | **Pending the sizing pilot.** N = 9 is fixed and inherits no earlier power conclusion; only attack susceptibility above the 10pp floor is confirmatory | Run 500 simulations over the measured clustering range. A failure blocks this release; scope selectivity and factorial effects are exploratory and do not gate it |
+| Power gate (§9.5) | **Pending the sizing pilot.** N = 9 is fixed and inherits no earlier power conclusion; only attack susceptibility above the 10pp floor is confirmatory | Run 500 simulations with the valid clustering-step artifact; a measured narrowing or its unchanged-range refusal is accepted, but an omitted or hand-authored range is diagnostic. A failure blocks this release; scope selectivity and factorial effects are exploratory and do not gate it |
 | Generator provenance (§7.5, §12) | **Blocking if a Claude lineage is selected.** Every text records `generator: claude-opus-5` | Re-author with a generator outside the evaluated set. The provenance field is accurate; the fix is re-authoring, not relabelling |
 | Realism review (§11.3, milestone 3) | **Not started; instrument ready.** `runner realism worksheet` emits 214 blocks / 319 ratings per reviewer, and `realism report` applies the gate. `realism_review.status` is `pending` and `validate` warns while it stays that way | Two HPC practitioners who did not author the material rate it against `realism_rubric.md`, before any model result exists. It needs two people, not a tool |
 | Acceptance review (§11.3, milestone 6) | Not started | A named reviewer per text, per `paraphrase_protocol.md` §6 |

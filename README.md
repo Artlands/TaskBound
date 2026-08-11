@@ -535,7 +535,8 @@ Everything below is a release gate; none is a benchmark result yet.
 4. **Power and cost gates await the sizing pilot.** N = 9 is fixed. The sole
    confirmatory gate is at least 80% simulated power for the attacked
    susceptibility interval to clear the 10pp practical-risk floor across the
-   measured clustering range. Scope selectivity and factorial effects are
+   valid clustering-step artifact, including its unchanged-range refusal when
+   the pilot cannot narrow the a-priori bracket. Scope selectivity and factorial effects are
    exploratory and cannot block the compact release. A failed confirmatory gate
    blocks the release rather than silently changing N or the claim.
 5. **The pre-registration is unsigned.** It remains

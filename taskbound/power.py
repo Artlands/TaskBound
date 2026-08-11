@@ -42,8 +42,14 @@ INDUCED_ACTIONS = ("A1", "A2", "A3", "A4")
 PARAPHRASES = ("p1", "p2", "p3")
 MODEL_FAMILIES = ("family_x", "family_y")
 RELEASE_SIMULATIONS = 500
+RELEASE_SEED = 1
 RELEASE_N_EXPOSED = 9
 RELEASE_ATTEMPT_CAP = 27
+RELEASE_DRAWS = 2000
+RELEASE_PRIOR_SD = glmm.DEFAULT_PRIOR_SD
+RELEASE_INTERVAL_LEVEL = 0.95
+CLUSTERING_ARTIFACT_TYPE = "taskbound.clustering"
+CLUSTERING_ARTIFACT_VERSION = 1
 
 # The conservative range the gate is evaluated across. The pilot replaces these
 # with measured values; until then they bracket "wording barely matters" and
@@ -114,6 +120,7 @@ def measure_clustering(
     source = {
         "runs": len(rows),
         "analysis_rows": len(analysis),
+        "settings": {"prior_sd": prior_sd, "seed": seed, "level": level},
         "used_fallback": primary["used_fallback"],
         "converged": getattr(fit, "converged", False),
         "at_variance_boundary": (fit.diagnostics.get("at_variance_boundary") or []
@@ -212,6 +219,8 @@ def measure_clustering(
         return {"label": label, **values}
 
     return {
+        "artifact_type": CLUSTERING_ARTIFACT_TYPE,
+        "artifact_version": CLUSTERING_ARTIFACT_VERSION,
         "measured": True,
         "narrowed": True,
         "level": level,
@@ -237,6 +246,8 @@ def _unnarrowed(source: dict[str, Any], reason: str,
     None only when the fit produced no components to report.
     """
     return {
+        "artifact_type": CLUSTERING_ARTIFACT_TYPE,
+        "artifact_version": CLUSTERING_ARTIFACT_VERSION,
         "measured": False,
         "narrowed": False,
         "reason": reason,
@@ -248,18 +259,86 @@ def _unnarrowed(source: dict[str, Any], reason: str,
     }
 
 
-def load_clustering(path: str) -> list[dict[str, Any]]:
-    """Read a measured range, rejecting one that does not carry every knob."""
+def load_clustering_artifact(path: str) -> dict[str, Any]:
+    """Read and structurally validate a clustering-step artifact."""
+    with open(path, encoding="utf-8") as fh:
+        payload = json.load(fh)
+    problems = clustering_artifact_problems(payload)
+    if problems:
+        raise SystemExit(
+            f"{path!r} is not a valid clustering-step artifact: " + "; ".join(problems)
+        )
+    return payload
+
+
+def load_clustering_input(path: str) -> tuple[list[dict[str, Any]], Any]:
+    """Read a clustering input, retaining invalid provenance for diagnostics."""
     with open(path, encoding="utf-8") as fh:
         payload = json.load(fh)
     entries = payload.get("range") if isinstance(payload, dict) else payload
-    if not entries:
+    if not isinstance(entries, list) or not entries:
         raise SystemExit(f"{path!r} carries no clustering range")
     for entry in entries:
+        if not isinstance(entry, dict):
+            raise SystemExit(f"{path!r} carries a non-object clustering rung")
         missing = [k for k in KNOBS if k not in entry]
         if missing:
             raise SystemExit(f"{path!r}: rung {entry.get('label')!r} is missing {missing}")
-    return list(entries)
+    return list(entries), payload
+
+
+def load_clustering(path: str) -> list[dict[str, Any]]:
+    """Read the range from a valid clustering-step artifact."""
+    return list(load_clustering_artifact(path)["range"])
+
+
+def clustering_artifact_problems(payload: Any) -> list[str]:
+    if not isinstance(payload, dict):
+        return ["artifact must be a JSON object"]
+    problems = []
+    if payload.get("artifact_type") != CLUSTERING_ARTIFACT_TYPE:
+        problems.append("artifact_type does not identify `runner clustering`")
+    if payload.get("artifact_version") != CLUSTERING_ARTIFACT_VERSION:
+        problems.append("unsupported artifact_version")
+    source = payload.get("source")
+    expected_settings = {
+        "prior_sd": RELEASE_PRIOR_SD,
+        "seed": 1,
+        "level": RELEASE_INTERVAL_LEVEL,
+    }
+    if not isinstance(source, dict):
+        problems.append("source does not identify the sizing-pilot fit")
+        source = {}
+    if source.get("runs", 0) <= 0 or source.get("analysis_rows", 0) <= 0:
+        problems.append("source must identify a non-empty sizing-pilot fit")
+    if source.get("settings") != expected_settings:
+        problems.append(f"clustering settings must be {expected_settings!r}")
+    entries = payload.get("range")
+    if not entries:
+        problems.append("artifact carries no clustering range")
+        entries = []
+    if not isinstance(entries, list):
+        problems.append("range must be a list")
+        entries = []
+    for entry in entries:
+        missing = [k for k in KNOBS if k not in entry]
+        if missing:
+            problems.append(f"rung {entry.get('label')!r} is missing {missing}")
+    measured = payload.get("measured")
+    narrowed = payload.get("narrowed")
+    if measured is True and narrowed is True:
+        if not isinstance(payload.get("components"), dict):
+            problems.append("narrowed artifact has no measured components")
+        if not isinstance(payload.get("point_estimate"), dict):
+            problems.append("narrowed artifact has no point estimate")
+    elif measured is False and narrowed is False:
+        if not payload.get("reason"):
+            problems.append("unchanged-range refusal has no reason")
+        if entries != CLUSTERING_RANGE:
+            problems.append("unchanged-range refusal did not retain the registered range")
+    else:
+        problems.append("measured/narrowed state is not a clustering-step outcome")
+    return problems
 
 
 @dataclass
@@ -478,7 +557,7 @@ def run(
     simulations: int,
     seed: int,
     clustering_range: Sequence[dict[str, float]] = CLUSTERING_RANGE,
-    draws: int = 400,
+    draws: int = RELEASE_DRAWS,
     prior_sd: float = glmm.DEFAULT_PRIOR_SD,
     clustering_provenance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -521,7 +600,33 @@ def run(
         for name, registered in registered_truth.items()
         if truth_values.get(name) != registered
     }
-    gate_eligible = simulations == RELEASE_SIMULATIONS and not truth_mismatches
+    registered_analysis = {
+        "seed": RELEASE_SEED,
+        "draws": RELEASE_DRAWS,
+        "prior_sd": RELEASE_PRIOR_SD,
+        "interval_level": RELEASE_INTERVAL_LEVEL,
+    }
+    actual_analysis = {
+        "seed": seed,
+        "draws": draws,
+        "prior_sd": prior_sd,
+        "interval_level": RELEASE_INTERVAL_LEVEL,
+    }
+    analysis_mismatches = {
+        name: {"registered": registered, "actual": actual_analysis.get(name)}
+        for name, registered in registered_analysis.items()
+        if actual_analysis.get(name) != registered
+    }
+    clustering_problems = clustering_artifact_problems(clustering_provenance)
+    if isinstance(clustering_provenance, dict) \
+            and clustering_provenance.get("range") != list(clustering_range):
+        clustering_problems.append("evaluated range differs from the clustering artifact")
+    gate_eligible = (
+        simulations == RELEASE_SIMULATIONS
+        and not truth_mismatches
+        and not analysis_mismatches
+        and not clustering_problems
+    )
     power_requirement_met = all(
         worst[name] is not None and worst[name] >= REQUIRED_POWER for name in confirmatory
     )
@@ -529,6 +634,9 @@ def run(
         "truth": truth.to_dict(),
         "registered_release_truth": registered_truth,
         "release_truth_mismatches": truth_mismatches,
+        "analysis_settings": actual_analysis,
+        "registered_release_analysis_settings": registered_analysis,
+        "release_analysis_mismatches": analysis_mismatches,
         "attack_susceptibility_null": PRACTICAL_SUSCEPTIBILITY_FLOOR,
         "required_power": REQUIRED_POWER,
         # Which range this gate was evaluated against is part of the result: a
@@ -539,6 +647,7 @@ def run(
             "measured": False,
             "note": "a-priori CLUSTERING_RANGE; no pilot has measured these components",
         },
+        "clustering_artifact_problems": clustering_problems,
         "by_clustering": by_clustering,
         "worst_case_power": worst,
         "confirmatory_estimands": list(confirmatory),
@@ -556,8 +665,9 @@ def run(
 # --- CLI -----------------------------------------------------------------
 def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--simulations", type=int, default=RELEASE_SIMULATIONS)
-    parser.add_argument("--seed", type=int, default=1)
-    parser.add_argument("--draws", type=int, default=400)
+    parser.add_argument("--seed", type=int, default=RELEASE_SEED)
+    parser.add_argument("--draws", type=int, default=RELEASE_DRAWS)
+    parser.add_argument("--prior-sd", type=float, default=RELEASE_PRIOR_SD)
     parser.add_argument("--n-exposed", type=int, default=9,
                         help="N per cell for the compact release (plan §9.5)")
     parser.add_argument("--attempt-cap", type=int, default=27)
@@ -624,17 +734,17 @@ def main(args: argparse.Namespace) -> int:
     )
     clustering_range, provenance = CLUSTERING_RANGE, None
     if args.clustering:
-        clustering_range = load_clustering(args.clustering)
-        with open(args.clustering, encoding="utf-8") as fh:
-            payload = json.load(fh)
-        provenance = {"path": args.clustering,
-                      "measured": payload.get("measured", False),
-                      "narrowed": payload.get("narrowed", False),
-                      "source": payload.get("source"),
-                      "reason": payload.get("reason")}
+        clustering_range, payload = load_clustering_input(args.clustering)
+        provenance = (
+            {**payload, "path": args.clustering}
+            if isinstance(payload, dict)
+            else {"path": args.clustering, "range": clustering_range,
+                  "input_type": "hand_authored_range"}
+        )
 
     result = run(truth, args.simulations, args.seed, clustering_range,
-                 draws=args.draws, clustering_provenance=provenance)
+                 draws=args.draws, prior_sd=args.prior_sd,
+                 clustering_provenance=provenance)
     print(f"power simulation: {args.simulations} sweeps per clustering setting, "
           f"N={args.n_exposed} exposed per cell")
     if provenance and provenance["narrowed"]:
@@ -664,7 +774,8 @@ def main(args: argparse.Namespace) -> int:
         print(f"\n{'GATE PASSED' if result['gate_passed'] else 'GATE NOT PASSED'} "
               f"(requires {REQUIRED_POWER:.0%} across the whole clustering range)")
     else:
-        print("\nDIAGNOSTIC ONLY (release gate requires 500 simulations and the registered truth)")
+        print("\nDIAGNOSTIC ONLY (release gate requires the clustering artifact and all "
+              "registered simulation and analysis settings)")
     if result["gate_eligible"] and not result["gate_passed"]:
         print(f"N = {args.n_exposed} is a floor: the pilot may raise it, but it may not "
               "lower it (plan §9.5).")

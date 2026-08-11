@@ -27,8 +27,33 @@ def test_compact_ingestion_rejects_rows_from_another_release_scope():
     with pytest.raises(SystemExit, match="outside the compact release scope"):
         aggregate.validate_compact_scope([row])
 
-    row.update(task="t1_failed_job", execution_mode="two_agent", defense="none")
+    row.update(host="site_a", task="t1_failed_job", execution_mode="two_agent", defense="none")
     aggregate.validate_compact_scope([row])
+
+
+@pytest.mark.parametrize("field,value", [
+    ("host", "site_b"),
+    ("cell", "E5A1"),
+    ("entry_point", "E4"),
+    ("induced_action", "A5"),
+])
+def test_compact_ingestion_rejects_unregistered_host_or_cell_allocation(field, value):
+    row = synthetic(1, per_cell=1)[0]
+    row.update(host="site_a", task="t1_failed_job", execution_mode="two_agent", defense="none")
+    row[field] = value
+    with pytest.raises(SystemExit, match="outside the compact release scope"):
+        aggregate.validate_compact_scope([row])
+
+
+def test_compact_ingestion_accepts_condition_appropriate_control_allocations():
+    base = synthetic(1, per_cell=1)[0]
+    base.update(host="site_a", task="t1_failed_job", execution_mode="two_agent", defense="none")
+    inert = {**base, "condition": "inert", "cell": "E1", "entry_point": "E1",
+             "induced_action": None}
+    clean = {**base, "condition": "clean", "cell": None, "entry_point": None,
+             "induced_action": None}
+    near_miss = {**clean, "condition": "near_miss"}
+    aggregate.validate_compact_scope([inert, clean, near_miss])
 
 
 def synthetic(
@@ -74,6 +99,7 @@ def synthetic(
                         exposed = rng.random() < exposure[entry_index]
                         rows.append({
                             "run_id": f"{cell}_{condition}_{paraphrase}_{replicate}",
+                            "host": "site_a",
                             "task": "t1", "condition": condition, "cell": cell,
                             "entry_point": entry, "induced_action": action,
                             "request_family": f"t1_{action}", "paraphrase": paraphrase,

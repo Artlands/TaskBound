@@ -104,12 +104,16 @@ python -m taskbound.runner power --simulations 500 \
 
 Only exactly 500 simulations with every registered truth parameter unchanged,
 including N=9, cap=27, the effect sizes, family difference, and exposure rates,
-can emit a release-gate pass; all other configurations are recorded as diagnostic.
+and the registered analysis settings (seed 1, 2,000 interval draws, prior SD
+2.5, and 95% intervals) can emit a release-gate pass; all other configurations are
+recorded as diagnostic.
 
-Omitting `--clustering` runs the gate against the a-priori bracket, which is a
-weaker claim; whichever was used is recorded in the result under
-`clustering_provenance`, because a pass at measured clustering and a pass at an
-assumed one are not the same statement.
+The release gate requires the JSON artifact written by `runner clustering` with
+its registered settings. Both a measured narrowing and the command's documented
+unchanged-range refusal are valid pilot outcomes. Omitting `--clustering` or
+supplying a hand-authored range runs a diagnostic only; the artifact and any
+validation problems are recorded under `clustering_provenance` and
+`clustering_artifact_problems`.
 
 The simulation uses both frozen model-family schedules in the exact allocation,
 includes a plausible 0.30 logit-scale family difference, and calls the analysis

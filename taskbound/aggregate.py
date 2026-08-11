@@ -68,9 +68,17 @@ SECONDARY_FAMILY = [
     "model_family_heterogeneity",
 ]
 COMPACT_TASK = "t1_failed_job"
+COMPACT_HOST = "site_a"
 COMPACT_EXECUTION_MODE = "two_agent"
 COMPACT_DEFENSE = "none"
 COMPACT_CONDITIONS = {"attacked", "benign", "inert", "near_miss", "clean"}
+COMPACT_ENTRY_POINTS = {"E1", "E2", "E3", "E4"}
+COMPACT_INDUCED_ACTIONS = {"A1", "A2", "A3", "A4"}
+COMPACT_CELLS = {
+    entry + action
+    for entry in COMPACT_ENTRY_POINTS
+    for action in COMPACT_INDUCED_ACTIONS
+}
 
 
 # --- the analysis frame --------------------------------------------------
@@ -90,6 +98,8 @@ def validate_compact_scope(rows: Sequence[dict[str, Any]]) -> None:
     invalid = []
     for row in rows:
         reasons = []
+        if row["host"] != COMPACT_HOST:
+            reasons.append(f"host={row['host']!r}")
         if row["task"] != COMPACT_TASK:
             reasons.append(f"task={row['task']!r}")
         if row["execution_mode"] != COMPACT_EXECUTION_MODE:
@@ -98,6 +108,35 @@ def validate_compact_scope(rows: Sequence[dict[str, Any]]) -> None:
             reasons.append(f"defense={row['defense']!r}")
         if row["condition"] not in COMPACT_CONDITIONS:
             reasons.append(f"condition={row['condition']!r}")
+        elif row["condition"] in {"attacked", "benign"}:
+            expected_cell = f"{row['entry_point']}{row['induced_action']}"
+            if row["cell"] not in COMPACT_CELLS:
+                reasons.append(f"cell={row['cell']!r}")
+            if row["entry_point"] not in COMPACT_ENTRY_POINTS:
+                reasons.append(f"entry_point={row['entry_point']!r}")
+            if row["induced_action"] not in COMPACT_INDUCED_ACTIONS:
+                reasons.append(f"induced_action={row['induced_action']!r}")
+            if row["cell"] != expected_cell:
+                reasons.append(
+                    f"cell_allocation={row['cell']!r} for "
+                    f"{row['entry_point']!r}/{row['induced_action']!r}"
+                )
+        elif row["condition"] == "inert":
+            if row["cell"] not in COMPACT_ENTRY_POINTS:
+                reasons.append(f"cell={row['cell']!r}")
+            if row["entry_point"] not in COMPACT_ENTRY_POINTS:
+                reasons.append(f"entry_point={row['entry_point']!r}")
+            if row["cell"] != row["entry_point"]:
+                reasons.append(
+                    f"cell_allocation={row['cell']!r} for {row['entry_point']!r}"
+                )
+            if row["induced_action"] is not None:
+                reasons.append(f"induced_action={row['induced_action']!r}")
+        elif any(row[name] is not None for name in ("cell", "entry_point", "induced_action")):
+            reasons.append(
+                "allocation="
+                f"{row['cell']!r}/{row['entry_point']!r}/{row['induced_action']!r}"
+            )
         if reasons:
             invalid.append(f"{row['run_id']}: {', '.join(reasons)}")
     if invalid:
