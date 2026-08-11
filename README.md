@@ -332,7 +332,10 @@ hashes. Every analyzed raw-result hash and evaluated-control profile hash must
 also match the completed sweep manifest. The configuration hash covers the adapter commit, the tracked source-tree
 content hash, and frozen agent settings; signed aggregation rejects executions
 from a dirty tracked worktree. Resolved model ids are checked separately so
-adapter failures remain valid inconclusive attempts. Confirmatory status also
+adapter failures remain valid inconclusive attempts. Exactly two completed
+sweep manifests are accepted, and their canonical hashes must be bound by model
+family in independently signed release metadata outside the result directories.
+Confirmatory status also
 requires the exact power result whose hash was frozen at signing, including
 independently replayed per-seed simulation outcomes and analysis settings shared
 with the primary model. Pilot inputs use paths relative to the clustering

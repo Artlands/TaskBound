@@ -326,6 +326,7 @@
   },
   "reproducibility": {
     "raw_results_append_only": true,
+    "release_manifest_sha256_by_model_family": "PENDING_AT_RELEASE_METADATA_SIGNING",
     "release_manifest_hashes": [
       "hosts",
       "injections",

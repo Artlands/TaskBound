@@ -303,7 +303,26 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
         }
         config_manifest["evaluated_control_profiles"] = [profile]
         manifests.append(config_manifest)
+    prereg["reproducibility"] = {
+        "release_manifest_sha256_by_model_family": {
+            f"family_{index}": aggregate._canonical_sha256(config_manifest)
+            for index, config_manifest in enumerate(manifests)
+        }
+    }
     aggregate.validate_release_binding(rows, prereg, manifests)
+
+    unanchored = json.loads(json.dumps(prereg))
+    del unanchored["reproducibility"]
+    with pytest.raises(SystemExit, match="signed release metadata"):
+        aggregate.validate_release_binding(rows, unanchored, manifests)
+
+    forged_manifest = json.loads(json.dumps(manifests[0]))
+    forged_manifest["finished_at"] = "forged"
+    with pytest.raises(SystemExit, match="independently signed metadata"):
+        aggregate.validate_release_binding(rows, prereg, [forged_manifest, manifests[1]])
+
+    with pytest.raises(SystemExit, match="exactly two matching sweep manifests"):
+        aggregate.validate_release_binding(rows, prereg, [*manifests, forged_manifest])
 
     altered_result = [{**rows[0], "raw_result_sha256": "f" * 64}, *rows[1:]]
     with pytest.raises(SystemExit, match="raw result hash"):
@@ -381,7 +400,7 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
 
     incomplete_manifests = json.loads(json.dumps(manifests))
     incomplete_manifests[1]["stopped_early"] = "max_attempts"
-    with pytest.raises(SystemExit, match="no complete matching sweep manifest"):
+    with pytest.raises(SystemExit, match="independently signed metadata"):
         aggregate.validate_release_binding(rows, prereg, incomplete_manifests)
 
 

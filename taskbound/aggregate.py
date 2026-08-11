@@ -145,6 +145,10 @@ def validate_release_binding(
     expected_resolved = family_spec.get(
         "resolved_models_by_configuration_sha256"
     )
+    release_manifest_hashes = (
+        (preregistration.get("reproducibility") or {})
+        .get("release_manifest_sha256_by_model_family")
+    )
     digest_chars = set("0123456789abcdef")
     if not isinstance(expected_sweep, str) or not expected_sweep \
             or expected_sweep.startswith("PENDING"):
@@ -180,10 +184,29 @@ def validate_release_binding(
             "signed pre-registration must bind each configuration hash to its "
             "resolved model"
         )
+    if not isinstance(release_manifest_hashes, dict) \
+            or set(release_manifest_hashes) != set(expected_families) \
+            or any(not isinstance(value, str) or len(value) != 64
+                   or set(value) - digest_chars
+                   for value in release_manifest_hashes.values()) \
+            or len(set(release_manifest_hashes.values())) != 2:
+        raise SystemExit(
+            "signed release metadata must bind each model family to one unique "
+            "release manifest hash"
+        )
 
     matching_manifests = [m for m in manifests if m.get("sweep_id") == expected_sweep]
-    if not matching_manifests:
-        raise SystemExit("signed release results have no matching sweep manifest")
+    if len(matching_manifests) != 2:
+        raise SystemExit(
+            "signed release results must contain exactly two matching sweep manifests"
+        )
+    actual_manifest_hashes = {
+        _canonical_sha256(manifest) for manifest in matching_manifests
+    }
+    if actual_manifest_hashes != set(release_manifest_hashes.values()):
+        raise SystemExit(
+            "release manifest hashes do not match the independently signed metadata"
+        )
     valid_manifests = []
     schedule_by_attempt: dict[str, dict[str, Any]] = {}
     for manifest in matching_manifests:
