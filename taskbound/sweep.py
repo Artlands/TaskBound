@@ -28,6 +28,7 @@ import hashlib
 import json
 import os
 import random
+from concurrent.futures import ThreadPoolExecutor
 from collections.abc import Sequence
 from typing import Any
 
@@ -300,48 +301,19 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
     started = _dt.datetime.now(_dt.timezone.utc).isoformat()
     stopped_early = None
 
-    for attempt in schedule["attempts"]:
-        group = schedule["groups"][attempt["group"]]
-        counts = state["counts"].setdefault(attempt["group"], _empty_counts())
-        if attempt["attempt_id"] in state["done"]:
-            continue
-        if _group_complete(group, counts):
-            continue
-        if args.max_attempts and state["attempted"] >= args.max_attempts:
-            stopped_early = "max_attempts"
-            break
-        if args.spend_ceiling and _cost(usage, args) >= args.spend_ceiling:
-            stopped_early = "spend_ceiling"
-            break
-
-        resolved_attempt = _resolve_attempt(group, counts, attempt)
-        record = _run_one(schedule, resolved_attempt, args)
-        record["sweep"] = {
-            "sweep_id": schedule["sweep_id"],
-            "attempt_id": attempt["attempt_id"],
-            "group": attempt["group"],
-            "order": attempt["order"],
-            "block": attempt["block"],
-            "agent_configuration": configuration,
-        }
-        _write(args.out, attempt["attempt_id"], record)
-        state["records"].append(record)
-
-        counts["attempted"] += 1
-        state["attempted"] += 1
-        if record["exposure"]["exposed"]:
-            counts["exposed"] += 1
-            paraphrase = resolved_attempt.get("paraphrase")
-            if paraphrase:
-                by_paraphrase = counts["exposed_by_paraphrase"]
-                by_paraphrase[paraphrase] = by_paraphrase.get(paraphrase, 0) + 1
-        if not record["outcome"]["inconclusive"]:
-            counts["conclusive"] += 1
-        _add_usage(usage, record["outcome"].get("usage") or {})
-        if args.verbose:
-            print(f"[{attempt['order']:>5}] {attempt['attempt_id']:<28} "
-                  f"exposed={record['exposure']['exposed']!s:<5} "
-                  f"inconclusive={record['outcome']['inconclusive']}")
+    workers = getattr(args, "workers", 1)
+    if workers <= 1:
+        # The default serial path is byte-identical to walking the frozen
+        # schedule one attempt at a time: recruitment reads the exposure
+        # results of every earlier run, so this is also the adaptive exact
+        # form of the paraphrase fallback (plan §8.4).
+        for attempt in schedule["attempts"]:
+            signal = _process_attempt(state, usage, attempt, schedule, args, configuration)
+            if signal in ("stop_max", "stop_spend"):
+                stopped_early = "max_attempts" if signal == "stop_max" else "spend_ceiling"
+                break
+    else:
+        stopped_early = _run_parallel(state, usage, schedule, args, configuration, workers)
 
     return _manifest(schedule, args, state, usage, started, stopped_early)
 
@@ -530,6 +502,160 @@ def _cost(usage: dict[str, int], args: argparse.Namespace) -> float:
     ) / 1e6
 
 
+# --- per-attempt execution ----------------------------------------------
+def _decide_attempt(state, schedule, args, usage, attempt):
+    """Classify one attempt without executing it.
+
+    Returns ``("run", group, counts)`` if it should run, ``("skip",
+    group, counts)`` if it is already done or its group is complete, or
+    ``("stop_max", ...)`` / ``("stop_spend", ...)`` for a hard stop. The two
+    stop reasons are how the caller knows which ceiling was hit.
+    """
+    group = schedule["groups"][attempt["group"]]
+    counts = state["counts"].setdefault(attempt["group"], _empty_counts())
+    if attempt["attempt_id"] in state["done"]:
+        return "skip", group, counts
+    if _group_complete(group, counts):
+        return "skip", group, counts
+    if args.max_attempts and state["attempted"] >= args.max_attempts:
+        return "stop_max", group, counts
+    if args.spend_ceiling and _cost(usage, args) >= args.spend_ceiling:
+        return "stop_spend", group, counts
+    return "run", group, counts
+
+
+def _apply_result(
+    state, usage, schedule, args, configuration,
+    attempt, resolved_attempt, record,
+) -> None:
+    """Fold one finished run into shared sweep state.
+
+    This is the single shared accounting path for both the serial and the
+    parallel runner, so the manifest, the append-only result files, and the
+    per-group counts are identical regardless of how attempts were scheduled.
+    The result file is written here on the caller's (main) thread, to a unique
+    ``attempt_id`` path that ``_write`` refuses to overwrite, so batch order
+    and thread timing never change a record.
+    """
+    counts = state["counts"].setdefault(attempt["group"], _empty_counts())
+    record["sweep"] = {
+        "sweep_id": schedule["sweep_id"],
+        "attempt_id": attempt["attempt_id"],
+        "group": attempt["group"],
+        "order": attempt["order"],
+        "block": attempt["block"],
+        "agent_configuration": configuration,
+    }
+    _write(args.out, attempt["attempt_id"], record)
+    state["records"].append(record)
+
+    counts["attempted"] += 1
+    state["attempted"] += 1
+    if record["exposure"]["exposed"]:
+        counts["exposed"] += 1
+        paraphrase = resolved_attempt.get("paraphrase")
+        if paraphrase:
+            by_paraphrase = counts["exposed_by_paraphrase"]
+            by_paraphrase[paraphrase] = by_paraphrase.get(paraphrase, 0) + 1
+    if not record["outcome"]["inconclusive"]:
+        counts["conclusive"] += 1
+    _add_usage(usage, record["outcome"].get("usage") or {})
+    if args.verbose:
+        print(f"[{attempt['order']:>5}] {attempt['attempt_id']:<28} "
+              f"exposed={record['exposure']['exposed']!s:<5} "
+              f"inconclusive={record['outcome']['inconclusive']}")
+
+
+def _process_attempt(
+    state, usage, attempt, schedule, args, configuration,
+) -> str:
+    """Execute one attempt and fold its result into shared sweep state.
+
+    Returns the loop-control signal: ``"ran"``, ``"skip"``, ``"stop_max"``, or
+    ``"stop_spend"``. The serial runner calls this once per schedule slot, so
+    its per-attempt accounting is identical to the original loop.
+    """
+    decision, group, counts = _decide_attempt(state, schedule, args, usage, attempt)
+    if decision != "run":
+        return decision
+    resolved_attempt = _resolve_attempt(group, counts, attempt)
+    record = _run_one(schedule, resolved_attempt, args)
+    _apply_result(
+        state, usage, schedule, args, configuration,
+        attempt, resolved_attempt, record,
+    )
+    return "ran"
+
+
+def _run_parallel(
+    state, usage, schedule, args, configuration, workers,
+):
+    """Run the schedule in deterministic, write-isolated batches.
+
+    Each batch takes up to ``workers`` pending attempts, resolves all of them
+    against the counts as they stand at batch start (exposure outcomes within
+    the batch are unknown until the attempts run), executes the model calls
+    concurrently, and folds the finished records in schedule order. Results
+    are written on this single thread, so the set of result files and the
+    manifest are reproducible for a fixed ``(schedule, seed, workers)`` even
+    though thread timing varies.
+
+    At ``workers == 1`` this behaves exactly like the serial path. At
+    ``workers > 1`` a slot that would, in serial order, have been re-routed by
+    an earlier same-batch run's exposure result instead resolves on the next
+    batch boundary, so the recruitment snapshot is coarser by up to one batch;
+    a group may therefore over-recruit by up to ``workers - 1`` attempts. The
+    attempt and spend ceilings are re-checked at every batch boundary, so the
+    spend ceiling may be exceeded by up to one batch's cost rather than being
+    enforced per run.
+
+    Returns the ``stopped_early`` reason string, or ``None``.
+    """
+    attempts = schedule["attempts"]
+    idx = 0
+    while True:
+        batch: list[tuple[Any, Any]] = []  # (frozen attempt, resolved attempt)
+        stopped = None
+        room = None
+        if args.max_attempts:
+            room = args.max_attempts - state["attempted"]
+            if room <= 0:
+                return "max_attempts"
+        while len(batch) < workers and idx < len(attempts):
+            if args.max_attempts and len(batch) >= room:
+                # The attempt ceiling keeps the batch from overshooting: run
+                # exactly the remaining allowance, then the next pass stops.
+                break
+            attempt = attempts[idx]
+            decision, group, counts = _decide_attempt(
+                state, schedule, args, usage, attempt
+            )
+            if decision in ("stop_max", "stop_spend"):
+                stopped = decision
+                break
+            if decision == "skip":
+                idx += 1
+                continue
+            resolved = _resolve_attempt(group, counts, attempt)
+            batch.append((attempt, resolved))
+            idx += 1
+        if stopped is not None:
+            return "max_attempts" if stopped == "stop_max" else "spend_ceiling"
+        if not batch:
+            return None
+        with ThreadPoolExecutor(max_workers=min(workers, len(batch))) as executor:
+            futures = [
+                executor.submit(_run_one, schedule, resolved, args)
+                for _, resolved in batch
+            ]
+            for (attempt, resolved), future in zip(batch, futures):
+                record = future.result()
+                _apply_result(
+                    state, usage, schedule, args, configuration,
+                    attempt, resolved, record,
+                )
+
+
 def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str, Any]:
     groups = {}
     for name, group in sorted(schedule["groups"].items()):
@@ -710,6 +836,13 @@ def add_arguments(sub) -> None:
     run_p.add_argument("--price-out", type=float, help="USD per million output tokens")
     run_p.add_argument("--price-date", help="the day the price table was read and approved")
     run_p.add_argument("--verbose", action="store_true")
+    run_p.add_argument(
+        "--workers", type=int, default=1,
+        help="run up to this many attempts concurrently. Default 1 preserves "
+             "the exact serial, adaptive-fallback order; concurrency batches "
+             "the recruitment snapshot by one batch and re-checks the spend "
+             "ceiling per batch (plan §8.4, §10.3)",
+    )
 
 
 def main(args: argparse.Namespace) -> int:

@@ -43,6 +43,7 @@ def run_args(out, script="complied_read", **kw):
         control_profiles=os.path.join(ROOT, "control_profiles"),
         inference_trust_boundary="external_api", max_attempts=None, spend_ceiling=None,
         price_in=None, price_cached=None, price_out=None, price_date=None, verbose=False,
+        workers=1,
     )
     return argparse.Namespace(**{**defaults, **kw})
 
@@ -222,3 +223,122 @@ def test_every_result_records_the_attempt_it_came_from(tmp_path):
             record = json.load(fh)
         assert record["sweep"]["sweep_id"] == s["sweep_id"]
         assert record["sweep"]["attempt_id"] == name[:-len(".json")]
+
+
+# --- parallel execution (--workers) --------------------------------------
+def _records_by_attempt(out_dir):
+    """Read the result files in a sweep output directory into a dict by attempt id."""
+    records = {}
+    for name in os.listdir(out_dir):
+        if name.startswith("sweep_manifest"):
+            continue
+        with open(os.path.join(out_dir, name), encoding="utf-8") as fh:
+            records[name[:-len(".json")]] = json.load(fh)
+    return records
+
+
+_VARYING_KEYS = {"started_at", "finished_at", "run_id", "git_dirty", "request_ids"}
+
+
+def _normalize_record(record):
+    """Drop fields that legitimately vary between executions (wall-clock timestamps,
+    the run id derived from them, working-tree dirtiness, and provider request ids)
+    so a record's substantive content — routing, exposure, compliance, usage,
+    attempt identity — can be compared across two runs."""
+    if isinstance(record, dict):
+        return {
+            k: _normalize_record(v)
+            for k, v in record.items()
+            if k not in _VARYING_KEYS
+        }
+    if isinstance(record, list):
+        return [_normalize_record(v) for v in record]
+    return record
+
+
+def _records_by_attempt_normalized(out_dir):
+    return {
+        attempt_id: _normalize_record(record)
+        for attempt_id, record in _records_by_attempt(out_dir).items()
+    }
+
+
+def test_workers_1_is_identical_to_the_default_serial_path(tmp_path):
+    """The default and an explicit --workers 1 must be byte-identical (plan §11.4)."""
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
+    out_default = tmp_path / "default"
+    out_one = tmp_path / "one"
+    sweep.execute(s, run_args(out_default))
+    sweep.execute(s, run_args(out_one, workers=1))
+    assert _records_by_attempt_normalized(out_default) == \
+        _records_by_attempt_normalized(out_one)
+
+
+def test_parallel_writes_one_complete_result_per_attempt_without_collision(tmp_path):
+    """The core safety guarantee: parallel runs are isolated and append-only.
+
+    Every attempt lands in exactly one result file keyed by its attempt id, the
+    on-disk record matches the manifest's canonical hash, and the manifest
+    totals are internally consistent, so concurrency never drops, duplicates,
+    or mutates a record (plan §11.4, §12).
+    """
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
+    out = tmp_path / "out"
+    manifest = sweep.execute(s, run_args(out, workers=6))
+
+    written = [p for p in os.listdir(out) if not p.startswith("sweep_manifest")]
+    # One file per attempt that actually ran this session.
+    assert len(written) == manifest["totals"]["attempted_this_session"]
+    assert len(written) == len(set(written))  # no duplicate attempt files
+    assert set(manifest["result_sha256_by_attempt_id"]) == {
+        name[:-len(".json")] for name in written
+    }
+    records = _records_by_attempt(out)
+    for attempt_id, record in records.items():
+        assert record["sweep"]["attempt_id"] == attempt_id
+        assert record["sweep"]["sweep_id"] == s["sweep_id"]
+        assert manifest["result_sha256_by_attempt_id"][attempt_id] == \
+            sweep._canonical_sha256(record)
+    # Group accounting stays self-consistent under concurrency.
+    assert manifest["totals"]["attempted_total"] == sum(
+        g["attempted"] for g in manifest["groups"].values()
+    )
+    assert manifest["totals"]["exposed_total"] == sum(
+        g["exposed"] for g in manifest["groups"].values()
+    )
+
+
+def test_parallel_reproduces_the_serial_records_for_a_deterministic_run(tmp_path):
+    """On the deterministic scripted schedule, workers>1 yields the same records
+    as workers=1, so the opt-in concurrency path does not silently change what
+    the benchmark measures (plan §8.4)."""
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
+    serial = sweep.execute(s, run_args(tmp_path / "serial", workers=1))
+    parallel = sweep.execute(s, run_args(tmp_path / "parallel", workers=6))
+    assert _records_by_attempt_normalized(tmp_path / "serial") == \
+        _records_by_attempt_normalized(tmp_path / "parallel")
+    assert parallel["totals"]["attempted_total"] == serial["totals"]["attempted_total"]
+    assert parallel["totals"]["exposed_total"] == serial["totals"]["exposed_total"]
+
+
+def test_parallel_is_reproducible_across_two_runs(tmp_path):
+    """Two parallel sweeps from the same schedule and seed produce identical
+    manifests, even though thread timing can vary between them."""
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
+    a = sweep.execute(s, run_args(tmp_path / "a", workers=4))
+    b = sweep.execute(s, run_args(tmp_path / "b", workers=4))
+    assert _records_by_attempt_normalized(tmp_path / "a") == \
+        _records_by_attempt_normalized(tmp_path / "b")
+    # The same set of attempts ran in both; their substantive content matches.
+    assert set(a["result_sha256_by_attempt_id"]) == set(b["result_sha256_by_attempt_id"])
+
+
+def test_parallel_respects_the_attempt_ceiling_exactly(tmp_path):
+    """--workers must not let a batch overshoot --max-attempts (plan §10.3)."""
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
+    out = tmp_path / "out"
+    manifest = sweep.execute(s, run_args(out, workers=8, max_attempts=25))
+    assert manifest["stopped_early"] == "max_attempts"
+    assert manifest["totals"]["attempted_this_session"] == 25
+    written = [p for p in os.listdir(out) if not p.startswith("sweep_manifest")]
+    assert len(written) == 25
