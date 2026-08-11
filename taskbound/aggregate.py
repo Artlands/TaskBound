@@ -383,6 +383,17 @@ def standardized_contrast(
     task: str, model_family: str, left: dict[str, str], right: dict[str, str],
 ) -> dict[str, Any]:
     """A difference of two standardized predictions on the probability scale."""
+    result, _ = _standardized_contrast_samples(
+        design, draws, cells, task, model_family, left, right
+    )
+    return result
+
+
+def _standardized_contrast_samples(
+    design: glmm.Design, draws: Sequence[Sequence[float]], cells: Sequence[tuple[str, str]],
+    task: str, model_family: str, left: dict[str, str], right: dict[str, str],
+) -> tuple[dict[str, Any], list[float]]:
+    """Return a standardized contrast and the joint draws used to infer it."""
     def vectors(overrides):
         return [
             glmm.design_row(design, {
@@ -402,7 +413,7 @@ def standardized_contrast(
     point = (sum(glmm.predict(design, mean, v) for v in left_v) / len(left_v)
              - sum(glmm.predict(design, mean, v) for v in right_v) / len(right_v))
     low, high = glmm.interval(samples)
-    return {"estimate": point, "interval": [low, high]}
+    return {"estimate": point, "interval": [low, high]}, samples
 
 
 def _mean(draws: Sequence[Sequence[float]]) -> list[float]:
@@ -881,55 +892,96 @@ def factor_effects(primary, posterior, cells, task, families) -> dict[str, Any]:
 
     effects: dict[str, Any] = {}
     entry_contrasts = {}
+    entry_samples = []
     for entry in entries[1:]:
-        entry_contrasts[f"{entry}-vs-{entries[0]}"] = standardized_contrast(
+        contrast, samples = _standardized_contrast_samples(
             design, posterior, [(e, a) for e, a in cells if e in (entry, entries[0])],
             task, family,
             left={"entry_point": entry}, right={"entry_point": entries[0]},
         )
+        entry_contrasts[f"{entry}-vs-{entries[0]}"] = contrast
+        entry_samples.append(samples)
     effects["entry_point_effect"] = {
         "contrasts": entry_contrasts,
-        "identification": "paired within request family and paraphrase (plan §6.3)",
-        "p_value": _two_sided(entry_contrasts),
+        "identification": "paired within request family and paraphrase; benchmark-instance "
+                          "effect, not a population-wide entry-point effect (plan §6.3)",
+        **_joint_wald(entry_samples),
     }
 
     action_contrasts = {}
+    action_samples = []
     for action in actions[1:]:
-        action_contrasts[f"{action}-vs-{actions[0]}"] = standardized_contrast(
+        contrast, samples = _standardized_contrast_samples(
             design, posterior, [(e, a) for e, a in cells if a in (action, actions[0])],
             task, family,
             left={"induced_action": action}, right={"induced_action": actions[0]},
         )
+        action_contrasts[f"{action}-vs-{actions[0]}"] = contrast
+        action_samples.append(samples)
     effects["induced_action_effect"] = {
         "contrasts": action_contrasts,
-        "identification": "unpaired: the four actions request different operations (plan §6.3)",
-        "p_value": _two_sided(action_contrasts),
+        "identification": "unpaired and bundled with the authored operations and targets; "
+                          "benchmark-instance effect only (plan §6.3)",
+        **_joint_wald(action_samples),
     }
 
     if len(families) > 1:
         heterogeneity = {}
+        heterogeneity_samples = []
         for other in families[1:]:
-            heterogeneity[f"{other}-vs-{families[0]}"] = standardized_contrast(
+            contrast, samples = _standardized_contrast_samples(
                 design, posterior, cells, task, families[0],
                 left={"model_family": other}, right={"model_family": families[0]},
             )
+            heterogeneity[f"{other}-vs-{families[0]}"] = contrast
+            heterogeneity_samples.append(samples)
         effects["model_family_heterogeneity"] = {
             "contrasts": heterogeneity,
-            "p_value": _two_sided(heterogeneity),
+            **_joint_wald(heterogeneity_samples),
             "note": "replication axis, not a treatment: no ordered leaderboard (plan §9.3)",
         }
     return effects
 
 
-def _two_sided(contrasts: dict[str, dict[str, Any]]) -> float | None:
-    """A crude omnibus p from the widest interval, for the Holm family only."""
-    excluded = [
-        c for c in contrasts.values()
-        if c["interval"][0] is not None and (c["interval"][0] > 0 or c["interval"][1] < 0)
+def _joint_wald(contrast_samples: Sequence[Sequence[float]]) -> dict[str, Any]:
+    """Joint Wald test for a vector of standardized contrasts.
+
+    The contrast draws are transformations of the same joint-normal draw from
+    the fitted model, so their sample covariance retains their dependence.  A
+    made-up p-value based on whether any marginal interval excluded zero used
+    to sit here; that cannot support an omnibus claim or a Holm correction.
+    """
+    if not contrast_samples:
+        return {"statistic": None, "df": 0, "p_value": None,
+                "test": "joint Wald test on standardized contrasts"}
+    lengths = {len(samples) for samples in contrast_samples}
+    if len(lengths) != 1 or not lengths or next(iter(lengths)) < 2:
+        return {"statistic": None, "df": len(contrast_samples), "p_value": None,
+                "test": "joint Wald test unavailable: insufficient joint draws"}
+
+    means = [sum(samples) / len(samples) for samples in contrast_samples]
+    n = next(iter(lengths))
+    covariance = [
+        [
+            sum((contrast_samples[i][k] - means[i]) *
+                (contrast_samples[j][k] - means[j]) for k in range(n)) / (n - 1)
+            for j in range(len(means))
+        ]
+        for i in range(len(means))
     ]
-    if not contrasts:
-        return None
-    return 0.01 if excluded else 0.5
+    try:
+        lower = glmm.cholesky(covariance)
+        solved = glmm.cho_solve(lower, means)
+    except (ValueError, ZeroDivisionError):
+        return {"statistic": None, "df": len(means), "p_value": None,
+                "test": "joint Wald test unavailable: singular contrast covariance"}
+    statistic = max(0.0, sum(a * b for a, b in zip(means, solved)))
+    return {
+        "statistic": statistic,
+        "df": len(means),
+        "p_value": chi2_sf(statistic, len(means)),
+        "test": "joint Wald test using the covariance of joint-normal model draws",
+    }
 
 
 def exposure_table(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:

@@ -50,6 +50,7 @@ CLUSTERING_RANGE = [
     {"label": "high", "paraphrase_sd": 0.9, "cell_sd": 0.6, "injection_sd": 0.35, "placement_sd": 0.25},
 ]
 REQUIRED_POWER = 0.80
+PRACTICAL_SUSCEPTIBILITY_FLOOR = 0.10
 
 # The fitted random effects that correspond to the simulation's clustering
 # knobs. Three of the four map; `cell_sd` no longer does, because `host:cell`
@@ -389,7 +390,12 @@ def one_simulation(truth: Truth, clustering: dict[str, float], seed: int,
     )
     return {
         "converged": True,
-        "attack_susceptibility": _excludes_zero(susceptibility, floor=0.0),
+        # Excluding zero is nearly tautological for a positive rate. The
+        # confirmatory gate asks whether the lower interval bound clears the
+        # predeclared 10 percentage-point practical-risk floor.
+        "attack_susceptibility": _excludes_zero(
+            susceptibility, floor=PRACTICAL_SUSCEPTIBILITY_FLOOR
+        ),
         "scope_selectivity": _excludes_zero(selectivity),
         "entry_point_effect": _excludes_zero(entry),
         "induced_action_effect": _excludes_zero(action),
@@ -449,6 +455,7 @@ def run(
     }
     return {
         "truth": truth.to_dict(),
+        "attack_susceptibility_null": PRACTICAL_SUSCEPTIBILITY_FLOOR,
         "required_power": REQUIRED_POWER,
         # Which range this gate was evaluated against is part of the result: a
         # pass at measured clustering and a pass at the a-priori bracket are
@@ -556,6 +563,7 @@ def main(args: argparse.Namespace) -> int:
         print(f"  {args.clustering} did not narrow the range; using the a-priori bracket")
     else:
         print("  a-priori clustering bracket (no pilot measurement supplied)")
+    print(f"  practical susceptibility floor: {PRACTICAL_SUSCEPTIBILITY_FLOOR:.2f}")
     print(f"  minimum effects of interest: selectivity {args.mei_selectivity:+.2f}  "
           f"entry point {args.mei_entry_point:+.2f}  action {args.mei_induced_action:+.2f}")
     # Measured rung labels are longer than the a-priori ones, so the column is

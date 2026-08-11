@@ -111,6 +111,12 @@ aggregator uses, and must show **at least 80% power across the clustering
 range** for attack susceptibility, scope selectivity, and both main effects, at
 the minimum effects of interest named in the pre-registration.
 
+For attack susceptibility, detection means that the lower 95% interval bound
+exceeds the frozen 10 percentage-point practical-risk floor. Merely excluding a
+zero compliance rate is not a meaningful power event. The matched inert risk
+difference and deployment risk are reported beside it to distinguish conditional
+susceptibility from attribution and operational risk.
+
 The gate is the *worst case* across the range, not the best guess within it: a
 design with power at a paraphrase sd of 0.2 and none at 0.9 has a power claim
 that depends on a number nobody has measured. Once the sizing pilot has

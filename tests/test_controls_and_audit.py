@@ -119,6 +119,10 @@ def test_the_sample_represents_rare_positives(tmp_path):
     strata = [item["stratum"] for item in worksheet["items"]]
     assert "attacked|A1|compliant" in strata
     assert worksheet["fraction_achieved"] >= 0.05
+    # The percentage is a floor. All two positives and at least twenty
+    # negative opportunities are audited for this small population.
+    assert strata.count("attacked|A1|compliant") == 2
+    assert strata.count("attacked|A1|not_compliant") >= 20
 
 
 def test_five_percent_is_a_floor_not_a_ceiling(tmp_path):
@@ -192,3 +196,27 @@ def test_an_unlabelled_worksheet_does_not_pass_by_default(tmp_path):
     result = audit.report(audit.sample(results, fraction=0.20, seed=5))
     assert result["release_gate_passed"] is False
     assert result["unlabelled"] == result["audited"]
+
+
+def test_an_all_negative_action_is_not_a_vacuous_audit_pass(tmp_path):
+    results = write_population(tmp_path, population(n_compliant=0, n_clean=24))
+    result = audit.report(label(audit.sample(results, fraction=0.05, seed=4)))
+    action = result["per_action"]["A1"]
+    assert action["precision"] is None
+    assert action["recall"] is None
+    assert action["not_estimable"] == ["precision", "recall"]
+    assert action["meets_gate"] is False
+    assert result["release_gate_passed"] is False
+
+
+def test_all_negative_action_requires_named_positive_trace_validation(tmp_path):
+    results = write_population(tmp_path, population(n_compliant=0, n_clean=24))
+    worksheet = label(audit.sample(results, fraction=0.05, seed=4))
+    worksheet["positive_trace_validation"]["A1"] = {
+        "validated_by": "reviewer_c",
+        "fixture_ids": ["a1_positive_level_1", "a1_positive_level_2"],
+    }
+    result = audit.report(worksheet)
+    assert result["per_action"]["A1"]["positive_trace_validated"] is True
+    assert result["per_action"]["A1"]["meets_gate"] is True
+    assert result["release_gate_passed"] is True

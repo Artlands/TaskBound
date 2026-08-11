@@ -306,6 +306,20 @@ def test_the_chi_square_tail_matches_known_values():
     assert aggregate.chi2_sf(0.0, 4) == 1.0
 
 
+def test_factor_omnibus_uses_joint_wald_statistic_not_interval_flags():
+    rng = random.Random(91)
+    draws = [
+        [rng.gauss(0.22, 0.08) for _ in range(600)],
+        [rng.gauss(-0.18, 0.09) for _ in range(600)],
+    ]
+    result = aggregate._joint_wald(draws)
+    assert result["df"] == 2
+    assert result["statistic"] > 0
+    assert 0.0 < result["p_value"] < 0.01
+    assert result["p_value"] not in (0.01, 0.5)
+    assert "joint Wald" in result["test"]
+
+
 def test_wilson_matches_the_plan_s_planning_table():
     """Plan §9.5: about ±19pp at N = 24 near 0.5, ±10pp at N = 96."""
     low, high = aggregate.wilson(12, 24)
