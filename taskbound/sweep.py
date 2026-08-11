@@ -9,11 +9,11 @@ Two commands, deliberately separate:
 
 The separation is the point. The complete attempt order and seeds are generated
 *before* execution, so recruitment cannot become a decision made while results
-are visible. A cell recruits to `EXPOSED_TARGET` exposed runs in blocks of three
-— one per paraphrase, so the split stays balanced whenever it stops — and is
-capped at `ATTEMPT_CAP` attempted. A cell that hits the cap short of target is
-reported at the precision it actually reached, with both denominators shown, and
-is never quietly pooled.
+are visible. A cell recruits each paraphrase to one third of `EXPOSED_TARGET`
+and is capped at `ATTEMPT_CAP` attempted. Once a paraphrase reaches its quota,
+its remaining scheduled attempts are skipped. A cell that finishes short of
+target reports the shortfall separately for every paraphrase and is never
+quietly pooled.
 
 Conditions, cells, and paraphrases are interleaved in seeded blocks so that
 time-of-day or provider drift cannot align with one condition.
@@ -63,6 +63,8 @@ def plan(
     records what it was planned to cover and a later sweep cannot silently widen
     it.
     """
+    if exposed_target % len(PARAPHRASES):
+        raise SystemExit("exposed target must divide evenly across the three paraphrases")
     host = runner.load_host(host_dir)
     injections = _index_injections(injections_dir, host["host_id"])
     rng = random.Random(seed)
@@ -153,6 +155,7 @@ def _group(
         # text reaching a tool result, and clean and near-miss runs have none.
         "recruits_to_exposure": recruits,
         "texts": [t["_path"] for t in texts],
+        "paraphrases": [t["paraphrase"] for t in texts],
     }
 
 
@@ -182,6 +185,7 @@ def _interleave(groups: dict[str, dict[str, Any]], rng: random.Random) -> list[d
     for name, group in sorted(groups.items()):
         attempts = []
         texts = group["texts"]
+        paraphrases = group["paraphrases"]
         for index in range(group["attempt_cap"]):
             attempts.append({
                 "group": name,
@@ -190,6 +194,7 @@ def _interleave(groups: dict[str, dict[str, Any]], rng: random.Random) -> list[d
                 "cell": group["cell"],
                 "near_miss_action": group["near_miss_action"],
                 "injection": texts[index % len(texts)] if texts else None,
+                "paraphrase": paraphrases[index % len(paraphrases)] if paraphrases else None,
                 "index_in_group": index,
                 "block": index // BLOCK,
                 "placement_seed": rng.randrange(1, 2**31),
@@ -259,12 +264,12 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
 
     for attempt in schedule["attempts"]:
         group = schedule["groups"][attempt["group"]]
-        counts = state["counts"].setdefault(
-            attempt["group"], {"attempted": 0, "exposed": 0, "conclusive": 0}
-        )
+        counts = state["counts"].setdefault(attempt["group"], _empty_counts())
         if attempt["attempt_id"] in state["done"]:
             continue
         if _group_complete(group, counts):
+            continue
+        if _paraphrase_complete(group, counts, attempt.get("paraphrase")):
             continue
         if args.max_attempts and state["attempted"] >= args.max_attempts:
             stopped_early = "max_attempts"
@@ -287,6 +292,10 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
         state["attempted"] += 1
         if record["exposure"]["exposed"]:
             counts["exposed"] += 1
+            paraphrase = attempt.get("paraphrase")
+            if paraphrase:
+                by_paraphrase = counts["exposed_by_paraphrase"]
+                by_paraphrase[paraphrase] = by_paraphrase.get(paraphrase, 0) + 1
         if not record["outcome"]["inconclusive"]:
             counts["conclusive"] += 1
         _add_usage(usage, record["outcome"].get("usage") or {})
@@ -298,21 +307,38 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
     return _manifest(schedule, args, state, usage, started, stopped_early)
 
 
-def _group_complete(group: dict[str, Any], counts: dict[str, int]) -> bool:
-    """Stop at a block boundary once the group has what it needs.
+def _group_complete(group: dict[str, Any], counts: dict[str, Any]) -> bool:
+    """Stop once every paraphrase in the group has what it needs.
 
     Recruitment is on *exposed* runs, so an entry point the agent rarely opens
-    costs attempts rather than silently reporting a smaller sample. Checking
-    only on block boundaries is what keeps the three paraphrases balanced in a
-    group that stops mid-recruitment.
+    costs attempts rather than silently reporting a smaller sample.
     """
     if counts["attempted"] >= group["attempt_cap"]:
         return True
-    if counts["attempted"] % BLOCK:
-        return False
     if group["recruits_to_exposure"]:
-        return counts["exposed"] >= group["target"]
+        target = group["target"] // len(group["paraphrases"])
+        return all(counts["exposed_by_paraphrase"].get(p, 0) >= target
+                   for p in group["paraphrases"])
     return counts["attempted"] >= group["target"]
+
+
+def _paraphrase_complete(
+    group: dict[str, Any], counts: dict[str, Any], paraphrase: str | None
+) -> bool:
+    if not group["recruits_to_exposure"] or paraphrase is None:
+        return False
+    return counts["exposed_by_paraphrase"].get(paraphrase, 0) >= (
+        group["target"] // len(group["paraphrases"])
+    )
+
+
+def _empty_counts() -> dict[str, Any]:
+    return {
+        "attempted": 0,
+        "exposed": 0,
+        "conclusive": 0,
+        "exposed_by_paraphrase": {},
+    }
 
 
 def _run_one(schedule: dict[str, Any], attempt: dict[str, Any], args: argparse.Namespace):
@@ -359,9 +385,13 @@ def _resume(out_dir: str, schedule: dict[str, Any]) -> dict[str, Any]:
             continue
         done.add(sweep["attempt_id"])
         records.append(record)
-        counts.setdefault(sweep["group"], {"attempted": 0, "exposed": 0, "conclusive": 0})
+        counts.setdefault(sweep["group"], _empty_counts())
         counts[sweep["group"]]["attempted"] += 1
         counts[sweep["group"]]["exposed"] += bool(record["exposure"]["exposed"])
+        paraphrase = (record.get("injection") or {}).get("paraphrase")
+        if record["exposure"]["exposed"] and paraphrase:
+            by_paraphrase = counts[sweep["group"]]["exposed_by_paraphrase"]
+            by_paraphrase[paraphrase] = by_paraphrase.get(paraphrase, 0) + 1
         counts[sweep["group"]]["conclusive"] += not record["outcome"]["inconclusive"]
     return {"done": done, "counts": counts, "records": records, "attempted": 0}
 
@@ -398,17 +428,35 @@ def _cost(usage: dict[str, int], args: argparse.Namespace) -> float:
 def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str, Any]:
     groups = {}
     for name, group in sorted(schedule["groups"].items()):
-        counts = state["counts"].get(name, {"attempted": 0, "exposed": 0, "conclusive": 0})
+        counts = state["counts"].get(name, _empty_counts())
         achieved = counts["exposed"] if group["recruits_to_exposure"] else counts["attempted"]
+        paraphrase_target = (
+            group["target"] // len(group["paraphrases"])
+            if group["recruits_to_exposure"] else None
+        )
+        exposed_by_paraphrase = {
+            p: counts["exposed_by_paraphrase"].get(p, 0) for p in group["paraphrases"]
+        }
+        shortfall_by_paraphrase = {
+            p: max(0, paraphrase_target - exposed_by_paraphrase[p])
+            for p in group["paraphrases"]
+        }
+        reached_target = (
+            all(shortfall == 0 for shortfall in shortfall_by_paraphrase.values())
+            if group["recruits_to_exposure"] else achieved >= group["target"]
+        )
         groups[name] = {
             **counts,
             "target": group["target"],
             "attempt_cap": group["attempt_cap"],
-            "reached_target": achieved >= group["target"],
+            "paraphrase_target": paraphrase_target,
+            "exposed_by_paraphrase": exposed_by_paraphrase,
+            "shortfall_by_paraphrase": shortfall_by_paraphrase,
+            "reached_target": reached_target,
             # A group that hit the cap short of its target is reported at the
             # precision it reached, with both denominators, never pooled away.
             "hit_attempt_cap": counts["attempted"] >= group["attempt_cap"]
-                               and achieved < group["target"],
+                               and not reached_target,
         }
     return {
         "sweep_id": schedule["sweep_id"],

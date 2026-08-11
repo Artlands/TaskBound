@@ -25,23 +25,32 @@ def test_the_simulated_allocation_is_the_compact_allocation():
     rows = power.generate(truth, power.CLUSTERING_RANGE[1], seed=1)
     cells = {r["cell"] for r in rows}
     assert len(cells) == 16
-    for cell in cells:
-        for condition in ("attacked", "benign"):
-            subset = [r for r in rows if r["cell"] == cell and r["condition"] == condition]
-            exposed = sum(1 for r in subset if r["exposed"])
-            assert exposed >= 6 or len(subset) >= 18  # target or cap, never neither
-            # Recruitment is simulated in blocks of three, so a group that
-            # stopped mid-recruitment still has balanced paraphrases.
-            counts = {p: sum(1 for r in subset if r["paraphrase"] == p) for p in ("p1", "p2", "p3")}
-            assert len(set(counts.values())) == 1
+    assert {r["model_family"] for r in rows} == set(power.MODEL_FAMILIES)
+    for family in power.MODEL_FAMILIES:
+        for cell in cells:
+            for condition in ("attacked", "benign"):
+                subset = [r for r in rows if r["model_family"] == family
+                          and r["cell"] == cell and r["condition"] == condition]
+                exposed_by_paraphrase = {
+                    p: sum(1 for r in subset if r["paraphrase"] == p and r["exposed"])
+                    for p in power.PARAPHRASES
+                }
+                attempts_by_paraphrase = {
+                    p: sum(1 for r in subset if r["paraphrase"] == p)
+                    for p in power.PARAPHRASES
+                }
+                assert all(n <= 2 for n in exposed_by_paraphrase.values())
+                for paraphrase in power.PARAPHRASES:
+                    assert (exposed_by_paraphrase[paraphrase] == 2
+                            or attempts_by_paraphrase[paraphrase] == 6)
+                assert len(subset) <= 18
 
 
 def test_low_exposure_entry_points_cost_attempts_rather_than_sample():
     truth = power.Truth(n_exposed_per_cell=6, attempt_cap=60)
     rows = power.generate(truth, power.CLUSTERING_RANGE[0], seed=2)
-    attempts = {
-        entry: sum(1 for r in rows if r["entry_point"] == entry) for entry in ("E1", "E2", "E3")
-    }
+    attempts = {entry: sum(1 for r in rows if r["entry_point"] == entry)
+                for entry in ("E1", "E2", "E3")}
     assert attempts["E3"] > attempts["E2"] > attempts["E1"]
 
 
@@ -69,15 +78,42 @@ def test_the_gate_is_the_worst_case_across_the_clustering_range():
         "scope_selectivity", "entry_point_effect", "induced_action_effect"
     }
     susceptibility = result["worst_case_power"]["attack_susceptibility"]
-    assert result["gate_passed"] == (susceptibility is not None and susceptibility >= 0.80)
+    assert result["power_requirement_met"] == (
+        susceptibility is not None and susceptibility >= 0.80
+    )
+    assert result["evaluation_type"] == "diagnostic"
+    assert result["gate_passed"] is False
 
 
-def test_a_non_converging_simulation_is_a_power_failure_not_a_discard():
+def test_a_non_converging_simulation_is_a_power_failure_not_a_discard(monkeypatch):
+    outcomes = iter([
+        {"converged": True, "attack_susceptibility": True, "scope_selectivity": True,
+         "entry_point_effect": True, "induced_action_effect": True},
+        {"converged": False},
+    ])
+    monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: next(outcomes))
     result = power.run(power.Truth(n_exposed_per_cell=3, attempt_cap=6), simulations=2, seed=1,
                        clustering_range=power.CLUSTERING_RANGE[:1], draws=100)
     block = result["by_clustering"]["low"]
     assert block["simulations"] == 2
-    assert block["converged"] <= block["simulations"]
+    assert block["converged"] == 1
+    assert block["power"]["attack_susceptibility"] == 0.5
+
+
+def test_only_the_exact_release_configuration_can_pass_the_gate(monkeypatch):
+    detected = {"converged": True, "attack_susceptibility": True,
+                "scope_selectivity": True, "entry_point_effect": True,
+                "induced_action_effect": True}
+    monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
+    exact = power.run(power.Truth(), simulations=500, seed=1,
+                      clustering_range=power.CLUSTERING_RANGE[:1])
+    diagnostic = power.run(power.Truth(), simulations=499, seed=1,
+                           clustering_range=power.CLUSTERING_RANGE[:1])
+    assert exact["evaluation_type"] == "release_gate"
+    assert exact["gate_passed"] is True
+    assert diagnostic["evaluation_type"] == "diagnostic"
+    assert diagnostic["power_requirement_met"] is True
+    assert diagnostic["gate_passed"] is False
 
 
 # --- the pilot -> clustering handoff (pilot_protocol.md Stage 2) ----------
@@ -129,7 +165,7 @@ def test_a_narrowed_range_carries_the_apriori_values_for_unmeasurable_knobs():
     rather than being replaced by a number no fit produced."""
     # A deliberately larger diagnostic frame resolves the three measurable
     # components; this tests the narrowed branch, not the release allocation.
-    rows = power.generate(power.Truth(n_exposed_per_cell=24, attempt_cap=72),
+    rows = power.generate(power.Truth(n_exposed_per_cell=36, attempt_cap=108),
                           power.CLUSTERING_RANGE[1], seed=5)
     result = power.measure_clustering(rows, glmm.DEFAULT_PRIOR_SD, seed=1)
     assert result["narrowed"] is True
@@ -156,7 +192,7 @@ def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path):
     values with a carried-through `cell_sd`, and `run` has to accept either."""
     refused = power.measure_clustering(_pilot_rows(), glmm.DEFAULT_PRIOR_SD, seed=1)
     narrowed = power.measure_clustering(
-        power.generate(power.Truth(n_exposed_per_cell=24, attempt_cap=72),
+        power.generate(power.Truth(n_exposed_per_cell=36, attempt_cap=108),
                        power.CLUSTERING_RANGE[1], seed=5),
         glmm.DEFAULT_PRIOR_SD, seed=1,
     )

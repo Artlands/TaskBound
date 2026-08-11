@@ -14,10 +14,21 @@ from __future__ import annotations
 import math
 import random
 
+import pytest
+
 from taskbound import aggregate, glmm
 
 ENTRIES = ("E1", "E2", "E3")
 ACTIONS = ("A1", "A2", "A3", "A4")
+
+
+def test_compact_ingestion_rejects_rows_from_another_release_scope():
+    row = synthetic(1, per_cell=1)[0]
+    with pytest.raises(SystemExit, match="outside the compact release scope"):
+        aggregate.validate_compact_scope([row])
+
+    row.update(task="t1_failed_job", execution_mode="two_agent", defense="none")
+    aggregate.validate_compact_scope([row])
 
 
 def synthetic(

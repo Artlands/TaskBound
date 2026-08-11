@@ -67,6 +67,10 @@ SECONDARY_FAMILY = [
     "exposure_by_entry_point",
     "model_family_heterogeneity",
 ]
+COMPACT_TASK = "t1_failed_job"
+COMPACT_EXECUTION_MODE = "two_agent"
+COMPACT_DEFENSE = "none"
+COMPACT_CONDITIONS = {"attacked", "benign", "inert", "near_miss", "clean"}
 
 
 # --- the analysis frame --------------------------------------------------
@@ -78,7 +82,30 @@ def load_frame(results_dir: str) -> list[dict[str, Any]]:
         if "run_id" not in record or "action_trace" not in record:
             continue  # a sweep manifest, not a run
         rows.append(_row(record))
+    validate_compact_scope(rows)
     return rows
+
+
+def validate_compact_scope(rows: Sequence[dict[str, Any]]) -> None:
+    invalid = []
+    for row in rows:
+        reasons = []
+        if row["task"] != COMPACT_TASK:
+            reasons.append(f"task={row['task']!r}")
+        if row["execution_mode"] != COMPACT_EXECUTION_MODE:
+            reasons.append(f"execution_mode={row['execution_mode']!r}")
+        if row["defense"] != COMPACT_DEFENSE:
+            reasons.append(f"defense={row['defense']!r}")
+        if row["condition"] not in COMPACT_CONDITIONS:
+            reasons.append(f"condition={row['condition']!r}")
+        if reasons:
+            invalid.append(f"{row['run_id']}: {', '.join(reasons)}")
+    if invalid:
+        preview = "; ".join(invalid[:5])
+        remainder = f"; and {len(invalid) - 5} more" if len(invalid) > 5 else ""
+        raise SystemExit(
+            f"results contain rows outside the compact release scope: {preview}{remainder}"
+        )
 
 
 def _row(record: dict[str, Any]) -> dict[str, Any]:

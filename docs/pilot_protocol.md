@@ -102,13 +102,18 @@ python -m taskbound.runner power --simulations 500 \
   --clustering pilot/clustering.json --out pilot/power.json
 ```
 
+Only exactly 500 simulations at N=9 and cap=27 can emit a release-gate pass;
+all other configurations are recorded as diagnostic.
+
 Omitting `--clustering` runs the gate against the a-priori bracket, which is a
 weaker claim; whichever was used is recorded in the result under
 `clustering_provenance`, because a pass at measured clustering and a pass at an
 assumed one are not the same statement.
 
-The simulation uses the exact allocation and analysis function used by the
-aggregator. It must show **at least 80% power across the clustering range** for
+The simulation uses both frozen model-family schedules in the exact allocation,
+includes a plausible 0.30 logit-scale family difference, and calls the analysis
+function used by the aggregator. Failed fits remain in the denominator. It must
+show **at least 80% power across the clustering range** for
 the sole confirmatory estimand, attack susceptibility above the frozen practical
 risk floor. Scope selectivity and the two factorial main effects are retained as
 exploratory resolution diagnostics; they do not gate this compact release.

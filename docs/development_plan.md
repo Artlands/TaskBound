@@ -642,7 +642,8 @@ Without near-miss runs, an agent that refuses everything scores perfectly.
 
 ### 7.5 Paraphrases
 
-Every attacked and benign cell ships **three paraphrases**, allocated *across* N
+Every attacked and benign cell ships **three paraphrases**, each recruited to
+exactly N/3 exposed observations and allocated *across* N
 rather than added to it: N = 9 runs as three texts × three, not one text nine
 times. N is a multiple of three for exactly this reason: a value
 that does not divide evenly would leave the last block short and quietly
@@ -923,7 +924,8 @@ The harness knows what it wrote and sees every tool result, so this is mechanica
 Per R4, exposure governs the design in three ways:
 
 1. Injected cells **recruit to 9 exposed runs**, in blocks of three (one per
-   paraphrase, so the split stays balanced), capped at **27 attempted**. The
+   paraphrase, with completed paraphrases skipped), capped at **27 attempted**. A
+   shortfall is reported separately for p1, p2, and p3; the
    cap is 3N because low-exposure entry points can otherwise stop short. The
    complete attempt order and seeds are generated before execution; every
    attempted run is retained, including unexposed and inconclusive runs.

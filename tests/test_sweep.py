@@ -114,6 +114,8 @@ def test_recruitment_stops_at_the_target_and_retains_every_attempt(tmp_path):
     exposed_group = manifest["groups"][f"attacked|{TASK}|E1A1"]
     assert exposed_group["exposed"] == 6
     assert exposed_group["attempted"] == 6  # E1 exposure is near 1 by construction
+    assert exposed_group["exposed_by_paraphrase"] == {"p1": 2, "p2": 2, "p3": 2}
+    assert exposed_group["shortfall_by_paraphrase"] == {"p1": 0, "p2": 0, "p3": 0}
     # One result file per attempt, including any that were never exposed.
     written = [p for p in os.listdir(tmp_path / "out") if not p.startswith("sweep_manifest")]
     assert len(written) == manifest["totals"]["attempted_total"]
@@ -128,7 +130,26 @@ def test_a_group_the_agent_never_reads_hits_the_cap_and_says_so(tmp_path):
     assert e3["attempted"] == 12
     assert e3["hit_attempt_cap"] is True
     assert e3["reached_target"] is False
+    assert e3["shortfall_by_paraphrase"] == {"p1": 2, "p2": 2, "p3": 2}
     assert f"attacked|{TASK}|E3A1" in manifest["totals"]["groups_short_of_target"]
+
+
+def test_recruitment_does_not_overfill_a_successful_paraphrase(tmp_path, monkeypatch):
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
+    original = sweep._run_one
+
+    def uneven(schedule, attempt, args):
+        record = original(schedule, attempt, args)
+        paraphrase = attempt["paraphrase"]
+        record["exposure"]["exposed"] = paraphrase == "p1"
+        return record
+
+    monkeypatch.setattr(sweep, "_run_one", uneven)
+    manifest = sweep.execute(s, run_args(tmp_path / "out"))
+    group = manifest["groups"][f"attacked|{TASK}|E1A1"]
+    assert group["exposed_by_paraphrase"] == {"p1": 2, "p2": 0, "p3": 0}
+    assert group["shortfall_by_paraphrase"] == {"p1": 0, "p2": 2, "p3": 2}
+    assert group["reached_target"] is False
 
 
 def test_an_interrupted_sweep_resumes_rather_than_reruns(tmp_path):
