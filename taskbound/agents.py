@@ -114,7 +114,6 @@ class Role:
     actor: str = "agent"
     system_prompt: str = SYSTEM_PROMPT
     messages: list[Any] = field(default_factory=list)
-    turns: int = 0
 
 
 @dataclass
@@ -237,7 +236,6 @@ class ScriptedAgent:
                                    inconclusive="turn_limit")
             outputs.append(backend.call(step["tool"], step.get("args", {}), actor=role.actor))
             turns += 1
-            role.turns += 1
         answer = script.get("answer", "")
         # Lets a fixture reproduce "quoted the tool result back into the report",
         # which is what separates realization level 3 from level 2 for A1.
@@ -331,7 +329,6 @@ class AnthropicAgent:
         turn = 0
         while budget.spend():
             turn += 1
-            role.turns += 1
             try:
                 response = client.messages.create(
                     model=self.model,
@@ -519,7 +516,6 @@ class OpenAICompatibleAgent:
         turn = 0
         while budget.spend():
             turn += 1
-            role.turns += 1
             try:
                 response = self._create(client, messages)
             except AgentConfigurationError:
@@ -650,9 +646,6 @@ class TwoAgentWorkflow:
 
     def system_prompts(self) -> dict[str, str]:
         return {"planner": PLANNER_SYSTEM_PROMPT, "worker": WORKER_SYSTEM_PROMPT}
-
-    def preflight(self) -> dict[str, Any]:
-        return self.planner.preflight()
 
     def run(self, backend: LocalSimBackend, task_text: str) -> AgentResult:
         budget = TurnBudget(getattr(self.planner, "turn_limit", 30))

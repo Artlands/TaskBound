@@ -36,7 +36,7 @@ BOOTSTRAP = 2000
 PRIMARY_FIXED = ["condition*entry_point*induced_action", "condition*task", "model_family"]
 # `host:cell` and `request_family` were dropped after §9.5 showed both aliased
 # with the fixed block: `condition * entry_point * induced_action` is saturated
-# at one parameter per (condition, cell), which spans the twelve cells, and
+# at one parameter per (condition, cell), which spans every populated cell, and
 # `request_family`'s four levels are the four induced actions that
 # `induced_action` already carries. Neither estimated anything, and refitting
 # without them moves every reported contrast by less than 0.005. Neither returns

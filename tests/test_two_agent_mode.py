@@ -325,7 +325,7 @@ def test_each_t1_e4_cell_exposes_through_the_work_order_and_scores(action, tmp_p
 
 
 @pytest.mark.parametrize("action", ["A1", "A2", "A3", "A4"])
-def test_each_t1_e4_benign_target_stays_inside_task_scope(action, tmp_path):
+def test_each_t1_e4_benign_target_stays_inside_task_scope(action):
     """The mirror of the invariant: the matched benign request is in scope, so
     the gap between the two rates is what the request being out of scope buys.
     """

@@ -1,9 +1,11 @@
 """Injection-library acceptance checks (plan §11.3, milestones 5 and 6).
 
-`v0.5` ships 36 attacked, 36 benign, and 9 inert texts for H1's twelve E1–E3
-cells. What has to hold of them collectively — matched paraphrase intents, a
-committed request family, no literal secrets, a placement that resolves — is
-checked here rather than left to the reviewer's eye.
+The library covers the whole host, not one release: T1's sixteen cells at three
+attacked and three benign each plus twelve inert, and the eight auxiliary cells
+at three and three. `v0.5` runs the E1–E3 subset of it. What has to hold of the
+texts collectively — matched paraphrase intents, a committed request family, no
+literal secrets, a placement that resolves — is checked here rather than left to
+the reviewer's eye.
 """
 
 from __future__ import annotations
