@@ -123,6 +123,7 @@ def model_configuration_sha256(record: dict[str, Any]) -> str:
     agent.pop("resolved_model", None)
     return _canonical_sha256({
         "adapter_commit": record.get("git_commit"),
+        "source_tree_sha256": record.get("git_source_sha256"),
         "agent": agent,
     })
 
@@ -208,10 +209,22 @@ def validate_release_binding(
         attempt_id = row.get("attempt_id")
         config = row.get("model_configuration_sha256")
         adapter_commit = row.get("adapter_commit")
+        source_tree_sha256 = row.get("source_tree_sha256")
         if not isinstance(adapter_commit, str) or len(adapter_commit) != 40 \
                 or set(adapter_commit) - digest_chars:
             invalid.append(
                 f"{row['run_id']}: adapter_commit={adapter_commit!r}"
+            )
+        if not isinstance(source_tree_sha256, str) \
+                or len(source_tree_sha256) != 64 \
+                or set(source_tree_sha256) - digest_chars:
+            invalid.append(
+                f"{row['run_id']}: source_tree_sha256={source_tree_sha256!r}"
+            )
+        if row.get("source_tree_dirty") is not False:
+            invalid.append(
+                f"{row['run_id']}: source_tree_dirty="
+                f"{row.get('source_tree_dirty')!r}"
             )
         if sweep_id != expected_sweep:
             invalid.append(f"{row['run_id']}: sweep_id={sweep_id!r}")
@@ -576,6 +589,8 @@ def _row(record: dict[str, Any]) -> dict[str, Any]:
     return {
         "run_id": record["run_id"],
         "adapter_commit": record.get("git_commit"),
+        "source_tree_sha256": record.get("git_source_sha256"),
+        "source_tree_dirty": record.get("git_dirty"),
         "host": record["host"]["id"],
         "host_hash": record["host"].get("hash"),
         "task": record["task"]["id"],
@@ -1578,6 +1593,8 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
 def verify_power_gate_evidence(
     preregistration: dict[str, Any], path: str | None
 ) -> tuple[dict[str, Any] | None, list[str]]:
+    from . import power
+
     registered_hash = (
         ((preregistration.get("gates") or {}).get("power") or {})
         .get("result_sha256")
@@ -1601,45 +1618,136 @@ def verify_power_gate_evidence(
         return None, problems
     if hashlib.sha256(raw).hexdigest() != registered_hash:
         problems.append("power-gate result does not match its registered hash")
-    for field, expected in (
-        ("gate_eligible", True),
-        ("gate_passed", True),
-        ("power_requirement_met", True),
-        ("evaluation_type", "release_gate"),
-        ("confirmatory_estimands", ["attack_susceptibility"]),
-        ("release_truth_mismatches", {}),
-        ("release_analysis_mismatches", {}),
-        ("clustering_artifact_problems", []),
-    ):
-        if result.get(field) != expected:
-            problems.append(f"power-gate result has {field}={result.get(field)!r}")
+    expected_truth = power.Truth().to_dict()
     truth = result.get("truth")
     registered_truth = result.get("registered_release_truth")
-    if not isinstance(truth, dict) or truth != registered_truth:
-        problems.append("power-gate result does not use its registered release truth")
-    elif truth.get("n_exposed_per_cell") != COMPACT_EXPOSED_TARGET \
-            or truth.get("attempt_cap") != COMPACT_ATTEMPT_CAP:
-        problems.append("power-gate result does not use the compact allocation")
+    truth_mismatches = {
+        name: {"registered": expected, "actual": truth.get(name)}
+        for name, expected in expected_truth.items()
+        if isinstance(truth, dict) and truth.get(name) != expected
+    }
+    if truth != expected_truth or registered_truth != expected_truth:
+        problems.append("power-gate result does not use the full registered release truth")
+    if result.get("release_truth_mismatches") != truth_mismatches:
+        problems.append("power-gate result has inconsistent release truth mismatches")
     expected_analysis = {
-        "seed": 1,
-        "draws": DRAWS,
-        "prior_sd": 2.5,
-        "interval_level": 0.95,
+        "seed": power.RELEASE_SEED,
+        "draws": power.RELEASE_DRAWS,
+        "prior_sd": power.RELEASE_PRIOR_SD,
+        "interval_level": power.RELEASE_INTERVAL_LEVEL,
     }
     if result.get("analysis_settings") != expected_analysis \
             or result.get("registered_release_analysis_settings") != expected_analysis:
         problems.append("power-gate result does not use the registered analysis settings")
-    by_clustering = result.get("by_clustering")
-    if not isinstance(by_clustering, dict) or not by_clustering \
-            or any(not isinstance(block, dict) or block.get("simulations") != 500
-                   for block in by_clustering.values()):
-        problems.append("power-gate result is not the exact 500-simulation run")
+    if result.get("release_analysis_mismatches") != {}:
+        problems.append("power-gate result has inconsistent release analysis mismatches")
+    primary_model = preregistration.get("primary_model") or {}
+    primary_power_settings = {
+        "seed": primary_model.get("analysis_seed"),
+        "draws": primary_model.get("interval_draws"),
+        "prior_sd": primary_model.get("prior_sd"),
+    }
+    for name in ("seed", "draws", "prior_sd"):
+        if primary_power_settings[name] != expected_analysis[name]:
+            problems.append(
+                f"signed primary-model {name}={primary_power_settings[name]!r} "
+                f"does not match power {name}={expected_analysis[name]!r}"
+            )
     provenance = result.get("clustering_provenance")
-    artifact_hash = provenance.get("artifact_sha256") \
-        if isinstance(provenance, dict) else None
-    if not isinstance(artifact_hash, str) or len(artifact_hash) != 64 \
-            or set(artifact_hash) - set("0123456789abcdef"):
-        problems.append("power-gate result has no valid clustering-artifact provenance")
+    try:
+        artifact_problems = power.clustering_artifact_problems(provenance)
+    except (OSError, ValueError, json.JSONDecodeError, SystemExit) as exc:
+        artifact_problems = [f"clustering artifact cannot be verified: {exc}"]
+    if artifact_problems:
+        problems.extend(
+            f"power-gate clustering artifact: {problem}"
+            for problem in artifact_problems
+        )
+    if result.get("clustering_artifact_problems") != artifact_problems:
+        problems.append("power-gate result has inconsistent clustering-artifact problems")
+    expected_estimands = (
+        "attack_susceptibility", "scope_selectivity",
+        "entry_point_effect", "induced_action_effect",
+    )
+    by_clustering = result.get("by_clustering")
+    expected_range = provenance.get("range") if isinstance(provenance, dict) else None
+    expected_by_label = {
+        rung.get("label"): rung for rung in expected_range
+        if isinstance(rung, dict) and isinstance(rung.get("label"), str)
+    } if isinstance(expected_range, list) else {}
+    derived_worst = {name: None for name in expected_estimands}
+    if not isinstance(by_clustering, dict) or set(by_clustering) != set(expected_by_label):
+        problems.append("power-gate simulation blocks do not match the clustering artifact")
+    else:
+        powers = {name: [] for name in expected_estimands}
+        for label, block in by_clustering.items():
+            if not isinstance(block, dict) or block.get("clustering") != expected_by_label[label]:
+                problems.append(f"power-gate block {label!r} has altered clustering inputs")
+                continue
+            simulations = block.get("simulations")
+            converged = block.get("converged")
+            detections = block.get("detections")
+            recorded_power = block.get("power")
+            if simulations != power.RELEASE_SIMULATIONS:
+                problems.append(f"power-gate block {label!r} is not the exact simulation count")
+            if not isinstance(converged, int) or isinstance(converged, bool) \
+                    or not 0 <= converged <= power.RELEASE_SIMULATIONS:
+                problems.append(f"power-gate block {label!r} has invalid convergence count")
+            if not isinstance(detections, dict) \
+                    or set(detections) != set(expected_estimands) \
+                    or not isinstance(recorded_power, dict) \
+                    or set(recorded_power) != set(expected_estimands):
+                problems.append(f"power-gate block {label!r} has incomplete estimand counts")
+                continue
+            for name in expected_estimands:
+                detected = detections[name]
+                value = recorded_power[name]
+                if not isinstance(detected, int) or isinstance(detected, bool) \
+                        or not isinstance(converged, int) \
+                        or not 0 <= detected <= converged:
+                    problems.append(
+                        f"power-gate block {label!r} has invalid {name} detections"
+                    )
+                    continue
+                expected_value = detected / power.RELEASE_SIMULATIONS
+                if not isinstance(value, (int, float)) or isinstance(value, bool) \
+                        or not math.isfinite(value) or value != expected_value:
+                    problems.append(
+                        f"power-gate block {label!r} has inconsistent {name} power"
+                    )
+                    continue
+                powers[name].append(value)
+        derived_worst = {
+            name: min(values) if len(values) == len(by_clustering) else None
+            for name, values in powers.items()
+        }
+    if result.get("worst_case_power") != derived_worst:
+        problems.append("power-gate worst-case power does not match simulation blocks")
+    requirement_met = (
+        derived_worst["attack_susceptibility"] is not None
+        and derived_worst["attack_susceptibility"] >= power.REQUIRED_POWER
+    )
+    eligibility = (
+        truth == expected_truth
+        and result.get("analysis_settings") == expected_analysis
+        and not artifact_problems
+        and isinstance(by_clustering, dict)
+        and set(by_clustering) == set(expected_by_label)
+        and not any("power-gate block" in problem for problem in problems)
+    )
+    expected_fields = {
+        "required_power": power.REQUIRED_POWER,
+        "attack_susceptibility_null": power.PRACTICAL_SUSCEPTIBILITY_FLOOR,
+        "confirmatory_estimands": ["attack_susceptibility"],
+        "exploratory_estimands": list(expected_estimands[1:]),
+        "evaluation_type": "release_gate" if eligibility else "diagnostic",
+        "gate_eligible": eligibility,
+        "power_requirement_met": requirement_met,
+        "gate_passed": eligibility and requirement_met,
+    }
+    for field, expected in expected_fields.items():
+        if result.get(field) != expected:
+            problems.append(f"power-gate result has {field}={result.get(field)!r}")
     return result, problems
 
 

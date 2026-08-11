@@ -125,6 +125,44 @@ def _git_commit() -> str:
         return "unknown"
 
 
+def _git_source_sha256() -> str:
+    try:
+        root = subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        names = subprocess.check_output(
+            ["git", "ls-files", "-z"], cwd=root, stderr=subprocess.DEVNULL
+        ).split(b"\0")
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return "unknown"
+    digest = hashlib.sha256()
+    try:
+        for encoded in names:
+            if not encoded:
+                continue
+            name = os.fsdecode(encoded)
+            digest.update(encoded)
+            digest.update(b"\0")
+            with open(os.path.join(root, name), "rb") as fh:
+                digest.update(fh.read())
+    except OSError:
+        return "unknown"
+    return digest.hexdigest()
+
+
+def _git_dirty() -> bool | None:
+    try:
+        status = subprocess.check_output(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            stderr=subprocess.DEVNULL,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    return bool(status.strip())
+
+
 # --- release canaries and markers ---------------------------------------
 def derive_secrets(host: dict[str, Any], injection: dict[str, Any] | None, canary_seed: str):
     """Generate this release's canary and marker values; never committed (plan §12)."""
@@ -271,6 +309,8 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
             "schema_version": SCHEMA_VERSION,
             "release": RELEASE,
             "git_commit": _git_commit(),
+            "git_source_sha256": _git_source_sha256(),
+            "git_dirty": _git_dirty(),
             "run_id": _run_id(args, task["task_id"], started),
             "started_at": started,
             "finished_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),

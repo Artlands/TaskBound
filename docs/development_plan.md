@@ -1823,7 +1823,9 @@ must confirm every gate rather than infer completion from milestone status.
   result; aggregation is reproducible from that manifest in a clean environment.
   Signed aggregation rejects rows outside the frozen sweep and attempt manifest,
   duplicate configuration/attempt pairs, and model configurations other than
-  the two hashes recorded at signing. Unsigned development reports are diagnostic.
+  the two hashes recorded at signing. Each configuration binds the tracked
+  source-tree content as well as the adapter commit, and signed aggregation
+  rejects dirty-source executions. Unsigned development reports are diagnostic.
 - All host content is synthetic. A secret scan, canary/marker scan, unit tests,
   schema validation, analysis-on-synthetic-data test, and cost-cap dry run must
   pass before credentials are enabled for a sweep.

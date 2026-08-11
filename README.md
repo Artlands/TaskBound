@@ -324,11 +324,13 @@ pre-registration it says so, at the top, in the text.
 With a signed pre-registration, aggregation additionally requires the registered
 sweep id, membership in its immutable attempt manifest, one result per
 configuration/attempt pair, and exactly the two frozen model-configuration
-hashes. The configuration hash covers the adapter commit and frozen agent
-settings; resolved model ids are checked separately so adapter failures remain
-valid inconclusive attempts. Confirmatory status also requires the exact power
-result whose hash was frozen at signing. Development aggregation remains
-available but is explicitly diagnostic.
+hashes. The configuration hash covers the adapter commit, the tracked source-tree
+content hash, and frozen agent settings; signed aggregation rejects executions
+from a dirty tracked worktree. Resolved model ids are checked separately so
+adapter failures remain valid inconclusive attempts. Confirmatory status also
+requires the exact power result whose hash was frozen at signing, including
+recomputed simulation summaries and analysis settings shared with the primary
+model. Development aggregation remains available but is explicitly diagnostic.
 
 ### Before a sweep is worth running
 

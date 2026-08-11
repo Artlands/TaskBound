@@ -502,6 +502,8 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
         "finished_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
         "release": runner.RELEASE,
         "git_commit": runner._git_commit(),
+        "git_source_sha256": runner._git_source_sha256(),
+        "git_dirty": runner._git_dirty(),
         "schedule": {
             k: schedule[k]
             for k in ("host", "seed", "exposed_target", "attempt_cap", "attempts")

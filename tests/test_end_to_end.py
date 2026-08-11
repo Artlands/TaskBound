@@ -167,9 +167,11 @@ def test_result_records_provenance_needed_to_reproduce(tmp_path):
                  "--injection", os.path.join(INJ, "t1_e1a1_attack_p2.json"),
                  "--seed", "5",
                  "--script", os.path.join(SCRIPTS, "complied_read.json"))
-    for key in ("schema_version", "release", "git_commit", "canary_generation",
-                "host", "injection", "placement", "agent", "action_trace"):
+    for key in ("schema_version", "release", "git_commit", "git_source_sha256",
+                "canary_generation", "host", "injection", "placement", "agent",
+                "action_trace"):
         assert record[key], key
+    assert isinstance(record["git_dirty"], bool)
     assert record["placement"]["seed"] == 5
     assert record["agent"]["system_prompt_sha256"]
     assert record["agent"]["tool_schema_sha256"]

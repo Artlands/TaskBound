@@ -19,7 +19,7 @@ import argparse
 
 import pytest
 
-from taskbound import aggregate, glmm, sweep
+from taskbound import aggregate, glmm, power, sweep
 
 ENTRIES = ("E1", "E2", "E3")
 ACTIONS = ("A1", "A2", "A3", "A4")
@@ -37,6 +37,7 @@ def test_compact_ingestion_rejects_rows_from_another_release_scope():
 def test_model_configuration_hash_uses_frozen_inputs_not_resolved_response():
     record = {
         "git_commit": "abc123",
+        "git_source_sha256": "a" * 64,
         "agent": {
             "adapter": "example",
             "sampling": {"model": "family_x", "turn_limit": 30},
@@ -49,43 +50,100 @@ def test_model_configuration_hash_uses_frozen_inputs_not_resolved_response():
     assert aggregate.model_configuration_sha256(record) == digest
     record["git_commit"] = "def456"
     assert aggregate.model_configuration_sha256(record) != digest
+    record["git_commit"] = "abc123"
+    record["git_source_sha256"] = "b" * 64
+    assert aggregate.model_configuration_sha256(record) != digest
 
 
-def test_power_gate_evidence_must_match_signed_exact_release_result(tmp_path):
-    result = {
-        "gate_eligible": True,
-        "gate_passed": True,
-        "power_requirement_met": True,
-        "evaluation_type": "release_gate",
-        "confirmatory_estimands": ["attack_susceptibility"],
-        "release_truth_mismatches": {},
-        "release_analysis_mismatches": {},
-        "clustering_artifact_problems": [],
-        "truth": {"n_exposed_per_cell": 9, "attempt_cap": 27},
-        "registered_release_truth": {"n_exposed_per_cell": 9, "attempt_cap": 27},
-        "analysis_settings": {
-            "seed": 1, "draws": 2000, "prior_sd": 2.5, "interval_level": 0.95,
-        },
-        "registered_release_analysis_settings": {
-            "seed": 1, "draws": 2000, "prior_sd": 2.5, "interval_level": 0.95,
-        },
-        "by_clustering": {"measured": {"simulations": 500}},
-        "clustering_provenance": {"artifact_sha256": "c" * 64},
+def _passing_power_result(monkeypatch):
+    detected = {
+        "converged": True,
+        "attack_susceptibility": True,
+        "scope_selectivity": True,
+        "entry_point_effect": True,
+        "induced_action_effect": True,
     }
+    monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
+    monkeypatch.setattr(power, "clustering_artifact_problems", lambda payload: [])
+    artifact = {
+        "artifact_sha256": "c" * 64,
+        "range": power.CLUSTERING_RANGE,
+    }
+    return power.run(
+        power.Truth(), power.RELEASE_SIMULATIONS, power.RELEASE_SEED,
+        clustering_range=power.CLUSTERING_RANGE,
+        clustering_provenance=artifact,
+    )
+
+
+def test_power_gate_evidence_must_match_signed_exact_release_result(
+    tmp_path, monkeypatch
+):
+    result = _passing_power_result(monkeypatch)
     raw = json.dumps(result, sort_keys=True).encode()
     path = tmp_path / "power.json"
     path.write_bytes(raw)
     prereg = {
-        "gates": {"power": {"result_sha256": hashlib.sha256(raw).hexdigest()}}
+        "primary_model": {
+            "analysis_seed": 1, "interval_draws": 2000, "prior_sd": 2.5,
+        },
+        "gates": {"power": {"result_sha256": hashlib.sha256(raw).hexdigest()}},
     }
     _, problems = aggregate.verify_power_gate_evidence(prereg, str(path))
     assert problems == []
+
+    altered_prereg = json.loads(json.dumps(prereg))
+    altered_prereg["primary_model"]["prior_sd"] = 1.0
+    _, problems = aggregate.verify_power_gate_evidence(altered_prereg, str(path))
+    assert any("primary-model prior_sd=1.0" in problem for problem in problems)
+
+    tampered = json.loads(json.dumps(result))
+    tampered["by_clustering"]["low"]["detections"]["attack_susceptibility"] = 499
+    tampered_raw = json.dumps(tampered, sort_keys=True).encode()
+    path.write_bytes(tampered_raw)
+    tampered_prereg = json.loads(json.dumps(prereg))
+    tampered_prereg["gates"]["power"]["result_sha256"] = \
+        hashlib.sha256(tampered_raw).hexdigest()
+    _, problems = aggregate.verify_power_gate_evidence(tampered_prereg, str(path))
+    assert any("inconsistent attack_susceptibility power" in problem
+               for problem in problems)
 
     result["gate_passed"] = False
     path.write_text(json.dumps(result, sort_keys=True))
     _, problems = aggregate.verify_power_gate_evidence(prereg, str(path))
     assert any("does not match its registered hash" in problem for problem in problems)
     assert any("gate_passed=False" in problem for problem in problems)
+
+
+def test_power_gate_evidence_rejects_fabricated_summary(tmp_path, monkeypatch):
+    monkeypatch.setattr(power, "clustering_artifact_problems", lambda payload: [])
+    result = {
+        "gate_eligible": True, "gate_passed": True,
+        "power_requirement_met": True, "evaluation_type": "release_gate",
+        "truth": power.Truth().to_dict(),
+        "registered_release_truth": power.Truth().to_dict(),
+        "analysis_settings": {
+            "seed": 1, "draws": 2000, "prior_sd": 2.5, "interval_level": 0.95,
+        },
+        "registered_release_analysis_settings": {
+            "seed": 1, "draws": 2000, "prior_sd": 2.5, "interval_level": 0.95,
+        },
+        "clustering_provenance": {
+            "artifact_sha256": "c" * 64, "range": power.CLUSTERING_RANGE,
+        },
+    }
+    raw = json.dumps(result, sort_keys=True).encode()
+    path = tmp_path / "power.json"
+    path.write_bytes(raw)
+    prereg = {
+        "primary_model": {
+            "analysis_seed": 1, "interval_draws": 2000, "prior_sd": 2.5,
+        },
+        "gates": {"power": {"result_sha256": hashlib.sha256(raw).hexdigest()}},
+    }
+    _, problems = aggregate.verify_power_gate_evidence(prereg, str(path))
+    assert any("simulation blocks" in problem for problem in problems)
+    assert any("worst-case power" in problem for problem in problems)
 
 
 @pytest.mark.parametrize("field,value", [
@@ -137,6 +195,8 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
             rows.append({
                 "run_id": f"{config_index}_{attempt['attempt_id']}",
                 "adapter_commit": "d" * 40,
+                "source_tree_sha256": "e" * 64,
+                "source_tree_dirty": False,
                 "host": "site_a", "host_hash": planned["host"]["hash"],
                 "task": attempt["task"],
                 "condition": attempt["condition"], "cell": attempt["cell"],
@@ -227,6 +287,10 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
     with pytest.raises(SystemExit, match="host_hash"):
         aggregate.validate_release_binding(altered_host, prereg, manifests)
 
+    dirty_source = [{**rows[0], "source_tree_dirty": True}, *rows[1:]]
+    with pytest.raises(SystemExit, match="source_tree_dirty"):
+        aggregate.validate_release_binding(dirty_source, prereg, manifests)
+
     altered_model = [{**rows[0], "resolved_model": "other"}, *rows[1:]]
     with pytest.raises(SystemExit, match="resolved_model"):
         aggregate.validate_release_binding(altered_model, prereg, manifests)
@@ -275,23 +339,7 @@ def test_signed_cli_labels_altered_analysis_diagnostic_and_uses_nested_headline(
 def test_signed_cli_requires_bound_passing_power_result_for_confirmatory_status(
     tmp_path, monkeypatch
 ):
-    result = {
-        "gate_eligible": True, "gate_passed": True,
-        "power_requirement_met": True, "evaluation_type": "release_gate",
-        "confirmatory_estimands": ["attack_susceptibility"],
-        "release_truth_mismatches": {}, "release_analysis_mismatches": {},
-        "clustering_artifact_problems": [],
-        "truth": {"n_exposed_per_cell": 9, "attempt_cap": 27},
-        "registered_release_truth": {"n_exposed_per_cell": 9, "attempt_cap": 27},
-        "analysis_settings": {
-            "seed": 1, "draws": 2000, "prior_sd": 2.5, "interval_level": 0.95,
-        },
-        "registered_release_analysis_settings": {
-            "seed": 1, "draws": 2000, "prior_sd": 2.5, "interval_level": 0.95,
-        },
-        "by_clustering": {"measured": {"simulations": 500}},
-        "clustering_provenance": {"artifact_sha256": "c" * 64},
-    }
+    result = _passing_power_result(monkeypatch)
     power_raw = json.dumps(result, sort_keys=True).encode()
     power_path = tmp_path / "power.json"
     power_path.write_bytes(power_raw)

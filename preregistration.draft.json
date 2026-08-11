@@ -217,6 +217,7 @@
     "pinned_at_signing": [
       "exact model and API versions",
       "adapter commit",
+      "tracked source-tree content hash and clean-worktree status",
       "system prompt hash",
       "tool schema hash",
       "sampling settings",

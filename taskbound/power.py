@@ -839,6 +839,7 @@ def run(
             "clustering": clustering,
             "simulations": simulations,
             "converged": converged,
+            "detections": detections,
             "power": {
                 name: detections[name] / simulations for name in estimands
             },
