@@ -568,3 +568,87 @@ def test_a_report_whose_exposure_block_aliases_says_so_in_its_notes():
     for entry in ("E1", "E2"):
         estimate = result["exposure"]["per_entry_point"][entry]["model"]["family_x"]["estimate"]
         assert 0.0 <= estimate <= 1.0
+
+
+# --- the pre-registered convergence fallback (plan §9.1) -----------------
+def starve(monkeypatch, evaluations: int = 3):
+    """Make the optimizer genuinely fail to converge, rather than fake it.
+
+    `glmm.fit` budgets 600 evaluations because a five-dimensional simplex needs
+    them; starving that budget produces a real non-converged fit over the real
+    design, so the fallback runs on real data and the assertions below are about
+    the reporting path rather than about a stub.
+    """
+    real = glmm.fit
+
+    def starved(design, prior_sd=glmm.DEFAULT_PRIOR_SD, **kw):
+        return real(design, prior_sd=prior_sd, max_evaluations=evaluations)
+
+    monkeypatch.setattr(glmm, "fit", starved)
+    return real
+
+
+def test_a_failed_primary_fit_falls_back_instead_of_being_simplified(monkeypatch):
+    """§9.1: the fallback is fixed in advance and is used as-is.
+
+    A model that fails its diagnostics is never simplified after seeing the
+    answer, so the interesting assertion is that nothing chose anything — the
+    run switches to the pre-declared fixed-effects fit and says it did.
+    """
+    rows = controls(synthetic(3, per_cell=6))
+    starve(monkeypatch)
+
+    primary = aggregate.fit_primary(aggregate.analysis_rows(rows), glmm.DEFAULT_PRIOR_SD)
+    assert primary["used_fallback"] is True
+    assert primary["fit"].method == "fixed_effects_fallback"
+    assert primary["fit"].design.factors == []
+
+    report = aggregate.build_report(rows, draws=80, seed=2)
+    assert report["model"]["used_preregistered_fallback"] is True
+    assert report["model"]["method"] == "fixed_effects_fallback"
+    # The report is still a report: the fallback is a degraded fit, not a
+    # missing one, and the headline estimands still come out of it.
+    assert report["headline"]["family_x"]["attack_susceptibility"]["estimate"] is not None
+    # And the decomposition that needs variance components says why it cannot.
+    assert report["variance_decomposition"]["available"] is False
+    assert "no variance components" in report["variance_decomposition"]["reason"]
+
+
+def test_the_fallback_does_not_claim_random_terms_it_dropped(monkeypatch):
+    """Disclosure, which is the whole point of naming the fallback in advance.
+
+    The registered random terms are read off the design that was *built*; the
+    fallback fits a design with none. Reporting the registered names beside a
+    fallback fit would tell a reader clustering was accounted for when it was
+    not.
+    """
+    rows = controls(synthetic(3, per_cell=6))
+    registered = ["injection_id", "placement_id", "request_family:paraphrase"]
+
+    converged = aggregate.build_report(rows, draws=80, seed=2)
+    assert sorted(converged["model"]["random_terms"]) == registered
+    assert converged["model"]["random_terms_dropped_by_fallback"] == []
+
+    starve(monkeypatch)
+    fell_back = aggregate.build_report(rows, draws=80, seed=2)
+    assert fell_back["model"]["random_terms"] == []
+    assert sorted(fell_back["model"]["random_terms_dropped_by_fallback"]) == registered
+
+
+def test_the_exposure_model_falls_back_on_the_same_rule(monkeypatch):
+    """The second registered model gets the same treatment as the first."""
+    rows = controls(synthetic(3, per_cell=6)) + inert_rows()
+    starve(monkeypatch)
+    report = aggregate.build_report(rows, draws=80, seed=2)
+
+    model = report["exposure"]["model"]
+    assert model["used_preregistered_fallback"] is True
+    assert model["method"] == "fixed_effects_fallback"
+    assert model["random_terms"] == []
+    assert sorted(model["random_terms_dropped_by_fallback"]) == [
+        "placement_id", "request_family:paraphrase"
+    ]
+    # Per-entry-point estimates still come out, so exposure stays reportable.
+    for entry in ENTRIES:
+        estimate = report["exposure"]["per_entry_point"][entry]["model"]["family_x"]["estimate"]
+        assert 0.0 <= estimate <= 1.0

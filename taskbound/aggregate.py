@@ -274,7 +274,12 @@ def add_exposure_model(
         "used_preregistered_fallback": exposure["used_fallback"],
         "prior_sd": prior_sd,
         "fixed_terms": glmm.expand_terms(EXPOSURE_FIXED),
-        "random_terms": [f.name for f in exposure["design"].factors],
+        # The terms the *reported* fit carried, which is not the registered list
+        # when the fallback ran: see the primary block for why.
+        "random_terms": [f.name for f in exposure["fit"].design.factors],
+        "random_terms_dropped_by_fallback": (
+            [f.name for f in exposure["design"].factors] if exposure["used_fallback"] else []
+        ),
         "coefficients": dict(zip(exposure["design"].fixed_names, exposure["fit"].beta)),
         "variance": exposure["fit"].variance,
         "aliasing": aliasing,
@@ -666,7 +671,15 @@ def build_report(
         "used_preregistered_fallback": primary["used_fallback"],
         "prior_sd": prior_sd,
         "fixed_terms": glmm.expand_terms(PRIMARY_FIXED),
-        "random_terms": [f.name for f in primary["design"].factors],
+        # The terms the *reported* fit carried, not the registered list. The
+        # pre-registered fallback drops the random effects entirely (§9.1), and
+        # reporting the registered names beside a fallback fit would tell a
+        # reader that clustering was accounted for when it was not — the
+        # opposite of the disclosure the fallback rule exists to guarantee.
+        "random_terms": [f.name for f in primary["fit"].design.factors],
+        "random_terms_dropped_by_fallback": (
+            [f.name for f in primary["design"].factors] if primary["used_fallback"] else []
+        ),
         "coefficients": dict(zip(primary["design"].fixed_names, primary["fit"].beta)),
         "marginal_loglik": primary["fit"].diagnostics.get("marginal_loglik"),
     }

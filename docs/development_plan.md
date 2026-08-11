@@ -1130,6 +1130,11 @@ The exact model matrix, priors, standardization weights, interval type, and a
 deterministic convergence fallback are part of `preregistration.json` and tested
 on synthetic data. A model that fails diagnostics is not simplified after seeing
 the answer; the pre-registered fallback is used and both fits are disclosed.
+Disclosure means the reported block names the terms the **reported fit** carried,
+not the registered ones: the fallback drops the random effects entirely, and a
+report listing them beside a fallback fit would say clustering was accounted for
+when it was not. The terms the fallback removed are listed separately, and both
+models follow the same rule.
 
 Clean and inert traces are each evaluated against multiple target predicates.
 Their risk-difference intervals therefore resample original run ids as clusters;
