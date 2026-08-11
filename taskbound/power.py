@@ -309,7 +309,8 @@ def clustering_artifact_problems(payload: Any) -> list[str]:
     if not isinstance(source, dict):
         problems.append("source does not identify the sizing-pilot fit")
         source = {}
-    if source.get("runs", 0) <= 0 or source.get("analysis_rows", 0) <= 0:
+    if not _positive_integer(source.get("runs")) \
+            or not _positive_integer(source.get("analysis_rows")):
         problems.append("source must identify a non-empty sizing-pilot fit")
     if source.get("settings") != expected_settings:
         problems.append(f"clustering settings must be {expected_settings!r}")
@@ -321,16 +322,21 @@ def clustering_artifact_problems(payload: Any) -> list[str]:
         problems.append("range must be a list")
         entries = []
     for entry in entries:
+        if not isinstance(entry, dict):
+            problems.append("range contains a non-object rung")
+            continue
         missing = [k for k in KNOBS if k not in entry]
         if missing:
             problems.append(f"rung {entry.get('label')!r} is missing {missing}")
+        for knob in KNOBS:
+            if knob in entry and not _nonnegative_finite(entry[knob]):
+                problems.append(
+                    f"rung {entry.get('label')!r} has invalid {knob}"
+                )
     measured = payload.get("measured")
     narrowed = payload.get("narrowed")
     if measured is True and narrowed is True:
-        if not isinstance(payload.get("components"), dict):
-            problems.append("narrowed artifact has no measured components")
-        if not isinstance(payload.get("point_estimate"), dict):
-            problems.append("narrowed artifact has no point estimate")
+        problems.extend(_narrowed_artifact_problems(payload, entries))
     elif measured is False and narrowed is False:
         if not payload.get("reason"):
             problems.append("unchanged-range refusal has no reason")
@@ -338,6 +344,88 @@ def clustering_artifact_problems(payload: Any) -> list[str]:
             problems.append("unchanged-range refusal did not retain the registered range")
     else:
         problems.append("measured/narrowed state is not a clustering-step outcome")
+    return problems
+
+
+def _positive_integer(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def _nonnegative_finite(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and value >= 0
+    )
+
+
+def _narrowed_artifact_problems(
+    payload: dict[str, Any], entries: Sequence[Any]
+) -> list[str]:
+    problems = []
+    components = payload.get("components")
+    point = payload.get("point_estimate")
+    measurable = tuple(knob for knob in KNOBS if knob not in UNMEASURABLE_KNOBS)
+    if not isinstance(components, dict):
+        return ["narrowed artifact has no measured components"]
+    if not isinstance(point, dict):
+        return ["narrowed artifact has no point estimate"]
+    if set(components) != set(KNOBS):
+        problems.append("narrowed artifact components do not match the clustering knobs")
+    if set(point) != set(measurable):
+        problems.append("point estimate does not match the measurable clustering knobs")
+    if payload.get("unmeasurable_knobs") != list(UNMEASURABLE_KNOBS):
+        problems.append("unmeasurable_knobs does not match the registered model")
+    if payload.get("level") != RELEASE_INTERVAL_LEVEL:
+        problems.append(f"narrowed artifact level must be {RELEASE_INTERVAL_LEVEL!r}")
+
+    expected_values: dict[str, tuple[Any, Any, Any]] = {}
+    for knob in measurable:
+        component = components.get(knob)
+        if not isinstance(component, dict):
+            problems.append(f"component {knob!r} is missing")
+            continue
+        estimate = component.get("estimate")
+        interval = component.get("interval")
+        if not _nonnegative_finite(estimate):
+            problems.append(f"component {knob!r} has an invalid estimate")
+            continue
+        if not isinstance(interval, list) or len(interval) != 2 \
+                or not all(_nonnegative_finite(value) for value in interval):
+            problems.append(f"component {knob!r} has an invalid interval")
+            continue
+        low, high = interval
+        if not low <= estimate <= high:
+            problems.append(f"component {knob!r} estimate is outside its interval")
+        if point.get(knob) != estimate:
+            problems.append(f"point estimate for {knob!r} differs from its component")
+        expected_values[knob] = (low, estimate, high)
+
+    for knob in UNMEASURABLE_KNOBS:
+        component = components.get(knob)
+        if not isinstance(component, dict) \
+                or component.get("measurable") is not False \
+                or component.get("estimate") is not None \
+                or component.get("interval") != [None, None]:
+            problems.append(f"unmeasurable component {knob!r} is not carried through")
+        values = sorted(rung[knob] for rung in CLUSTERING_RANGE)
+        expected_values[knob] = (values[0], values[len(values) // 2], values[-1])
+
+    labels = ("measured_low", "measured", "measured_high")
+    if len(entries) != len(labels):
+        problems.append("narrowed range must contain the three registered rungs")
+    elif all(isinstance(entry, dict) for entry in entries) \
+            and len({entry.get("label") for entry in entries}) != len(labels):
+        problems.append("narrowed range labels must be unique")
+    if set(expected_values) == set(KNOBS) and len(entries) == len(labels) \
+            and all(isinstance(entry, dict) for entry in entries):
+        expected_range = [
+            {"label": label, **{knob: expected_values[knob][index] for knob in KNOBS}}
+            for index, label in enumerate(labels)
+        ]
+        if list(entries) != expected_range:
+            problems.append("narrowed range is not derived from the recorded components")
     return problems
 
 
@@ -741,16 +829,23 @@ def main(args: argparse.Namespace) -> int:
             else {"path": args.clustering, "range": clustering_range,
                   "input_type": "hand_authored_range"}
         )
+        if isinstance(payload, dict) and clustering_artifact_problems(payload):
+            provenance["input_type"] = "invalid_clustering_artifact"
 
     result = run(truth, args.simulations, args.seed, clustering_range,
                  draws=args.draws, prior_sd=args.prior_sd,
                  clustering_provenance=provenance)
     print(f"power simulation: {args.simulations} sweeps per clustering setting, "
           f"N={args.n_exposed} exposed per cell")
-    if provenance and provenance["narrowed"]:
+    if provenance and provenance.get("narrowed", False):
         print(f"  clustering measured from {args.clustering}")
     elif provenance:
-        print(f"  {args.clustering} did not narrow the range; using the a-priori bracket")
+        if provenance.get("input_type") in {
+            "hand_authored_range", "invalid_clustering_artifact"
+        }:
+            print(f"  ad-hoc clustering range from {args.clustering} (diagnostic only)")
+        else:
+            print(f"  {args.clustering} did not narrow the range; using the a-priori bracket")
     else:
         print("  a-priori clustering bracket (no pilot measurement supplied)")
     print(f"  practical susceptibility floor: {PRACTICAL_SUSCEPTIBILITY_FLOOR:.2f}")

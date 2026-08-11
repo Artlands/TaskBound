@@ -7,6 +7,8 @@ allocation, recruitment included, and the same fit the aggregator uses.
 
 from __future__ import annotations
 
+import argparse
+import copy
 import json
 
 import pytest
@@ -27,6 +29,51 @@ def _valid_refusal_artifact():
         },
         "pilot did not resolve the clustering components",
     )
+
+
+def _valid_narrowed_artifact():
+    estimates = {"paraphrase_sd": 0.4, "injection_sd": 0.2, "placement_sd": 0.15}
+    intervals = {
+        "paraphrase_sd": [0.3, 0.6],
+        "injection_sd": [0.1, 0.3],
+        "placement_sd": [0.1, 0.2],
+    }
+    components = {
+        knob: {"estimate": estimate, "interval": intervals[knob]}
+        for knob, estimate in estimates.items()
+    }
+    components["cell_sd"] = {
+        "estimate": None,
+        "interval": [None, None],
+        "measurable": False,
+    }
+    return {
+        "artifact_type": power.CLUSTERING_ARTIFACT_TYPE,
+        "artifact_version": power.CLUSTERING_ARTIFACT_VERSION,
+        "measured": True,
+        "narrowed": True,
+        "level": power.RELEASE_INTERVAL_LEVEL,
+        "point_estimate": estimates,
+        "source": {
+            "runs": 10,
+            "analysis_rows": 8,
+            "settings": {
+                "prior_sd": power.RELEASE_PRIOR_SD,
+                "seed": power.RELEASE_SEED,
+                "level": power.RELEASE_INTERVAL_LEVEL,
+            },
+        },
+        "components": components,
+        "unmeasurable_knobs": ["cell_sd"],
+        "range": [
+            {"label": "measured_low", "paraphrase_sd": 0.3, "cell_sd": 0.3,
+             "injection_sd": 0.1, "placement_sd": 0.1},
+            {"label": "measured", "paraphrase_sd": 0.4, "cell_sd": 0.5,
+             "injection_sd": 0.2, "placement_sd": 0.15},
+            {"label": "measured_high", "paraphrase_sd": 0.6, "cell_sd": 0.6,
+             "injection_sd": 0.3, "placement_sd": 0.2},
+        ],
+    }
 
 
 def test_compact_power_defaults_match_the_release_allocation():
@@ -186,6 +233,36 @@ def test_unchanged_range_refusal_is_release_eligible_provenance(monkeypatch):
     assert result["gate_passed"] is True
 
 
+@pytest.mark.parametrize("mutate,problem", [
+    (lambda artifact: artifact.update(components={}, point_estimate={}), "components"),
+    (lambda artifact: artifact["components"]["paraphrase_sd"].update(estimate=-0.1),
+     "invalid estimate"),
+    (lambda artifact: artifact["components"]["injection_sd"].update(interval=[0.1, float("inf")]),
+     "invalid interval"),
+    (lambda artifact: artifact["range"][0].update(paraphrase_sd=0.01), "not derived"),
+    (lambda artifact: artifact["range"][1].update(label="measured_low"), "unique"),
+    (lambda artifact: artifact["range"][1].update(cell_sd=0.01), "not derived"),
+])
+def test_forged_narrowed_artifacts_are_diagnostic(monkeypatch, mutate, problem):
+    detected = {"converged": True, "attack_susceptibility": True,
+                "scope_selectivity": True, "entry_point_effect": True,
+                "induced_action_effect": True}
+    monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
+    artifact = copy.deepcopy(_valid_narrowed_artifact())
+    mutate(artifact)
+    result = power.run(
+        power.Truth(), power.RELEASE_SIMULATIONS, power.RELEASE_SEED,
+        artifact["range"], clustering_provenance=artifact,
+    )
+    assert result["evaluation_type"] == "diagnostic"
+    assert result["gate_passed"] is False
+    assert any(problem in message for message in result["clustering_artifact_problems"])
+
+
+def test_valid_narrowed_artifact_is_reconstructed_without_problems():
+    assert power.clustering_artifact_problems(_valid_narrowed_artifact()) == []
+
+
 @pytest.mark.parametrize("field,value", [
     ("attacked_rate", 0.31),
     ("scope_selectivity", -0.14),
@@ -299,6 +376,25 @@ def test_ad_hoc_clustering_range_can_run_only_as_a_diagnostic(tmp_path, monkeypa
     assert payload == [power.CLUSTERING_RANGE[0]]
     assert result["evaluation_type"] == "diagnostic"
     assert result["gate_passed"] is False
+
+
+def test_ad_hoc_clustering_cli_reports_diagnostic_without_crashing(
+    tmp_path, monkeypatch, capsys
+):
+    path = tmp_path / "range.json"
+    path.write_text(json.dumps([power.CLUSTERING_RANGE[0]]))
+    detected = {"converged": True, "attack_susceptibility": True,
+                "scope_selectivity": True, "entry_point_effect": True,
+                "induced_action_effect": True}
+    monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
+    parser = argparse.ArgumentParser()
+    power.add_arguments(parser)
+    args = parser.parse_args(["--simulations", "1", "--clustering", str(path)])
+
+    assert power.main(args) == 0
+    output = capsys.readouterr().out
+    assert "ad-hoc clustering range" in output
+    assert "DIAGNOSTIC ONLY" in output
 
 
 def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path):
