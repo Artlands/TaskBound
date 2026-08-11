@@ -292,6 +292,28 @@ def test_clustering_artifact_must_reproduce_from_hashed_pilot_inputs(monkeypatch
     )
 
 
+def test_sizing_pilot_requires_complete_frozen_schedule(monkeypatch):
+    schedule = {
+        "host": {"id": "site_a", "hash": "host"}, "seed": 2,
+        "exposed_target": 6, "attempt_cap": 18, "attempts": [],
+    }
+    sweep_id = "sweep_" + power.hashlib.sha256(
+        json.dumps(schedule, sort_keys=True).encode()
+    ).hexdigest()[:12]
+    manifest = {
+        "sweep_id": sweep_id, "schedule": schedule, "attempt_ids": [],
+        "groups": {}, "totals": {},
+    }
+    monkeypatch.setattr(
+        power.aggregate, "_execution_binding_problems",
+        lambda *args, **kwargs: ["configuration is incomplete at attempt_17"],
+    )
+    problems = power._pilot_allocation_problems(
+        [{"model_configuration_sha256": "a" * 64}], [manifest]
+    )
+    assert any("incomplete" in problem for problem in problems)
+
+
 @pytest.mark.parametrize("field,value", [
     ("attacked_rate", 0.31),
     ("scope_selectivity", -0.14),

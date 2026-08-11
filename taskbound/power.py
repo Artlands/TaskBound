@@ -109,23 +109,78 @@ def load_pilot_frame(results_dir: str) -> tuple[list[dict[str, Any]], dict[str, 
     root = os.path.realpath(results_dir)
     rows = []
     inputs = []
+    manifests = []
     for path in sorted(glob.glob(os.path.join(root, "**", "*.json"), recursive=True)):
         with open(path, encoding="utf-8") as fh:
             record = json.load(fh)
         if "run_id" not in record or "action_trace" not in record:
-            continue
-        rows.append(aggregate._row(record))
+            if {"sweep_id", "groups", "totals"} <= set(record):
+                manifests.append(record)
+            else:
+                continue
+        else:
+            rows.append(aggregate._row(record))
         inputs.append({
             "path": os.path.relpath(path, root),
             "sha256": _canonical_sha256(record),
         })
     aggregate.validate_compact_scope(rows)
+    pilot_problems = _pilot_allocation_problems(rows, manifests)
+    if pilot_problems:
+        raise SystemExit("sizing pilot does not match its frozen allocation: "
+                         + "; ".join(pilot_problems))
     manifest = {
         "results_dir": root,
         "files": inputs,
         "combined_sha256": _canonical_sha256(inputs),
+        "sweep_id": manifests[0]["sweep_id"],
     }
     return rows, manifest
+
+
+def _pilot_allocation_problems(
+    rows: Sequence[dict[str, Any]], manifests: Sequence[dict[str, Any]]
+) -> list[str]:
+    if not manifests:
+        return ["no sizing-pilot sweep manifest"]
+    sweep_ids = {manifest.get("sweep_id") for manifest in manifests}
+    if len(sweep_ids) != 1 or None in sweep_ids:
+        return ["sizing-pilot manifests do not identify one frozen sweep"]
+    schedule = manifests[0].get("schedule")
+    if not isinstance(schedule, dict):
+        return ["sizing-pilot manifest has no reproducible schedule"]
+    expected = {"seed": 2, "exposed_target": 6, "attempt_cap": 18}
+    problems = [
+        f"pilot schedule {key}={schedule.get(key)!r}, required={value!r}"
+        for key, value in expected.items() if schedule.get(key) != value
+    ]
+    required = {"host", "seed", "exposed_target", "attempt_cap", "attempts"}
+    if not required <= set(schedule):
+        return problems + ["sizing-pilot schedule is incomplete"]
+    payload = {key: schedule[key] for key in
+               ("host", "seed", "exposed_target", "attempt_cap", "attempts")}
+    sweep_id = "sweep_" + hashlib.sha256(
+        json.dumps(payload, sort_keys=True).encode()
+    ).hexdigest()[:12]
+    attempt_ids = [attempt.get("attempt_id") for attempt in schedule["attempts"]]
+    if sweep_id not in sweep_ids:
+        problems.append("sizing-pilot sweep identity does not reproduce")
+    if len(attempt_ids) != len(set(attempt_ids)) or any(not value for value in attempt_ids):
+        problems.append("sizing-pilot attempt membership is not unique")
+    for manifest in manifests:
+        if manifest.get("attempt_ids") != attempt_ids:
+            problems.append("sizing-pilot manifest attempt membership differs from schedule")
+    configurations = sorted({row.get("model_configuration_sha256") for row in rows})
+    if len(configurations) != 1 or configurations == [None]:
+        problems.append("sizing pilot must use exactly one model configuration")
+    if not problems:
+        problems.extend(aggregate._execution_binding_problems(
+            rows, schedule, manifests, configurations,
+            {"target_runs_per_model_family": 246,
+             "max_attempts_per_model_family": 678},
+            aggregate.COMPACT_GROUPS,
+        ))
+    return problems
 
 
 def _fit_provenance(primary: dict[str, Any]) -> dict[str, Any]:

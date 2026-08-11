@@ -15,10 +15,11 @@ import hashlib
 import json
 import math
 import random
+import argparse
 
 import pytest
 
-from taskbound import aggregate, glmm
+from taskbound import aggregate, glmm, sweep
 
 ENTRIES = ("E1", "E2", "E3")
 ACTIONS = ("A1", "A2", "A3", "A4")
@@ -60,50 +61,129 @@ def test_compact_ingestion_accepts_condition_appropriate_control_allocations():
 
 def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
     configs = ["a" * 64, "b" * 64]
+    planned = sweep.plan(
+        "hosts/site_a", "injections", 1,
+        tasks_filter=sweep.DEFAULT_RELEASE_TASKS,
+        entry_points=("E1", "E2", "E3", "E4"),
+    )
+    schedule = {
+        key: planned[key]
+        for key in ("host", "seed", "exposed_target", "attempt_cap", "attempts")
+    }
+    sweep_id = planned["sweep_id"]
+    selected = [attempt for attempt in planned["attempts"]
+                if attempt["index_in_group"] < 9]
     rows = []
-    for index, config in enumerate(configs):
-        row = synthetic(1, per_cell=1)[index]
-        row.update(
-            sweep_id="sweep_signed", attempt_id=f"attempt_{index}",
-            model_configuration_sha256=config,
-        )
-        rows.append(row)
+    for config_index, config in enumerate(configs):
+        for attempt in selected:
+            injection = {}
+            if attempt["injection"]:
+                with open(attempt["injection"], encoding="utf-8") as fh:
+                    injection = json.load(fh)
+            rows.append({
+                "run_id": f"{config_index}_{attempt['attempt_id']}",
+                "host": "site_a", "task": attempt["task"],
+                "condition": attempt["condition"], "cell": attempt["cell"],
+                "entry_point": injection.get("entry_point"),
+                "induced_action": injection.get("induced_action"),
+                "request_family": injection.get("spec_id"),
+                "paraphrase": injection.get("paraphrase"),
+                "injection_id": injection.get("injection_id"),
+                "injection_hash": attempt.get("injection_hash"),
+                "execution_mode": "two_agent", "defense": "none",
+                "exposed": bool(injection), "sweep_id": sweep_id,
+                "attempt_id": attempt["attempt_id"], "sweep_group": attempt["group"],
+                "sweep_order": attempt["order"], "sweep_block": attempt["block"],
+                "placement_seed": attempt["placement_seed"],
+                "model_configuration_sha256": config,
+            })
     prereg = {
         "signed": True,
-        "allocation": {"sweep_id": "sweep_signed"},
+        "allocation": {
+            "sweep_id": sweep_id, "n_exposed_per_cell": 9,
+            "attempt_cap_per_cell": 27, "target_runs_per_model_family": 369,
+            "max_attempts_per_model_family": 1017,
+        },
         "model_families": {"configuration_sha256": configs},
     }
-    manifests = [{
-        "sweep_id": "sweep_signed",
-        "attempt_ids": ["attempt_0", "attempt_1"],
-        "schedule": {},
-    }]
-    schedule = {
-        "host": {"id": "site_a", "hash": "host_hash"},
-        "seed": 1,
-        "exposed_target": 9,
-        "attempt_cap": 27,
-        "attempts": [
-            {"attempt_id": "attempt_0"},
-            {"attempt_id": "attempt_1"},
-        ],
+    groups = {}
+    for name, group in planned["groups"].items():
+        paraphrases = group["paraphrases"]
+        groups[name] = {
+            "attempted": 9, "exposed": 9 if paraphrases else 0,
+            "exposed_by_paraphrase": ({p: 3 for p in paraphrases}
+                                      if paraphrases else {}),
+            "shortfall_by_paraphrase": ({p: 0 for p in paraphrases}
+                                        if paraphrases else {}),
+            "target": 9, "attempt_cap": group["attempt_cap"],
+            "reached_target": True, "hit_attempt_cap": False,
+        }
+    manifest = {
+        "sweep_id": sweep_id,
+        "attempt_ids": [attempt["attempt_id"] for attempt in planned["attempts"]],
+        "schedule": schedule, "stopped_early": None,
+        "groups": groups,
+        "totals": {"attempted_total": 369, "groups_short_of_target": []},
     }
-    sweep_id = "sweep_" + hashlib.sha256(
-        json.dumps(schedule, sort_keys=True).encode()
-    ).hexdigest()[:12]
-    prereg["allocation"]["sweep_id"] = sweep_id
-    manifests[0].update(sweep_id=sweep_id, schedule=schedule)
-    for row in rows:
-        row["sweep_id"] = sweep_id
+    manifests = [manifest, json.loads(json.dumps(manifest))]
     aggregate.validate_release_binding(rows, prereg, manifests)
 
-    duplicate = [{**rows[0]}, {**rows[0]}]
+    duplicate = rows[1:] + [{**rows[1]}]
     with pytest.raises(SystemExit, match="signed release allocation"):
         aggregate.validate_release_binding(duplicate, prereg, manifests)
 
-    outside = [{**rows[0], "attempt_id": "unregistered"}, rows[1]]
+    outside = [{**rows[0], "attempt_id": "unregistered"}, *rows[1:]]
     with pytest.raises(SystemExit, match="signed release allocation"):
         aggregate.validate_release_binding(outside, prereg, manifests)
+
+    altered = [{**rows[0], "placement_seed": 99}, *rows[1:]]
+    with pytest.raises(SystemExit, match="placement_seed"):
+        aggregate.validate_release_binding(altered, prereg, manifests)
+
+    injected_index = next(index for index, row in enumerate(rows) if row["injection_id"])
+    altered_injection = [*rows]
+    altered_injection[injected_index] = {
+        **rows[injected_index], "injection_hash": "forged"
+    }
+    with pytest.raises(SystemExit, match="injection_hash"):
+        aggregate.validate_release_binding(altered_injection, prereg, manifests)
+
+    incomplete_manifests = json.loads(json.dumps(manifests))
+    incomplete_manifests[1]["stopped_early"] = "max_attempts"
+    with pytest.raises(SystemExit, match="no complete matching sweep manifest"):
+        aggregate.validate_release_binding(rows, prereg, incomplete_manifests)
+
+
+def test_signed_cli_labels_altered_analysis_diagnostic_and_uses_nested_headline(
+    tmp_path, monkeypatch
+):
+    prereg = {
+        "signed": True, "preregistration_id": "registered",
+        "primary_model": {"prior_sd": 2.5, "analysis_seed": 1, "interval_draws": 2000},
+        "model_families": {"headline_model_family": "family_x"},
+    }
+    path = tmp_path / "preregistration.json"
+    path.write_text(json.dumps(prereg))
+    monkeypatch.setattr(aggregate, "load_frame", lambda *args: [{"run_id": "run"}])
+    captured = {}
+
+    def fake_report(rows, **kwargs):
+        captured.update(kwargs)
+        return {"notes": []}
+
+    monkeypatch.setattr(aggregate, "build_report", fake_report)
+    printed = {}
+    monkeypatch.setattr(aggregate, "print_report", lambda report: printed.update(report))
+    args = argparse.Namespace(
+        results="results", out=None, preregistration=str(path), seed=1, draws=1,
+    )
+    assert aggregate.main(args) == 0
+    assert captured["headline_family"] == "family_x"
+    assert captured["draws"] == 1
+    assert printed["release_status"] == "diagnostic"
+    assert printed["preregistration"]["analysis_mismatches"]["draws"] == {
+        "registered": 2000, "actual": 1,
+    }
 
 
 def synthetic(

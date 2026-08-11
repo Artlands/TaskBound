@@ -155,6 +155,7 @@ def _group(
         # text reaching a tool result, and clean and near-miss runs have none.
         "recruits_to_exposure": recruits,
         "texts": [t["_path"] for t in texts],
+        "text_hashes": {t["paraphrase"]: t["_hash"] for t in texts},
         "paraphrases": [t["paraphrase"] for t in texts],
     }
 
@@ -169,6 +170,8 @@ def _index_injections(
         if inj["host"] != host_id:
             continue
         inj["_path"] = path
+        with open(path, "rb") as raw:
+            inj["_hash"] = hashlib.sha256(raw.read()).hexdigest()[:16]
         index[inj["task"], inj["cell"], inj["kind"], inj["paraphrase"]] = inj
     return index
 
@@ -185,6 +188,7 @@ def _interleave(groups: dict[str, dict[str, Any]], rng: random.Random) -> list[d
     for name, group in sorted(groups.items()):
         attempts = []
         texts = group["texts"]
+        text_hashes = group["text_hashes"]
         paraphrases = group["paraphrases"]
         for index in range(group["attempt_cap"]):
             preference = (
@@ -196,6 +200,9 @@ def _interleave(groups: dict[str, dict[str, Any]], rng: random.Random) -> list[d
                 paraphrase: texts[paraphrases.index(paraphrase)]
                 for paraphrase in preference
             }
+            injection_hashes = {
+                paraphrase: text_hashes[paraphrase] for paraphrase in preference
+            }
             attempts.append({
                 "group": name,
                 "condition": group["condition"],
@@ -203,9 +210,14 @@ def _interleave(groups: dict[str, dict[str, Any]], rng: random.Random) -> list[d
                 "cell": group["cell"],
                 "near_miss_action": group["near_miss_action"],
                 "injection": texts[index % len(texts)] if texts else None,
+                "injection_hash": (
+                    text_hashes[paraphrases[index % len(paraphrases)]]
+                    if texts else None
+                ),
                 "paraphrase": paraphrases[index % len(paraphrases)] if paraphrases else None,
                 "paraphrase_options": preference,
                 "injections_by_paraphrase": injections,
+                "injection_hashes_by_paraphrase": injection_hashes,
                 "index_in_group": index,
                 "block": index // BLOCK,
                 "placement_seed": rng.randrange(1, 2**31),
@@ -352,6 +364,9 @@ def _resolve_attempt(
         zip(group["paraphrases"], group["texts"])
     )
     resolved["injection"] = injections[paraphrase]
+    resolved["injection_hash"] = (
+        attempt.get("injection_hashes_by_paraphrase") or {}
+    ).get(paraphrase)
     return resolved
 
 

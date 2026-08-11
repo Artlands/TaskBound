@@ -80,6 +80,15 @@ COMPACT_CELLS = {
     for entry in COMPACT_ENTRY_POINTS
     for action in COMPACT_INDUCED_ACTIONS
 }
+COMPACT_EXPOSED_TARGET = 9
+COMPACT_ATTEMPT_CAP = 27
+COMPACT_GROUPS = (
+    {f"{condition}|{COMPACT_TASK}|{cell}"
+     for condition in ("attacked", "benign") for cell in COMPACT_CELLS}
+    | {f"inert|{COMPACT_TASK}|{entry}" for entry in COMPACT_ENTRY_POINTS}
+    | {f"near_miss|{COMPACT_TASK}|{action}" for action in COMPACT_INDUCED_ACTIONS}
+    | {f"clean|{COMPACT_TASK}"}
+)
 
 
 # --- the analysis frame --------------------------------------------------
@@ -137,7 +146,8 @@ def validate_release_binding(
     matching_manifests = [m for m in manifests if m.get("sweep_id") == expected_sweep]
     if not matching_manifests:
         raise SystemExit("signed release results have no matching sweep manifest")
-    allowed_attempts: set[str] = set()
+    valid_manifests = []
+    schedule_by_attempt: dict[str, dict[str, Any]] = {}
     for manifest in matching_manifests:
         attempt_ids = manifest.get("attempt_ids")
         if not isinstance(attempt_ids, list) or not attempt_ids \
@@ -163,7 +173,15 @@ def validate_release_binding(
             raise SystemExit(
                 "signed release sweep manifest does not reproduce its sweep identity"
             )
-        allowed_attempts.update(attempt_ids)
+        for attempt in schedule["attempts"]:
+            attempt_id = attempt.get("attempt_id")
+            prior = schedule_by_attempt.get(attempt_id)
+            if prior is not None and prior != attempt:
+                raise SystemExit(
+                    "signed release manifests disagree about scheduled attempt inputs"
+                )
+            schedule_by_attempt[attempt_id] = attempt
+        valid_manifests.append(manifest)
 
     invalid = []
     seen = set()
@@ -174,7 +192,7 @@ def validate_release_binding(
         config = row.get("model_configuration_sha256")
         if sweep_id != expected_sweep:
             invalid.append(f"{row['run_id']}: sweep_id={sweep_id!r}")
-        if attempt_id not in allowed_attempts:
+        if attempt_id not in schedule_by_attempt:
             invalid.append(f"{row['run_id']}: attempt_id={attempt_id!r}")
         if config not in expected_configs:
             invalid.append(f"{row['run_id']}: model_configuration_sha256={config!r}")
@@ -187,11 +205,275 @@ def validate_release_binding(
         invalid.append(
             "observed model configurations do not equal the two registered hashes"
         )
+    allocation_checks = {
+        "exposed_target": (
+            allocation.get("n_exposed_per_cell"), COMPACT_EXPOSED_TARGET
+        ),
+        "attempt_cap": (
+            allocation.get("attempt_cap_per_cell"), COMPACT_ATTEMPT_CAP
+        ),
+    }
+    schedule = valid_manifests[0]["schedule"]
+    for field, (registered, required) in allocation_checks.items():
+        if registered != required or schedule.get(field) != required:
+            invalid.append(
+                f"schedule {field}={schedule.get(field)!r}, "
+                f"registered={registered!r}, required={required!r}"
+            )
+    for field, required in (
+        ("target_runs_per_model_family", 369),
+        ("max_attempts_per_model_family", 1017),
+    ):
+        if allocation.get(field) != required:
+            invalid.append(
+                f"registered {field}={allocation.get(field)!r}, required={required!r}"
+            )
+    if not invalid:
+        invalid.extend(_execution_binding_problems(
+            rows, schedule, valid_manifests, expected_configs, allocation,
+            COMPACT_GROUPS,
+        ))
     if invalid:
         preview = "; ".join(invalid[:5])
         remainder = f"; and {len(invalid) - 5} more" if len(invalid) > 5 else ""
         raise SystemExit(f"results do not match the signed release allocation: "
                          f"{preview}{remainder}")
+
+
+def _execution_binding_problems(
+    rows: Sequence[dict[str, Any]],
+    schedule: dict[str, Any],
+    manifests: Sequence[dict[str, Any]],
+    configurations: Sequence[str],
+    allocation: dict[str, Any] | None = None,
+    required_groups: set[str] | None = None,
+) -> list[str]:
+    attempts = schedule["attempts"]
+    by_id = {attempt["attempt_id"]: attempt for attempt in attempts}
+    groups: dict[str, dict[str, Any]] = {}
+    for attempt in attempts:
+        group = groups.setdefault(attempt["group"], {
+            "condition": attempt["condition"],
+            "task": attempt["task"],
+            "cell": attempt.get("cell"),
+            "attempt_cap": 0,
+            "paraphrases": [],
+        })
+        group["attempt_cap"] += 1
+        for paraphrase in attempt.get("paraphrase_options") or []:
+            if paraphrase not in group["paraphrases"]:
+                group["paraphrases"].append(paraphrase)
+
+    target = schedule["exposed_target"]
+    problems = []
+    if required_groups is not None and set(groups) != required_groups:
+        missing = sorted(required_groups - set(groups))
+        extra = sorted(set(groups) - required_groups)
+        problems.append(
+            f"schedule groups differ from compact allocation "
+            f"(missing={missing[:3]!r}, extra={extra[:3]!r})"
+        )
+    manifest_states = [_manifest_execution_state(manifest) for manifest in manifests]
+    consumed_manifests: set[int] = set()
+    for configuration in configurations:
+        config_rows = [row for row in rows
+                       if row.get("model_configuration_sha256") == configuration]
+        rows_by_id = {row["attempt_id"]: row for row in config_rows}
+        state = {name: {"attempted": 0, "exposed": 0,
+                        "exposed_by_paraphrase": {}}
+                 for name in groups}
+        expected_ids = []
+        for attempt in attempts:
+            group = groups[attempt["group"]]
+            counts = state[attempt["group"]]
+            if _replayed_group_complete(group, counts, target):
+                continue
+            row = rows_by_id.get(attempt["attempt_id"])
+            if row is None:
+                problems.append(
+                    f"configuration {configuration!r} is incomplete at "
+                    f"{attempt['attempt_id']!r}"
+                )
+                break
+            expected_ids.append(attempt["attempt_id"])
+            resolved_paraphrase = _replayed_paraphrase(group, counts, target, attempt)
+            problems.extend(_scheduled_row_problems(row, attempt, resolved_paraphrase))
+            counts["attempted"] += 1
+            if row["exposed"]:
+                counts["exposed"] += 1
+                if resolved_paraphrase:
+                    by_paraphrase = counts["exposed_by_paraphrase"]
+                    by_paraphrase[resolved_paraphrase] = \
+                        by_paraphrase.get(resolved_paraphrase, 0) + 1
+        extras = sorted(set(rows_by_id) - set(expected_ids))
+        if extras:
+            problems.append(
+                f"configuration {configuration!r} has unscheduled post-completion rows "
+                f"{extras[:3]!r}"
+            )
+        for name, group in groups.items():
+            if not _replayed_group_complete(group, state[name], target):
+                problems.append(
+                    f"configuration {configuration!r} group {name!r} reached neither "
+                    "its exposure target nor attempt cap"
+                )
+        expected_state = _replayed_execution_state(groups, state, target)
+        match = next(
+            (index for index, actual in enumerate(manifest_states)
+             if index not in consumed_manifests and actual == expected_state),
+            None,
+        )
+        if match is None:
+            problems.append(
+                f"configuration {configuration!r} has no complete matching sweep manifest"
+            )
+        else:
+            consumed_manifests.add(match)
+
+    allocation = allocation or {}
+    target_per_family = allocation.get("target_runs_per_model_family")
+    maximum_per_family = allocation.get("max_attempts_per_model_family")
+    if target_per_family is not None:
+        derived = sum(target for _ in groups)
+        if derived != target_per_family:
+            problems.append(
+                f"schedule target total {derived} != registered {target_per_family}"
+            )
+    if maximum_per_family is not None and len(attempts) != maximum_per_family:
+        problems.append(
+            f"schedule maximum attempts {len(attempts)} != registered "
+            f"{maximum_per_family}"
+        )
+    return problems
+
+
+def _replayed_group_complete(
+    group: dict[str, Any], counts: dict[str, Any], target: int
+) -> bool:
+    if counts["attempted"] >= group["attempt_cap"]:
+        return True
+    paraphrases = group["paraphrases"]
+    if paraphrases:
+        per_paraphrase = target // len(paraphrases)
+        return all(counts["exposed_by_paraphrase"].get(p, 0) >= per_paraphrase
+                   for p in paraphrases)
+    return counts["attempted"] >= target
+
+
+def _replayed_paraphrase(
+    group: dict[str, Any], counts: dict[str, Any], target: int,
+    attempt: dict[str, Any],
+) -> str | None:
+    paraphrases = group["paraphrases"]
+    if not paraphrases:
+        return None
+    per_paraphrase = target // len(paraphrases)
+    return next(
+        paraphrase for paraphrase in attempt["paraphrase_options"]
+        if counts["exposed_by_paraphrase"].get(paraphrase, 0) < per_paraphrase
+    )
+
+
+def _scheduled_row_problems(
+    row: dict[str, Any], attempt: dict[str, Any], paraphrase: str | None
+) -> list[str]:
+    expected = {
+        "sweep_group": attempt["group"],
+        "sweep_order": attempt["order"],
+        "sweep_block": attempt["block"],
+        "placement_seed": attempt["placement_seed"],
+        "task": attempt["task"],
+        "condition": attempt["condition"],
+        "cell": attempt.get("cell"),
+        "paraphrase": paraphrase,
+    }
+    problems = [
+        f"{row['run_id']}: {field}={row.get(field)!r}, scheduled={value!r}"
+        for field, value in expected.items() if row.get(field) != value
+    ]
+    injection_path = None
+    if paraphrase is not None:
+        injection_path = (attempt.get("injections_by_paraphrase") or {}).get(paraphrase)
+    if injection_path:
+        try:
+            with open(injection_path, encoding="utf-8") as fh:
+                injection = json.load(fh)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            problems.append(f"{row['run_id']}: scheduled injection cannot be verified: {exc}")
+        else:
+            injection_expected = {
+                "injection_id": injection.get("injection_id"),
+                "entry_point": injection.get("entry_point"),
+                "induced_action": injection.get("induced_action"),
+                "request_family": injection.get("spec_id"),
+                "injection_hash": (
+                    attempt.get("injection_hashes_by_paraphrase") or {}
+                ).get(paraphrase),
+            }
+            for field, value in injection_expected.items():
+                if row.get(field) != value:
+                    problems.append(
+                        f"{row['run_id']}: {field}={row.get(field)!r}, scheduled={value!r}"
+                    )
+    elif any(row.get(field) is not None for field in
+             ("injection_id", "entry_point", "induced_action", "paraphrase")):
+        problems.append(f"{row['run_id']}: scheduled control attempt carries injection fields")
+    return problems
+
+
+def _replayed_execution_state(
+    groups: dict[str, dict[str, Any]], state: dict[str, dict[str, Any]], target: int
+) -> dict[str, Any]:
+    summaries = {}
+    for name, group in groups.items():
+        counts = state[name]
+        paraphrases = group["paraphrases"]
+        per_paraphrase = target // len(paraphrases) if paraphrases else None
+        shortfall = {
+            p: max(0, per_paraphrase - counts["exposed_by_paraphrase"].get(p, 0))
+            for p in paraphrases
+        }
+        reached = (all(value == 0 for value in shortfall.values())
+                   if paraphrases else counts["attempted"] >= target)
+        summaries[name] = {
+            "attempted": counts["attempted"],
+            "exposed": counts["exposed"],
+            "exposed_by_paraphrase": {
+                p: counts["exposed_by_paraphrase"].get(p, 0) for p in paraphrases
+            },
+            "shortfall_by_paraphrase": shortfall,
+            "target": target,
+            "attempt_cap": group["attempt_cap"],
+            "reached_target": reached,
+            "hit_attempt_cap": counts["attempted"] >= group["attempt_cap"] and not reached,
+        }
+    return {
+        "stopped_early": None,
+        "groups": summaries,
+        "attempted_total": sum(value["attempted"] for value in state.values()),
+        "groups_short_of_target": sorted(
+            name for name, value in summaries.items() if not value["reached_target"]
+        ),
+    }
+
+
+def _manifest_execution_state(manifest: dict[str, Any]) -> dict[str, Any]:
+    groups = {}
+    for name, value in (manifest.get("groups") or {}).items():
+        groups[name] = {
+            key: value.get(key) for key in (
+                "attempted", "exposed", "exposed_by_paraphrase",
+                "shortfall_by_paraphrase", "target", "attempt_cap",
+                "reached_target", "hit_attempt_cap",
+            )
+        }
+    totals = manifest.get("totals") or {}
+    return {
+        "stopped_early": manifest.get("stopped_early"),
+        "groups": groups,
+        "attempted_total": totals.get("attempted_total"),
+        "groups_short_of_target": totals.get("groups_short_of_target"),
+    }
 
 
 def validate_compact_scope(rows: Sequence[dict[str, Any]]) -> None:
@@ -263,6 +545,7 @@ def _row(record: dict[str, Any]) -> dict[str, Any]:
         "request_family": injection.get("spec_id"),
         "paraphrase": injection.get("paraphrase"),
         "injection_id": injection.get("injection_id"),
+        "injection_hash": injection.get("hash"),
         "placement_id": placement.get("placement_id"),
         # A family is a provider/model lineage. The configured id is what the
         # release pins, and the resolved id is recorded beside it because many
@@ -272,6 +555,10 @@ def _row(record: dict[str, Any]) -> dict[str, Any]:
         "model_configuration_sha256": model_configuration_sha256(record),
         "sweep_id": sweep.get("sweep_id"),
         "attempt_id": sweep.get("attempt_id"),
+        "sweep_group": sweep.get("group"),
+        "sweep_order": sweep.get("order"),
+        "sweep_block": sweep.get("block"),
+        "placement_seed": placement.get("seed"),
         "defense": record.get("defense"),
         "execution_mode": record.get("execution_mode"),
         "exposed": bool(record["exposure"]["exposed"]),
@@ -1250,22 +1537,48 @@ def main(args: argparse.Namespace) -> int:
     rows = load_frame(args.results, prereg)
     if not rows:
         raise SystemExit(f"no results found under {args.results!r}")
+    primary_model = prereg.get("primary_model") or {}
+    registered_settings = {
+        "seed": primary_model.get("analysis_seed"),
+        "draws": primary_model.get("interval_draws"),
+        "prior_sd": primary_model.get("prior_sd"),
+    }
+    actual_settings = {
+        "seed": args.seed,
+        "draws": args.draws,
+        "prior_sd": primary_model.get("prior_sd", glmm.DEFAULT_PRIOR_SD),
+    }
+    analysis_mismatches = {
+        key: {"registered": registered, "actual": actual_settings[key]}
+        for key, registered in registered_settings.items()
+        if registered != actual_settings[key]
+    } if prereg.get("signed") else {}
     report = build_report(
         rows,
-        prior_sd=prereg.get("prior_sd", glmm.DEFAULT_PRIOR_SD),
+        prior_sd=actual_settings["prior_sd"],
         seed=args.seed,
         draws=args.draws,
-        headline_family=prereg.get("headline_model_family"),
+        headline_family=(prereg.get("model_families") or {}).get(
+            "headline_model_family"
+        ),
     )
     report["preregistration"] = {
         "path": args.preregistration,
         "signed": prereg.get("signed", False),
         "id": prereg.get("preregistration_id"),
+        "analysis_settings": actual_settings,
+        "registered_analysis_settings": registered_settings,
+        "analysis_mismatches": analysis_mismatches,
     }
     report["release_status"] = (
-        "confirmatory_release" if prereg.get("signed") else "diagnostic"
+        "confirmatory_release"
+        if prereg.get("signed") and not analysis_mismatches else "diagnostic"
     )
-    if not prereg.get("signed"):
+    if prereg.get("signed") and analysis_mismatches:
+        report["notes"].append(
+            "signed analysis settings were altered; this report is diagnostic only"
+        )
+    elif not prereg.get("signed"):
         report["notes"].append(
             "no signed pre-registration: everything here is exploratory and must be labelled "
             "as such in the text, not only in a footnote (plan §9)"

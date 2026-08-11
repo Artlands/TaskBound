@@ -94,6 +94,8 @@
       "placement_id"
     ],
     "prior_sd": 2.5,
+    "analysis_seed": 1,
+    "interval_draws": 2000,
     "prior_sensitivity_fit": {
       "prior_sd": 1.0,
       "reported_alongside": true
