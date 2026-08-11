@@ -132,12 +132,16 @@ class TurnBudget:
     """
 
     remaining: int
+    accepted_responses: int = 0
 
     def spend(self) -> bool:
         if self.remaining <= 0:
             return False
         self.remaining -= 1
         return True
+
+    def accept_response(self) -> None:
+        self.accepted_responses += 1
 
 
 def config_hashes(
@@ -323,7 +327,15 @@ class AnthropicAgent:
 
         role = role or Role()
         budget = budget if budget is not None else TurnBudget(self.turn_limit)
-        client = anthropic.Anthropic(max_retries=0)
+        try:
+            client = anthropic.Anthropic(max_retries=0)
+        except Exception as exc:
+            if budget.accepted_responses == 0 and _is_configuration_error(exc):
+                raise AgentConfigurationError(str(exc)) from exc
+            return AgentResult(
+                answer="", turns=0, stop_reason="error", inconclusive="error",
+                adapter_error=f"{type(exc).__name__}: {exc}",
+            )
         # Stable prefix first, volatile task text after the breakpoint. The
         # prefix is the role's prompt, so a resumed planner keeps its cache.
         system = [
@@ -355,7 +367,7 @@ class AnthropicAgent:
                     output_config={"effort": self.effort},
                 )
             except Exception as exc:
-                if turn == 1 and not request_ids and _is_configuration_error(exc):
+                if budget.accepted_responses == 0 and _is_configuration_error(exc):
                     raise AgentConfigurationError(str(exc)) from exc
                 return AgentResult(
                     answer="\n\n".join(answer_parts), turns=turn,
@@ -363,6 +375,7 @@ class AnthropicAgent:
                     request_ids=request_ids, resolved_models=resolved_models,
                     adapter_error=f"{type(exc).__name__}: {exc}",
                 )
+            budget.accept_response()
             request_ids.append(getattr(response, "_request_id", "") or "")
             resolved_models.append(getattr(response, "model", None))
             for key in usage:
@@ -535,7 +548,6 @@ class OpenAICompatibleAgent:
     ) -> AgentResult:
         role = role or Role()
         budget = budget if budget is not None else TurnBudget(self.turn_limit)
-        client = self._client()
         # The role owns its history, so a second call resumes rather than restarts.
         messages: list[dict[str, Any]] = role.messages
         if not messages:
@@ -549,15 +561,33 @@ class OpenAICompatibleAgent:
         resolved_models: list[str | None] = []
         retry_history: list[dict[str, Any]] = []
 
+        try:
+            client = self._client()
+        except AgentConfigurationError as exc:
+            if budget.accepted_responses == 0:
+                raise
+            return self._result(
+                answer_parts, 0, "error", "error", usage, request_ids,
+                malformed, resolved_models, adapter_error=str(exc),
+                retry_history=retry_history,
+            )
+
         turn = 0
         while budget.spend():
             turn += 1
             try:
                 response = self._create(client, messages, retry_history)
-            except AgentConfigurationError:
-                raise
+            except AgentConfigurationError as exc:
+                if budget.accepted_responses == 0:
+                    raise
+                return self._result(
+                    answer_parts, turn, "error", "error", usage, request_ids,
+                    malformed, resolved_models, adapter_error=str(exc),
+                    retry_history=retry_history,
+                )
             except Exception as exc:
-                if turn == 1 and _is_openai_configuration_error(exc):
+                if budget.accepted_responses == 0 \
+                        and _is_openai_configuration_error(exc):
                     raise AgentConfigurationError(_openai_reason(exc)) from exc
                 return self._result(
                     answer_parts, turn, "error", "error", usage, request_ids,
@@ -566,6 +596,7 @@ class OpenAICompatibleAgent:
                     retry_history=retry_history,
                 )
 
+            budget.accept_response()
             request_ids.append(getattr(response, "_request_id", None) or response.id or "")
             resolved_models.append(getattr(response, "model", None))
             _accumulate_usage(usage, getattr(response, "usage", None))

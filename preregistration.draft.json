@@ -211,6 +211,7 @@
       "PENDING_AT_SIGNING_1",
       "PENDING_AT_SIGNING_2"
     ],
+    "configuration_sha256_by_model_family": "PENDING_AT_SIGNING",
     "resolved_models_by_configuration_sha256": "PENDING_AT_SIGNING",
     "selected_before_attacked_pilot_results": true,
     "qualification": "same tool contract, and an attack-free suite covering tool use, context length, and completion of every clean task",

@@ -138,6 +138,8 @@ def validate_release_binding(
     expected_sweep = allocation.get("sweep_id")
     family_spec = preregistration.get("model_families") or {}
     expected_configs = family_spec.get("configuration_sha256")
+    expected_families = family_spec.get("evaluated_model_families")
+    config_by_family = family_spec.get("configuration_sha256_by_model_family")
     expected_resolved = family_spec.get(
         "resolved_models_by_configuration_sha256"
     )
@@ -151,6 +153,21 @@ def validate_release_binding(
                    or set(value) - digest_chars for value in expected_configs):
         raise SystemExit(
             "signed pre-registration must freeze exactly two model configuration hashes"
+        )
+    if not isinstance(expected_families, list) or len(expected_families) != 2 \
+            or len(set(expected_families)) != 2 \
+            or any(not isinstance(value, str) or not value
+                   or value.startswith("PENDING") for value in expected_families):
+        raise SystemExit(
+            "signed pre-registration must freeze exactly two model families"
+        )
+    if not isinstance(config_by_family, dict) \
+            or set(config_by_family) != set(expected_families) \
+            or any(not isinstance(value, str) for value in config_by_family.values()) \
+            or set(config_by_family.values()) != set(expected_configs):
+        raise SystemExit(
+            "signed pre-registration must bind each model family to one "
+            "configuration hash"
         )
     if not isinstance(expected_resolved, dict) \
             or set(expected_resolved) != set(expected_configs) \
@@ -234,6 +251,15 @@ def validate_release_binding(
         if config not in expected_configs:
             invalid.append(f"{row['run_id']}: model_configuration_sha256={config!r}")
         else:
+            expected_family = next(
+                family for family, digest in config_by_family.items()
+                if digest == config
+            )
+            if row.get("model_family") != expected_family:
+                invalid.append(
+                    f"{row['run_id']}: model_family={row.get('model_family')!r}, "
+                    f"registered={expected_family!r}"
+                )
             resolved_models = row.get("resolved_models")
             request_ids = row.get("request_ids")
             if not isinstance(resolved_models, list) or not isinstance(request_ids, list) \

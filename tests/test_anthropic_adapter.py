@@ -222,6 +222,30 @@ def test_a_mid_run_authentication_error_preserves_provenance(stub_anthropic):
     assert "credential expired" in result.adapter_error
 
 
+def test_a_later_role_configuration_error_is_an_outcome(stub_anthropic):
+    from taskbound.agents import Role, TurnBudget
+
+    stub_anthropic([
+        Response([Block(type="text", text="delegate")], "end_turn",
+                 model="snapshot-a"),
+        stub_anthropic.module.AuthenticationError("worker access revoked"),
+    ])
+    budget = TurnBudget(3)
+    with tempfile.TemporaryDirectory() as tmp:
+        backend = make_backend(tmp)
+        first = AnthropicAgent().run(
+            backend, "task", role=Role(actor="planner"), budget=budget
+        )
+        second = AnthropicAgent().run(
+            backend, first.answer, role=Role(actor="worker"), budget=budget
+        )
+
+    assert first.resolved_models == ["snapshot-a"]
+    assert second.inconclusive == "error"
+    assert second.request_ids == []
+    assert "worker access revoked" in second.adapter_error
+
+
 def test_refusal_and_max_tokens_are_recorded(stub_anthropic):
     stub_anthropic([Response([Block(type="text", text="I can't help.")], "refusal")])
     with tempfile.TemporaryDirectory() as tmp:

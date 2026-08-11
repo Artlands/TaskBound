@@ -309,6 +309,30 @@ def test_a_connection_failure_after_the_first_turn_stays_an_outcome(stub_openai,
     assert "Connection reset" in record["outcome"]["adapter_error"]
 
 
+def test_a_later_role_configuration_error_is_an_outcome(stub_openai):
+    from taskbound.agents import Role, TurnBudget
+
+    module = stub_openai.module
+    stub_openai([
+        completion(content="delegate", model="snapshot-a"),
+        module.AuthenticationError("worker access revoked"),
+    ])
+    budget = TurnBudget(3)
+    with tempfile.TemporaryDirectory() as tmp:
+        backend = make_backend(tmp)
+        first = agent().run(
+            backend, "task", role=Role(actor="planner"), budget=budget
+        )
+        second = agent().run(
+            backend, first.answer, role=Role(actor="worker"), budget=budget
+        )
+
+    assert first.resolved_models == ["snapshot-a"]
+    assert second.inconclusive == "error"
+    assert second.request_ids == []
+    assert "worker access revoked" in second.adapter_error
+
+
 def test_preflight_falls_back_to_the_list_endpoint(stub_openai, capsys):
     from taskbound.runner import main
 

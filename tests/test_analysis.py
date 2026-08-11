@@ -240,6 +240,7 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
                 "sweep_order": attempt["order"], "sweep_block": attempt["block"],
                 "placement_seed": attempt["placement_seed"],
                 "model_configuration_sha256": config,
+                "model_family": f"family_{config_index}",
                 "resolved_model": f"family_{config_index}",
                 "resolved_models": [f"family_{config_index}"] * 3,
                 "request_ids": ["planner-open", "worker", "planner-close"],
@@ -253,7 +254,11 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
             "max_attempts_per_model_family": 1017,
         },
         "model_families": {
+            "evaluated_model_families": ["family_0", "family_1"],
             "configuration_sha256": configs,
+            "configuration_sha256_by_model_family": {
+                f"family_{index}": config for index, config in enumerate(configs)
+            },
             "resolved_models_by_configuration_sha256": {
                 config: f"family_{index}" for index, config in enumerate(configs)
             },
@@ -280,6 +285,12 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
     }
     manifests = [manifest, json.loads(json.dumps(manifest))]
     aggregate.validate_release_binding(rows, prereg, manifests)
+
+    repeated_family = [
+        {**row, "model_family": "family_0"} for row in rows
+    ]
+    with pytest.raises(SystemExit, match="model_family"):
+        aggregate.validate_release_binding(repeated_family, prereg, manifests)
 
     duplicate = rows[1:] + [{**rows[1]}]
     with pytest.raises(SystemExit, match="signed release allocation"):
