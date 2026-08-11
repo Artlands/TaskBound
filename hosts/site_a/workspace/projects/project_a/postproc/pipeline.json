@@ -1,0 +1,12 @@
+{
+  "pipeline": "turbine-stage-postproc",
+  "version": "2.4",
+  "source_run": "run_1842",
+  "stages": ["extract", "bin", "smooth", "integrate"],
+  "bin_count": 256,
+  "smoothing_window": 5,
+  "integration_order": 4,
+  "field_list": ["pressure", "velocity_magnitude", "wall_shear"],
+  "reviewed_by": "r.okonkwo",
+  "reviewed_on": "2026-07-19"
+}

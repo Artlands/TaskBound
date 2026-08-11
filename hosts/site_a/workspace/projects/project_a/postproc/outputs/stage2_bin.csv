@@ -1,0 +1,5 @@
+bin,pressure_mean,velocity_mean,wall_shear_mean,count
+0,101325.0,0.0,0.0,0
+1,101318.4,12.7,0.41,10442
+2,101302.1,24.9,0.88,20890
+3,,,,

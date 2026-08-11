@@ -27,6 +27,7 @@ import hashlib
 import json
 import os
 import random
+from collections.abc import Sequence
 import sys
 from typing import Any
 
@@ -50,7 +51,16 @@ def plan(
     seed: int,
     exposed_target: int = EXPOSED_TARGET,
     attempt_cap: int = ATTEMPT_CAP,
+    tasks_filter: Sequence[str] | None = None,
+    entry_points: Sequence[str] | None = None,
 ) -> dict[str, Any]:
+    """Freeze the attempt schedule for one release's scope.
+
+    A release is a subset of what the host carries: `v0.5` is the core task at
+    E1-E3, `v1.0` is every task at E1-E4 (plan §13). The scope is named here
+    rather than inferred, so a schedule records what it was planned to cover and
+    a later sweep cannot silently widen it.
+    """
     host = runner.load_host(host_dir)
     injections = _index_injections(injections_dir, host["host_id"])
     rng = random.Random(seed)
@@ -60,9 +70,20 @@ def plan(
     # its own scope and therefore its own floor; inert is per entry point under
     # the core task alone, which supplies the text-presence contrast (plan §7).
     groups: dict[str, dict[str, Any]] = {}
-    tasks = {tid: runner.load_task(host, tid) for tid in sorted(host.get("tasks", {}))}
+    declared = sorted(host.get("tasks", {}))
+    if tasks_filter:
+        unknown = sorted(set(tasks_filter) - set(declared))
+        if unknown:
+            raise SystemExit(f"{host['host_id']} declares no task(s): {', '.join(unknown)}")
+        declared = [t for t in declared if t in set(tasks_filter)]
+    keep_ep = set(entry_points) if entry_points else None
+
+    tasks = {tid: runner.load_task(host, tid) for tid in declared}
     for task_id, task in tasks.items():
-        for cell in task["cells"]:
+        cells = [c for c in task["cells"] if keep_ep is None or c[:2] in keep_ep]
+        if not cells:
+            continue
+        for cell in cells:
             for condition, kind in (("attacked", "attack"), ("benign", "benign")):
                 texts = [injections[task_id, cell, kind, p] for p in PARAPHRASES]
                 groups[f"{condition}|{task_id}|{cell}"] = _group(
@@ -70,13 +91,13 @@ def plan(
                     task=task_id, cell=cell, recruits=True,
                 )
         if task.get("role") == "core":
-            for entry in sorted({c[:2] for c in task["cells"]}):
+            for entry in sorted({c[:2] for c in cells}):
                 texts = [injections[task_id, entry, "inert", p] for p in INERT_PARAPHRASES]
                 groups[f"inert|{task_id}|{entry}"] = _group(
                     "inert", exposed_target, attempt_cap, texts,
                     task=task_id, cell=entry, recruits=True,
                 )
-        for action in sorted({c[2:] for c in task["cells"]}):
+        for action in sorted({c[2:] for c in cells}):
             groups[f"near_miss|{task_id}|{action}"] = _group(
                 "near_miss", exposed_target, exposed_target, [],
                 task=task_id, near_miss_action=action, recruits=False,
@@ -91,6 +112,7 @@ def plan(
         "sweep_id": None,
         "created_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
         "host": {"dir": host_dir, "id": host["host_id"], "hash": host["_hash"]},
+        "scope": {"tasks": list(tasks), "entry_points": sorted(keep_ep) if keep_ep else None},
         "injections_dir": injections_dir,
         "seed": seed,
         "exposed_target": exposed_target,
@@ -397,13 +419,17 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
 
 # --- CLI -----------------------------------------------------------------
 def cmd_plan(args: argparse.Namespace) -> int:
-    schedule = plan(args.host, args.injections, args.seed, args.exposed_target, args.attempt_cap)
+    schedule = plan(args.host, args.injections, args.seed, args.exposed_target,
+                    args.attempt_cap, args.tasks, args.entry_points)
     os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as fh:
         json.dump(schedule, fh, indent=2)
         fh.write("\n")
+    scope = schedule["scope"]
     print(f"{schedule['sweep_id']}: {len(schedule['groups'])} groups, "
           f"{schedule['target_runs']} target runs, {schedule['max_attempts']} maximum attempts")
+    print(f"  scope: {len(scope['tasks'])} task(s) {', '.join(scope['tasks'])}"
+          f"  entry points: {', '.join(scope['entry_points']) if scope['entry_points'] else 'all'}")
     print(f"  wrote {args.out}")
     return 0
 
@@ -447,6 +473,11 @@ def add_arguments(sub) -> None:
     plan_p.add_argument("--exposed-target", type=int, default=EXPOSED_TARGET,
                         help="N per cell; the pilot may raise it, never lower it (plan §9.5)")
     plan_p.add_argument("--attempt-cap", type=int, default=ATTEMPT_CAP)
+    plan_p.add_argument("--task", action="append", dest="tasks",
+                        help="restrict to this task; repeatable. Default: every task the host carries")
+    plan_p.add_argument("--entry-point", action="append", dest="entry_points",
+                        choices=("E1", "E2", "E3", "E4"),
+                        help="restrict to this entry point; repeatable. `v0.5` is E1 E2 E3")
 
     run_p = sub.add_parser("run", help="execute a schedule, retaining every attempt")
     run_p.add_argument("--schedule", required=True)

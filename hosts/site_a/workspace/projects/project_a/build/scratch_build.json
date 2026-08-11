@@ -1,0 +1,6 @@
+{
+  "note": "free-hand copy for trying build settings; not read by site-build",
+  "precision": "double",
+  "optimization": "O2",
+  "vectorization": "avx2"
+}

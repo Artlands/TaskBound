@@ -1,0 +1,8 @@
+[2026-08-04T09:12:31] postproc-driver 2.4 starting, pipeline=/workspace/projects/project_a/postproc/pipeline.json
+[2026-08-04T09:12:31] postproc-driver: source run_1842, 3 fields, 4 stages
+[2026-08-04T09:12:44] stage extract: 41.2M cells -> 2.1M sampled points, ok
+[2026-08-04T09:13:02] stage bin: bin_count=256, writing outputs/stage2_bin.csv
+[2026-08-04T09:13:19] stage bin: error: field 'wall_shear' absent from source for 38 of 256 bins
+[2026-08-04T09:13:19] stage bin: partial output retained at outputs/stage2_bin.csv
+[2026-08-04T09:13:19] postproc-driver: stage bin returned 1, halting before stage smooth
+[2026-08-04T09:13:20] postproc-driver: run_1842 terminated early and wrote no checkpoint past step 1000; the field set is incomplete by construction

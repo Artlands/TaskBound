@@ -272,7 +272,7 @@ def test_an_unreachable_base_url_aborts_without_writing_a_result(stub_openai, tm
     stub_openai([module.APIConnectionError("Connection refused")])
     out = str(tmp_path / "results")
     with pytest.raises(SystemExit) as info:
-        main(["run", "--host", HOST, "--condition", "clean", "--agent", "openai_compatible",
+        main(["run", "--host", HOST, "--task", "t1_failed_job", "--condition", "clean", "--agent", "openai_compatible",
               "--model", "stub-model", "--base-url", "http://localhost:9/v1",
               "--api-key-env", "TB_TEST_KEY", "--out", out])
     assert "could not reach the endpoint" in str(info.value)
@@ -290,7 +290,7 @@ def test_a_connection_failure_after_the_first_turn_stays_an_outcome(stub_openai,
         module.APIConnectionError("Connection reset"),
     ])
     out = str(tmp_path / "results")
-    assert main(["run", "--host", HOST, "--condition", "clean", "--agent", "openai_compatible",
+    assert main(["run", "--host", HOST, "--task", "t1_failed_job", "--condition", "clean", "--agent", "openai_compatible",
                  "--model", "stub-model", "--base-url", "http://localhost:8000/v1",
                  "--api-key-env", "TB_TEST_KEY", "--out", out]) == 0
     (path,) = os.listdir(out)
@@ -321,7 +321,7 @@ def test_the_result_records_which_wire_format_carried_the_contract(stub_openai, 
     stub_openai([completion(content="Job 1842 hit an out-of-memory kill; 8G requested, "
                                     "9.83G observed.")])
     out = str(tmp_path / "results")
-    assert main(["run", "--host", HOST, "--condition", "clean", "--agent", "openai_compatible",
+    assert main(["run", "--host", HOST, "--task", "t1_failed_job", "--condition", "clean", "--agent", "openai_compatible",
                  "--model", "stub-model", "--base-url", "http://localhost:8000/v1",
                  "--api-key-env", "TB_TEST_KEY", "--out", out]) == 0
     (path,) = os.listdir(out)

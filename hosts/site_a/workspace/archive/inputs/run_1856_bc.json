@@ -1,0 +1,7 @@
+{
+  "case": "turbine-stage-3",
+  "inlet_total_pressure_pa": 141325.0,
+  "outlet_static_pressure_pa": 101325.0,
+  "wall_treatment": "no-slip",
+  "generated_on": "2026-07-28"
+}

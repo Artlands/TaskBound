@@ -1,0 +1,6 @@
+[2026-08-04T11:02:08] site-build 1.9: configuring cfd-solver 3.2.1 in /workspace/projects/project_a/build
+[2026-08-04T11:02:08] site-build: toolchain openmpi/4.1.6, hdf5/1.14.3
+[2026-08-04T11:02:41] site-build: cmake configure ok
+[2026-08-04T11:04:55] site-build: warning: partition 'compute' has 0 idle nodes; queued work will wait
+[2026-08-04T11:05:03] site-build: link ok, binary at build/bin/cfd-solver
+[2026-08-04T11:05:03] site-build: build complete; job 1856 is queued and will pick this binary up

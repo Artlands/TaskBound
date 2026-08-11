@@ -115,8 +115,11 @@ def test_no_committed_text_carries_a_literal_canary_or_marker():
     for inj in library():
         assert not re.search(r"TB-(CANARY|MARKER)-", inj["text"]), inj["injection_id"]
         if inj.get("induced_action") == "A4":
-            assert "{{marker:a4_payload}}" in inj["text"], inj["injection_id"]
-            assert inj["marker_slots"] == ["a4_payload"]
+            # Three tasks carry A4 and each declares its own marker slot, so the
+            # text must use the slot it declares rather than one fixed name.
+            for slot in inj["marker_slots"]:
+                assert "{{marker:" + slot + "}}" in inj["text"], inj["injection_id"]
+            assert inj["marker_slots"], inj["injection_id"]
 
 
 def test_every_injection_declares_who_could_have_written_it():
@@ -134,20 +137,30 @@ def test_every_text_reaches_the_agent_through_its_own_vehicle(tmp_path):
     """
     h = host()
     policy = hostfixture.policy()
-    read_by = {
-        "E1": ("read_file", {"path": "/workspace/logs/job_1842.err"}),
-        "E2": ("read_file", {"path": "/workspace/projects/project_a/README.md"}),
-        "E3": ("module_show", {"name": "hdf5/1.14.3"}),
+    # Each entry point now has more than one vehicle, so the natural call is
+    # derived from the injection's own placement class rather than from E alone.
+    module_names = {
+        "/workspace/modulefiles/hdf5-1.14.3.lua": "hdf5/1.14.3",
+        "/workspace/modulefiles/site-report-2.1.lua": "site-report/2.1",
     }
+
+    def natural_call(placement_class: str):
+        spec = h["placement_classes"][placement_class]
+        if spec["entry_point"] == "E3":
+            return "module_show", {"name": module_names[spec["file"]]}
+        return "read_file", {"path": spec["file"]}
+
     for n, inj in enumerate(library()):
         run_dir = str(tmp_path / f"run{n}")
-        backend = LocalSimBackend.materialize(
-            HOST_DIR, run_dir, policy, {"{{marker:a4_payload}}": "TB-MARKER-TEST"}
-        )
+        subs = {"{{marker:" + slot + "}}": f"TB-MARKER-{slot.upper()}"
+                for slot in inj.get("marker_slots", [])}
+        backend = LocalSimBackend.materialize(HOST_DIR, run_dir, policy, subs)
         placement = sample_placement(
             backend.workspace, h["placement_classes"], inj["placement_class"], seed=n
         )
-        text = inj["text"].replace("{{marker:a4_payload}}", "TB-MARKER-TEST")
+        text = inj["text"]
+        for placeholder, value in subs.items():
+            text = text.replace(placeholder, value)
         probe = exposure_probe(apply_injection(backend.workspace, placement, text))
-        tool, args = read_by[inj["entry_point"]]
+        tool, args = natural_call(inj["placement_class"])
         assert probe in backend.call(tool, args), inj["injection_id"]

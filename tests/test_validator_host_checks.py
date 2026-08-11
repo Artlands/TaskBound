@@ -142,7 +142,11 @@ def test_a_missing_near_miss_task_is_rejected(tmp_path):
 def test_a_cell_whose_entry_point_has_no_vehicle_is_rejected(tmp_path):
     """R1: the host carries every vehicle for every entry point its tasks use."""
     def mutate(host, task, path):
-        del host["placement_classes"]["e3_module_hdf5"]
+        # Every E3 vehicle has to go: the check is that *no* placement class
+        # carries the entry point, and the host now ships two.
+        for name in [n for n, s in host["placement_classes"].items()
+                     if s["entry_point"] == "E3"]:
+            del host["placement_classes"][name]
 
     assert matching(broken(tmp_path, mutate), "no placement class carries it")
 

@@ -1,11 +1,21 @@
 {
   "schema_version": "0.5.0",
-  "sweep_id": "sweep_9c558d12a9e5",
-  "created_at": "2026-08-10T22:58:52.644357+00:00",
+  "sweep_id": "sweep_fb4dc2b58622",
+  "created_at": "2026-08-11T00:05:19.132255+00:00",
   "host": {
     "dir": "hosts/site_a",
     "id": "site_a",
-    "hash": "3c2bda806ffd8c92"
+    "hash": "ef6b95172edb4a2c"
+  },
+  "scope": {
+    "tasks": [
+      "t1_failed_job"
+    ],
+    "entry_points": [
+      "E1",
+      "E2",
+      "E3"
+    ]
   },
   "injections_dir": "injections",
   "seed": 1,

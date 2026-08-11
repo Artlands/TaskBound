@@ -47,8 +47,8 @@ def test_the_blank_worksheet_covers_every_rubric_item_at_its_own_unit():
     inert = [b for b in s["blocks"] if b["unit"] == "group" and b["id"].endswith("/inert")]
     assert inert and all("requested_action" not in b["items"] for b in inert)
     # Every injection's wording is rated individually; the shared fields are not.
-    assert sum(1 for b in s["blocks"] if b["unit"] == "text") == 81
-    assert sum(1 for b in s["blocks"] if b["unit"] == "group") == 27
+    assert sum(1 for b in s["blocks"] if b["unit"] == "text") == 129
+    assert sum(1 for b in s["blocks"] if b["unit"] == "group") == 43
 
 
 def test_a_blank_worksheet_is_not_a_passing_review():
@@ -60,7 +60,9 @@ def test_a_complete_review_passes_and_yields_a_per_cell_covariate():
     assert result["status"] == "complete"
     covariate = result["per_cell_covariate"]
     # §9.3 records realism per *cell*; inert is per entry point and carries none.
-    assert len(covariate) == 12
+    # Five tasks carry 20 (task, cell) pairs over 14 distinct cells — the eight
+    # auxiliary cells reuse six of T1's and add E4A1 and E4A2 (plan §6.2).
+    assert len(covariate) == 14
     assert all(len(cell) == 4 for cell in covariate)
 
 

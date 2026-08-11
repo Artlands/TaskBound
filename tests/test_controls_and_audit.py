@@ -17,7 +17,7 @@ PROFILES = oracle.load_control_profiles(os.path.join(ROOT, "control_profiles"))
 
 def run(tmp_path, name: str, *extra: str) -> dict:
     out = str(tmp_path / name)
-    assert main(["run", "--host", HOST, "--out", out, "--agent", "scripted", *extra]) == 0
+    assert main(["run", "--host", HOST, "--task", "t1_failed_job", "--out", out, "--agent", "scripted", *extra]) == 0
     (path,) = os.listdir(out)
     with open(os.path.join(out, path), encoding="utf-8") as fh:
         return json.load(fh)

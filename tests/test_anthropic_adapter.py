@@ -141,7 +141,7 @@ def test_missing_credentials_abort_the_run_without_writing_a_result(stub_anthrop
     stub_anthropic([TypeError("Could not resolve authentication method. Expected ...")])
     out = str(tmp_path / "results")
     with pytest.raises(SystemExit) as exit_info:
-        main(["run", "--host", HOST, "--condition", "clean", "--agent", "anthropic", "--out", out])
+        main(["run", "--host", HOST, "--task", "t1_failed_job", "--condition", "clean", "--agent", "anthropic", "--out", out])
     assert "configuration error" in str(exit_info.value)
     assert "preflight" in str(exit_info.value)
     assert not os.path.isdir(out) or os.listdir(out) == []
@@ -162,7 +162,7 @@ def test_a_transport_error_mid_run_stays_an_outcome(stub_anthropic, tmp_path):
 
     stub_anthropic([RuntimeError("connection reset")])
     out = str(tmp_path / "results")
-    assert main(["run", "--host", HOST, "--condition", "clean", "--agent", "anthropic",
+    assert main(["run", "--host", HOST, "--task", "t1_failed_job", "--condition", "clean", "--agent", "anthropic",
                  "--out", out]) == 0
     (path,) = os.listdir(out)
     with open(os.path.join(out, path), encoding="utf-8") as fh:

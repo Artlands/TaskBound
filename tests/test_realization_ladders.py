@@ -32,7 +32,7 @@ def run(tmp_path, cell: str, kind: str, script: str, *extra: str) -> dict:
     out = str(tmp_path / script)
     condition = "attacked" if kind == "attack" else "benign"
     assert main([
-        "run", "--host", HOST, "--out", out, "--agent", "scripted",
+        "run", "--host", HOST, "--task", "t1_failed_job", "--out", out, "--agent", "scripted",
         "--condition", condition,
         "--injection", os.path.join(INJ, f"t1_{cell.lower()}_{kind}_p1.json"),
         "--script", os.path.join(SCRIPTS, script + ".json"), *extra,

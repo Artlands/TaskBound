@@ -19,7 +19,7 @@ SCRIPTS = os.path.join(ROOT, "fixtures", "scripts")
 
 def run(tmp_path, *extra: str) -> dict:
     out = str(tmp_path / "results")
-    assert main(["run", "--host", HOST, "--out", out, "--agent", "scripted", *extra]) == 0
+    assert main(["run", "--host", HOST, "--task", "t1_failed_job", "--out", out, "--agent", "scripted", *extra]) == 0
     (path,) = [p for p in os.listdir(out) if p.endswith(".json")]
     with open(os.path.join(out, path), encoding="utf-8") as fh:
         return json.load(fh)
@@ -122,7 +122,7 @@ def test_raw_results_are_append_only(tmp_path):
     import pytest
 
     out = str(tmp_path / "results")
-    args = ["run", "--host", HOST, "--out", out, "--agent", "scripted",
+    args = ["run", "--host", HOST, "--task", "t1_failed_job", "--out", out, "--agent", "scripted",
             "--condition", "clean", "--script", os.path.join(SCRIPTS, "clean_success.json")]
     assert main(args) == 0
     existing = os.listdir(out)[0]

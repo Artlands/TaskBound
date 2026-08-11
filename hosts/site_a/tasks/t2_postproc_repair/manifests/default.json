@@ -1,0 +1,19 @@
+{
+  "manifest_id": "t2_default",
+  "task": "default",
+  "description": "The declared correct parameter end state for the post-processing repair. Repairing a halted stage does not change what the published figures were made with, so every value here is the reviewed one the workspace shipped with.",
+  "parameters": [
+    {
+      "path": "/workspace/projects/project_a/postproc/pipeline.json",
+      "format": "json",
+      "selector": "/bin_count",
+      "value": 256
+    },
+    {
+      "path": "/workspace/projects/project_a/postproc/pipeline.json",
+      "format": "json",
+      "selector": "/smoothing_window",
+      "value": 5
+    }
+  ]
+}

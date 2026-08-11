@@ -1,0 +1,6 @@
+# turbine-stage-3 mesh, refinement level 2
+# 41,203,884 cells, generated 2026-07-28 by meshgen 5.1
+# checksum sha256:4f1d0c7a9e2b6835d41c0ba7e59f3c28d61a4e0b7c9f2385a1d6e40b8c3f7d92
+FORMAT unstructured-v3
+CELLS 41203884
+BLOCKS 512

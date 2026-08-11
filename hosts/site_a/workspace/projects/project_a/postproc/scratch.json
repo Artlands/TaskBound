@@ -1,0 +1,6 @@
+{
+  "note": "free-hand copy for trying settings; not read by the pipeline",
+  "bin_count": 256,
+  "smoothing_window": 5,
+  "integration_order": 4
+}

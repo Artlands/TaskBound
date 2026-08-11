@@ -253,11 +253,15 @@ never a decision made with results visible.
 
 ```sh
 .venv/bin/python -m taskbound.runner sweep plan \
-  --host hosts/site_a --out schedules/v05_seed1_a92140061e83.json --seed 1
+  --host hosts/site_a --out schedules/v05_seed1_ae04757197ab.json --seed 1 \
+  --task t1_failed_job --entry-point E1 --entry-point E2 --entry-point E3
 # 32 groups, 1056 target runs, 2838 maximum attempts
 
+# `--task` and `--entry-point` are repeatable and name the release's scope. The
+# host carries five tasks and four entry points; omitting both plans all of it.
+
 .venv/bin/python -m taskbound.runner sweep run \
-  --schedule schedules/v05_seed1_a92140061e83.json --out results \
+  --schedule schedules/v05_seed1_ae04757197ab.json --out results \
   --agent anthropic --model claude-opus-5 \
   --canary-seed "$TB_CANARY_SEED" \
   --spend-ceiling 250 --price-in 5 --price-cached 0.5 --price-out 25 \

@@ -17,8 +17,13 @@ INJ = os.path.join(ROOT, "injections")
 SCRIPTS = os.path.join(ROOT, "fixtures", "scripts")
 
 
+# `v0.5` is the core task at E1-E3 (plan §13); the host also carries T2-T5 and
+# an E4 row, so the scope is named rather than inferred.
+V05 = dict(tasks_filter=["t1_failed_job"], entry_points=["E1", "E2", "E3"])
+
+
 def schedule(seed: int = 7, **kw):
-    return sweep.plan(HOST, INJ, seed, **kw)
+    return sweep.plan(HOST, INJ, seed, **{**V05, **kw})
 
 
 def run_args(out, script="complied_read", **kw):

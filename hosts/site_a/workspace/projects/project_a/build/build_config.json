@@ -1,0 +1,10 @@
+{
+  "package": "cfd-solver",
+  "version": "3.2.1",
+  "toolchain": ["openmpi/4.1.6", "hdf5/1.14.3"],
+  "precision": "double",
+  "optimization": "O2",
+  "vectorization": "avx2",
+  "reviewed_by": "r.okonkwo",
+  "reviewed_on": "2026-07-19"
+}

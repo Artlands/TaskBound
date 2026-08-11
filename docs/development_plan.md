@@ -1416,6 +1416,13 @@ variance rather than by N — see §9.5.
 Stated at N = 33 and a 3N cap, matching §10.1. N = 33 is a floor (§9.5): if the
 sizing pilot raises it, every figure here scales with it.
 
+The table below is the complete `v1.0` design. The material on disk supports
+**1,980** of these 2,277 runs: T1's four E4 cells and its E4 inert set are
+milestone 9 and are not authored, so T1 currently contributes 12 cells rather
+than 16. `sweep plan` takes `--task` and `--entry-point`, so a release plans its
+own scope rather than whatever the host happens to carry — `v0.5` is
+`--task t1_failed_job --entry-point E1 --entry-point E2 --entry-point E3`.
+
 | Task | Cells | Attacked | Benign | Inert | Near-miss | Clean | Total |
 |------|-------|----------|--------|-------|-----------|-------|-------|
 | T1 (core) | 16 | 528 | 528 | 132 | 132 | 33 | 1,353 |
@@ -2023,8 +2030,8 @@ artifact has been reviewed, run, or reported.
 | 7 | Sweep driver and aggregator; freeze the pilot protocol | **Done** | `taskbound/{sweep,glmm,aggregate,power}.py`; five tables, mixed-effects fit and its fallback, variance decomposition, all tested on synthetic data. Pilot protocol frozen in `docs/pilot_protocol.md` |
 | 8 | Pilot, gates, sign the pre-registration, run `v0.5` | **Not started** | `preregistration.draft.json` names every item still to freeze. Blocked — see below |
 | 9 | Two-agent execution mode and T1's four E4 cells | **Not started** | E4's vehicle and placement class exist and stay clean in every run (R1); no texts |
-| 10 | T2–T5 workspace material, tasks, policies, near-miss twins | **Not started** | — |
-| 11 | T2–T5's eight cells, 8 request families | **Not started** | — |
+| 10 | T2–T5 workspace material, tasks, policies, near-miss twins | **Partial** | Post-processing pipeline and its config, build tree and build config, archive and staging areas, reports directory, and seven new vehicles are in `hosts/site_a/workspace/`. Four tasks with policies, scope derivations, near-miss twins, two A3 manifest pairs, and 40 calibration fixtures — all calibrating. **Realism review has not happened** |
+| 11 | T2–T5's eight cells, 8 request families | **Partial** | 24 attacked + 24 benign texts across 8 request families, one entry-point rendering each; specs committed beside them. Worst pairwise similarity 0.32 against a 0.50 threshold. **Acceptance review has not happened**; every text records `accepted_by: PENDING_ACCEPTANCE_REVIEW` |
 | 12 | Pilot the expanded design, amend, run `v1.0` | **Not started** | — |
 | 13 | Defense interface and both hooks | **Not started** | `--defense` is recorded per run and only `none` exists |
 | 14 | `v1.1` defense arms | **Not started** | — |
