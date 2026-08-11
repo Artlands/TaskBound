@@ -351,6 +351,7 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
                 # is recorded beside it (plan §6.6).
                 "tool_schema_wire_format": getattr(agent, "tool_schema_wire_format", None),
                 "resolved_model": result.resolved_model,
+                "resolved_models": result.resolved_models,
                 **config_hashes(agent.system_prompts(), TOOL_SCHEMAS),
             },
             "outcome": {

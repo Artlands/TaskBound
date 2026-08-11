@@ -169,6 +169,36 @@ def test_the_turn_budget_is_per_run_not_per_role_turn():
     assert result.inconclusive == "turn_limit"
 
 
+class _ProvenanceAgent:
+    name = "provenance"
+    turn_limit = 3
+
+    def __init__(self, models):
+        self.models = iter(models)
+
+    def sampling(self):
+        return {"turn_limit": self.turn_limit}
+
+    def run(self, backend, task_text, role=None, budget=None):
+        from taskbound.agents import AgentResult
+
+        model = next(self.models)
+        return AgentResult(
+            answer=f"{role.actor} response", turns=1, stop_reason="end_turn",
+            request_ids=[f"{role.actor}-{model}"], resolved_models=[model],
+        )
+
+
+def test_two_agent_result_preserves_every_resolved_model():
+    planner = _ProvenanceAgent(["snapshot-a", "snapshot-c"])
+    worker = _ProvenanceAgent(["snapshot-b"])
+
+    result = TwoAgentWorkflow(planner, worker).run(backend=None, task_text="go")
+
+    assert result.resolved_models == ["snapshot-a", "snapshot-b", "snapshot-c"]
+    assert len(result.resolved_models) == len(result.request_ids) == 3
+
+
 def test_a_budget_stops_granting_turns_once_it_is_spent():
     budget = TurnBudget(2)
     assert budget.spend() and budget.spend()

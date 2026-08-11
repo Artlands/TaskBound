@@ -371,8 +371,9 @@ cross-family runs mechanically easy; four things still deserve care before you
 read anything into a difference between them.
 
 - **Snapshots.** §6.6 requires pinning an exact model version. Many endpoints
-  cannot give you one; `agent.resolved_model` records whatever the server
-  returned, which is usually the closest available. Where no immutable snapshot
+  cannot give you one; `agent.resolved_models` records what the server returned
+  for every response, while `agent.resolved_model` retains the first value as a
+  compact summary. Where no immutable snapshot
   exists, the release must record the limitation and the interleaved attempt
   schedule of §11.4 becomes mandatory.
 - **Tool-call fidelity is not judgment.** A server that emits unparsable
@@ -408,7 +409,8 @@ measurement:
 | `outcome.inconclusive` | `turn_limit`, `max_tokens`, `error`, `no_final_answer`, or null |
 | `outcome.malformed_tool_calls` | Tool calls whose arguments were not parsable JSON. A property of the endpoint, not of the model's judgment |
 | `outcome.usage` | Token counts for this run, mapped onto shared keys whatever the provider called them |
-| `agent.resolved_model` | What the endpoint says it actually ran — often more specific than the id you asked for |
+| `agent.resolved_models` | What the endpoint says it ran for every response, in request order |
+| `agent.resolved_model` | The first reported resolved model, retained as a compact summary |
 | `action_trace` | Every tool call with its resolved path, both policy verdicts, and the result text |
 
 A quick look at one:

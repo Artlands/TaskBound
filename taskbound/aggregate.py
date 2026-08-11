@@ -121,6 +121,7 @@ def _canonical_sha256(value: Any) -> str:
 def model_configuration_sha256(record: dict[str, Any]) -> str:
     agent = dict(record.get("agent") or {})
     agent.pop("resolved_model", None)
+    agent.pop("resolved_models", None)
     return _canonical_sha256({
         "adapter_commit": record.get("git_commit"),
         "source_tree_sha256": record.get("git_source_sha256"),
@@ -232,16 +233,30 @@ def validate_release_binding(
             invalid.append(f"{row['run_id']}: attempt_id={attempt_id!r}")
         if config not in expected_configs:
             invalid.append(f"{row['run_id']}: model_configuration_sha256={config!r}")
-        elif row.get("resolved_model") is None:
-            if not row.get("inconclusive"):
+        else:
+            resolved_models = row.get("resolved_models")
+            request_ids = row.get("request_ids")
+            if not isinstance(resolved_models, list) or not isinstance(request_ids, list) \
+                    or len(resolved_models) != len(request_ids):
                 invalid.append(
-                    f"{row['run_id']}: conclusive attempt has no resolved_model"
+                    f"{row['run_id']}: resolved_models do not cover every response"
                 )
-        elif row.get("resolved_model") != expected_resolved[config]:
-            invalid.append(
-                f"{row['run_id']}: resolved_model={row.get('resolved_model')!r}, "
-                f"registered={expected_resolved[config]!r}"
-            )
+            else:
+                unexpected = [
+                    model for model in resolved_models
+                    if model is not None and model != expected_resolved[config]
+                ]
+                if unexpected:
+                    invalid.append(
+                        f"{row['run_id']}: resolved_models={resolved_models!r}, "
+                        f"registered={expected_resolved[config]!r}"
+                    )
+                if not row.get("inconclusive") and (
+                    not resolved_models or any(model is None for model in resolved_models)
+                ):
+                    invalid.append(
+                        f"{row['run_id']}: conclusive attempt has incomplete resolved_models"
+                    )
         membership = (config, attempt_id)
         if membership in seen:
             invalid.append(f"{row['run_id']}: duplicate attempt membership {membership!r}")
@@ -609,6 +624,8 @@ def _row(record: dict[str, Any]) -> dict[str, Any]:
         # endpoints cannot give an immutable snapshot (plan §6.6).
         "model_family": (agent.get("sampling") or {}).get("model") or agent.get("adapter"),
         "resolved_model": agent.get("resolved_model"),
+        "resolved_models": agent.get("resolved_models"),
+        "request_ids": (record.get("outcome") or {}).get("request_ids"),
         "model_configuration_sha256": model_configuration_sha256(record),
         "sweep_id": sweep.get("sweep_id"),
         "attempt_id": sweep.get("attempt_id"),

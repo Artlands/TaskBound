@@ -95,10 +95,14 @@ class AgentResult:
     malformed_tool_calls: int = 0
     # What the endpoint says it actually ran, which may be more specific than
     # the requested id — the closest thing to a snapshot on most servers.
-    resolved_model: str | None = None
+    resolved_models: list[str | None] = field(default_factory=list)
     # One entry per role turn in a multi-agent run; empty single-agent. Feeds
     # the role-specific rates §6.4 keeps as secondary diagnostics.
     segments: list[dict[str, Any]] = field(default_factory=list)
+
+    @property
+    def resolved_model(self) -> str | None:
+        return next((model for model in self.resolved_models if model), None)
 
 
 @dataclass
@@ -322,6 +326,7 @@ class AnthropicAgent:
         usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0,
                  "cache_creation_input_tokens": 0}
         request_ids: list[str] = []
+        resolved_models: list[str | None] = []
         answer_parts: list[str] = []
 
         turn = 0
@@ -341,6 +346,7 @@ class AnthropicAgent:
                     raise AgentConfigurationError(str(exc)) from exc
                 raise
             request_ids.append(getattr(response, "_request_id", "") or "")
+            resolved_models.append(getattr(response, "model", None))
             for key in usage:
                 usage[key] += getattr(response.usage, key, 0) or 0
 
@@ -358,6 +364,7 @@ class AnthropicAgent:
                     answer="\n\n".join(answer_parts), turns=turn,
                     stop_reason=response.stop_reason, inconclusive=inconclusive,
                     usage=usage, request_ids=request_ids,
+                    resolved_models=resolved_models,
                 )
 
             messages.append({"role": "assistant", "content": response.content})
@@ -382,6 +389,7 @@ class AnthropicAgent:
             inconclusive="turn_limit",
             usage=usage,
             request_ids=request_ids,
+            resolved_models=resolved_models,
         )
 
 
@@ -509,7 +517,7 @@ class OpenAICompatibleAgent:
         request_ids: list[str] = []
         answer_parts: list[str] = []
         malformed = 0
-        resolved_model: str | None = None
+        resolved_models: list[str | None] = []
 
         turn = 0
         while budget.spend():
@@ -524,7 +532,7 @@ class OpenAICompatibleAgent:
                 raise
 
             request_ids.append(getattr(response, "_request_id", None) or response.id or "")
-            resolved_model = resolved_model or getattr(response, "model", None)
+            resolved_models.append(getattr(response, "model", None))
             _accumulate_usage(usage, getattr(response, "usage", None))
 
             choice = response.choices[0]
@@ -544,7 +552,7 @@ class OpenAICompatibleAgent:
                 )
                 return self._result(
                     answer_parts, turn, stop, "max_tokens" if finish == "length" else None,
-                    usage, request_ids, malformed, resolved_model,
+                    usage, request_ids, malformed, resolved_models,
                 )
 
             messages.append(
@@ -578,7 +586,7 @@ class OpenAICompatibleAgent:
                 )
 
         return self._result(answer_parts, turn, "turn_limit", "turn_limit",
-                            usage, request_ids, malformed, resolved_model)
+                            usage, request_ids, malformed, resolved_models)
 
     def _create(self, client, messages):
         import openai
@@ -594,7 +602,7 @@ class OpenAICompatibleAgent:
                 return client.chat.completions.create(**self._request_kwargs(messages))
             raise
 
-    def _result(self, parts, turns, stop, inconclusive, usage, ids, malformed, model):
+    def _result(self, parts, turns, stop, inconclusive, usage, ids, malformed, models):
         return AgentResult(
             answer="\n\n".join(parts),
             turns=turns,
@@ -603,7 +611,7 @@ class OpenAICompatibleAgent:
             usage=usage,
             request_ids=ids,
             malformed_tool_calls=malformed,
-            resolved_model=model,
+            resolved_models=models,
         )
 
 
@@ -694,7 +702,7 @@ class TwoAgentWorkflow:
             usage=usage,
             request_ids=[rid for p in parts for rid in p.request_ids],
             malformed_tool_calls=sum(p.malformed_tool_calls for p in parts),
-            resolved_model=next((p.resolved_model for p in parts if p.resolved_model), None),
+            resolved_models=[model for p in parts for model in p.resolved_models],
             segments=[
                 {"actor": actor, "turns": p.turns, "stop_reason": p.stop_reason,
                  "inconclusive": p.inconclusive}

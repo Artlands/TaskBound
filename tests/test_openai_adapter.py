@@ -131,6 +131,7 @@ def test_tool_calls_reach_the_backend_and_get_one_tool_message_each(stub_openai)
     assert result.stop_reason == "stop" and result.turns == 2
     assert "OOM-killed" in result.answer
     assert result.resolved_model == "stub-model"
+    assert result.resolved_models == ["stub-model", "stub-model"]
 
     # Chat Completions wants one `tool` message per call, keyed by id.
     sent = stub.calls[1]["messages"]
@@ -331,6 +332,7 @@ def test_the_result_records_which_wire_format_carried_the_contract(stub_openai, 
     assert agent_block["provider"] == "openai_compatible"
     assert agent_block["tool_schema_wire_format"] == "openai_chat_completions"
     assert agent_block["resolved_model"] == "stub-model"
+    assert agent_block["resolved_models"] == ["stub-model"]
     assert agent_block["sampling"]["base_url"] == "http://localhost:8000/v1"
     assert record["outcome"]["malformed_tool_calls"] == 0
     # The contract hash is of the canonical tools, so it is comparable across

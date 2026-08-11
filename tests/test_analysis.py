@@ -43,10 +43,12 @@ def test_model_configuration_hash_uses_frozen_inputs_not_resolved_response():
             "sampling": {"model": "family_x", "turn_limit": 30},
             "system_prompt_sha256": "prompt",
             "resolved_model": "family_x-2026-08-01",
+            "resolved_models": ["family_x-2026-08-01"],
         },
     }
     digest = aggregate.model_configuration_sha256(record)
     record["agent"]["resolved_model"] = None
+    record["agent"]["resolved_models"] = ["family_x-2026-08-02"]
     assert aggregate.model_configuration_sha256(record) == digest
     record["git_commit"] = "def456"
     assert aggregate.model_configuration_sha256(record) != digest
@@ -236,6 +238,8 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
                 "placement_seed": attempt["placement_seed"],
                 "model_configuration_sha256": config,
                 "resolved_model": f"family_{config_index}",
+                "resolved_models": [f"family_{config_index}"] * 3,
+                "request_ids": ["planner-open", "worker", "planner-close"],
                 "inconclusive": None,
             })
     prereg = {
@@ -313,11 +317,21 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
     with pytest.raises(SystemExit, match="source_tree_dirty"):
         aggregate.validate_release_binding(dirty_source, prereg, manifests)
 
-    altered_model = [{**rows[0], "resolved_model": "other"}, *rows[1:]]
-    with pytest.raises(SystemExit, match="resolved_model"):
+    altered_model = [{
+        **rows[0],
+        "resolved_models": [rows[0]["resolved_model"], "other", rows[0]["resolved_model"]],
+    }, *rows[1:]]
+    with pytest.raises(SystemExit, match="resolved_models"):
         aggregate.validate_release_binding(altered_model, prereg, manifests)
 
-    inconclusive = [{**rows[0], "resolved_model": None, "inconclusive": "error"}, *rows[1:]]
+    incomplete_models = [{**rows[0], "resolved_models": [rows[0]["resolved_model"]]}, *rows[1:]]
+    with pytest.raises(SystemExit, match="every response"):
+        aggregate.validate_release_binding(incomplete_models, prereg, manifests)
+
+    inconclusive = [{
+        **rows[0], "resolved_model": None, "resolved_models": [],
+        "request_ids": [], "inconclusive": "error",
+    }, *rows[1:]]
     aggregate.validate_release_binding(inconclusive, prereg, manifests)
 
     incomplete_manifests = json.loads(json.dumps(manifests))
