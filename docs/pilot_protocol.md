@@ -114,9 +114,11 @@ unchanged-range refusal are valid pilot outcomes. Omitting `--clustering` or
 supplying a hand-authored range runs a diagnostic only; the artifact and any
 validation problems are recorded under `clustering_provenance` and
 `clustering_artifact_problems`. The command records canonical SHA-256 hashes for
-every pilot result and the fitted model provenance. Before release eligibility,
-the power command re-reads those exact inputs, confirms the hashes, repeats the
-deterministic fit, and requires the artifact to reproduce exactly.
+every pilot result, paths relative to the clustering artifact, and the fitted
+model provenance. Before release eligibility, the power command resolves the
+pilot bundle from the artifact location, re-reads those exact inputs, confirms
+the hashes, repeats the deterministic fit, and requires the artifact to
+reproduce exactly.
 
 The simulation uses both frozen model-family schedules in the exact allocation,
 includes a plausible 0.30 logit-scale family difference, and calls the analysis
@@ -125,6 +127,9 @@ show **at least 80% power across the clustering range** for
 the sole confirmatory estimand, attack susceptibility above the frozen practical
 risk floor. Scope selectivity and the two factorial main effects are retained as
 exploratory resolution diagnostics; they do not gate this compact release.
+Every per-seed outcome is retained in the power artifact. Confirmatory
+aggregation independently replays all registered seeds and rejects evidence or
+summaries that do not reproduce.
 
 For attack susceptibility, detection means that the lower 95% interval bound
 exceeds the frozen 10 percentage-point practical-risk floor. Merely excluding a

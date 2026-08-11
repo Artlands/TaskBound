@@ -1654,8 +1654,21 @@ def verify_power_gate_evidence(
                 f"does not match power {name}={expected_analysis[name]!r}"
             )
     provenance = result.get("clustering_provenance")
+    power_root = os.path.dirname(os.path.realpath(path))
+    artifact_root = power_root
+    provenance_path = provenance.get("path") if isinstance(provenance, dict) else None
+    if provenance_path is not None:
+        if not isinstance(provenance_path, str) or not provenance_path \
+                or os.path.isabs(provenance_path):
+            problems.append("power-gate clustering artifact path is not portable")
+        else:
+            artifact_root = os.path.dirname(os.path.realpath(
+                os.path.join(power_root, provenance_path)
+            ))
     try:
-        artifact_problems = power.clustering_artifact_problems(provenance)
+        artifact_problems = power.clustering_artifact_problems(
+            provenance, artifact_root
+        )
     except (OSError, ValueError, json.JSONDecodeError, SystemExit) as exc:
         artifact_problems = [f"clustering artifact cannot be verified: {exc}"]
     if artifact_problems:
@@ -1676,10 +1689,12 @@ def verify_power_gate_evidence(
         if isinstance(rung, dict) and isinstance(rung.get("label"), str)
     } if isinstance(expected_range, list) else {}
     derived_worst = {name: None for name in expected_estimands}
+    replay_verified = False
     if not isinstance(by_clustering, dict) or set(by_clustering) != set(expected_by_label):
         problems.append("power-gate simulation blocks do not match the clustering artifact")
     else:
         powers = {name: [] for name in expected_estimands}
+        replay_verified = True
         for label, block in by_clustering.items():
             if not isinstance(block, dict) or block.get("clustering") != expected_by_label[label]:
                 problems.append(f"power-gate block {label!r} has altered clustering inputs")
@@ -1688,8 +1703,10 @@ def verify_power_gate_evidence(
             converged = block.get("converged")
             detections = block.get("detections")
             recorded_power = block.get("power")
+            evidence = block.get("simulation_evidence")
             if simulations != power.RELEASE_SIMULATIONS:
                 problems.append(f"power-gate block {label!r} is not the exact simulation count")
+                replay_verified = False
             if not isinstance(converged, int) or isinstance(converged, bool) \
                     or not 0 <= converged <= power.RELEASE_SIMULATIONS:
                 problems.append(f"power-gate block {label!r} has invalid convergence count")
@@ -1698,6 +1715,48 @@ def verify_power_gate_evidence(
                     or not isinstance(recorded_power, dict) \
                     or set(recorded_power) != set(expected_estimands):
                 problems.append(f"power-gate block {label!r} has incomplete estimand counts")
+                replay_verified = False
+                continue
+            if not isinstance(evidence, list) \
+                    or len(evidence) != power.RELEASE_SIMULATIONS:
+                problems.append(
+                    f"power-gate block {label!r} has incomplete simulation evidence"
+                )
+                replay_verified = False
+                continue
+            replayed = []
+            try:
+                for index in range(power.RELEASE_SIMULATIONS):
+                    simulation_seed = power.RELEASE_SEED + index
+                    outcome = power.one_simulation(
+                        power.Truth(), expected_by_label[label], simulation_seed,
+                        power.RELEASE_DRAWS, power.RELEASE_PRIOR_SD,
+                    )
+                    replayed.append(power.simulation_evidence(
+                        outcome, index, simulation_seed, expected_estimands
+                    ))
+            except Exception as exc:
+                problems.append(
+                    f"power-gate block {label!r} simulation replay failed: {exc}"
+                )
+                replay_verified = False
+                continue
+            if evidence != replayed:
+                problems.append(
+                    f"power-gate block {label!r} simulation evidence does not replay"
+                )
+                replay_verified = False
+                continue
+            replayed_converged = sum(item["converged"] for item in replayed)
+            replayed_detections = {
+                name: sum(item["detections"][name] for item in replayed)
+                for name in expected_estimands
+            }
+            if converged != replayed_converged or detections != replayed_detections:
+                problems.append(
+                    f"power-gate block {label!r} summaries differ from replayed evidence"
+                )
+                replay_verified = False
                 continue
             for name in expected_estimands:
                 detected = detections[name]
@@ -1733,6 +1792,7 @@ def verify_power_gate_evidence(
         and not artifact_problems
         and isinstance(by_clustering, dict)
         and set(by_clustering) == set(expected_by_label)
+        and replay_verified
         and not any("power-gate block" in problem for problem in problems)
     )
     expected_fields = {

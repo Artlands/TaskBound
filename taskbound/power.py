@@ -52,7 +52,7 @@ RELEASE_DRAWS = 2000
 RELEASE_PRIOR_SD = glmm.DEFAULT_PRIOR_SD
 RELEASE_INTERVAL_LEVEL = 0.95
 CLUSTERING_ARTIFACT_TYPE = "taskbound.clustering"
-CLUSTERING_ARTIFACT_VERSION = 1
+CLUSTERING_ARTIFACT_VERSION = 2
 
 # The conservative range the gate is evaluated across. The pilot replaces these
 # with measured values; until then they bracket "wording barely matters" and
@@ -105,8 +105,11 @@ def _artifact_core(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def load_pilot_frame(results_dir: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def load_pilot_frame(
+    results_dir: str, artifact_root: str
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     root = os.path.realpath(results_dir)
+    artifact_root = os.path.realpath(artifact_root)
     rows = []
     inputs = []
     manifests = []
@@ -130,7 +133,7 @@ def load_pilot_frame(results_dir: str) -> tuple[list[dict[str, Any]], dict[str, 
         raise SystemExit("sizing pilot does not match its frozen allocation: "
                          + "; ".join(pilot_problems))
     manifest = {
-        "results_dir": root,
+        "results_path": os.path.relpath(root, artifact_root),
         "files": inputs,
         "combined_sha256": _canonical_sha256(inputs),
         "sweep_id": manifests[0]["sweep_id"],
@@ -387,7 +390,9 @@ def load_clustering_artifact(path: str) -> dict[str, Any]:
     """Read and structurally validate a clustering-step artifact."""
     with open(path, encoding="utf-8") as fh:
         payload = json.load(fh)
-    problems = clustering_artifact_problems(payload)
+    problems = clustering_artifact_problems(
+        payload, os.path.dirname(os.path.realpath(path))
+    )
     if problems:
         raise SystemExit(
             f"{path!r} is not a valid clustering-step artifact: " + "; ".join(problems)
@@ -414,7 +419,9 @@ def load_clustering(path: str) -> list[dict[str, Any]]:
     return list(load_clustering_artifact(path)["range"])
 
 
-def clustering_artifact_problems(payload: Any) -> list[str]:
+def clustering_artifact_problems(
+    payload: Any, artifact_root: str | None = None
+) -> list[str]:
     if not isinstance(payload, dict):
         return ["artifact must be a JSON object"]
     problems = []
@@ -459,7 +466,7 @@ def clustering_artifact_problems(payload: Any) -> list[str]:
     else:
         problems.append("measured/narrowed state is not a clustering-step outcome")
     if not problems:
-        problems.extend(_pilot_binding_problems(payload))
+        problems.extend(_pilot_binding_problems(payload, artifact_root))
     return problems
 
 
@@ -486,16 +493,22 @@ def _clustering_range_problems(entries: Sequence[Any]) -> list[str]:
     return problems
 
 
-def _pilot_binding_problems(payload: dict[str, Any]) -> list[str]:
+def _pilot_binding_problems(
+    payload: dict[str, Any], artifact_root: str | None
+) -> list[str]:
     source = payload["source"]
     recorded_inputs = source.get("pilot_inputs")
     if not isinstance(recorded_inputs, dict):
         return ["source has no canonical pilot input manifest"]
-    results_dir = recorded_inputs.get("results_dir")
-    if not isinstance(results_dir, str) or not results_dir:
-        return ["pilot input manifest has no results directory"]
+    results_path = recorded_inputs.get("results_path")
+    if not isinstance(results_path, str) or not results_path \
+            or os.path.isabs(results_path):
+        return ["pilot input manifest has no portable relative results path"]
+    if not isinstance(artifact_root, str) or not artifact_root:
+        return ["pilot inputs cannot be verified without an artifact root"]
+    results_dir = os.path.join(os.path.realpath(artifact_root), results_path)
     try:
-        rows, actual_inputs = load_pilot_frame(results_dir)
+        rows, actual_inputs = load_pilot_frame(results_dir, artifact_root)
     except (OSError, ValueError, json.JSONDecodeError, SystemExit) as exc:
         return [f"pilot inputs cannot be verified: {exc}"]
     if actual_inputs != recorded_inputs:
@@ -762,6 +775,22 @@ def one_simulation(truth: Truth, clustering: dict[str, float], seed: int,
     }
 
 
+def simulation_evidence(
+    result: dict[str, Any] | None, index: int, seed: int,
+    estimands: Sequence[str],
+) -> dict[str, Any]:
+    converged = bool(result and result.get("converged") is True)
+    return {
+        "index": index,
+        "seed": seed,
+        "converged": converged,
+        "detections": {
+            name: bool(result.get(name)) if converged and result else False
+            for name in estimands
+        },
+    }
+
+
 def _excludes_zero(contrast: dict[str, Any], floor: float | None = None) -> bool:
     low, high = contrast["interval"]
     if floor is not None:
@@ -814,10 +843,13 @@ def run(
     draws: int = RELEASE_DRAWS,
     prior_sd: float = glmm.DEFAULT_PRIOR_SD,
     clustering_provenance: dict[str, Any] | None = None,
+    clustering_artifact_root: str | None = None,
 ) -> dict[str, Any]:
     if simulations <= 0:
         raise ValueError("simulations must be positive")
-    clustering_problems = clustering_artifact_problems(clustering_provenance)
+    clustering_problems = clustering_artifact_problems(
+        clustering_provenance, clustering_artifact_root
+    )
     if isinstance(clustering_provenance, dict) \
             and clustering_provenance.get("range") != list(clustering_range):
         clustering_problems.append("evaluated range differs from the clustering artifact")
@@ -828,18 +860,27 @@ def run(
     for clustering in clustering_range:
         detections = {name: 0 for name in estimands}
         converged = 0
+        evidence = []
         for index in range(simulations):
-            result = one_simulation(truth, clustering, seed + index, draws, prior_sd)
-            if not result or not result["converged"]:
+            simulation_seed = seed + index
+            result = one_simulation(
+                truth, clustering, simulation_seed, draws, prior_sd
+            )
+            recorded = simulation_evidence(
+                result, index, simulation_seed, estimands
+            )
+            evidence.append(recorded)
+            if not recorded["converged"]:
                 continue
             converged += 1
             for name in estimands:
-                detections[name] += bool(result[name])
+                detections[name] += recorded["detections"][name]
         by_clustering[clustering["label"]] = {
             "clustering": clustering,
             "simulations": simulations,
             "converged": converged,
             "detections": detections,
+            "simulation_evidence": evidence,
             "power": {
                 name: detections[name] / simulations for name in estimands
             },
@@ -947,7 +988,8 @@ def add_clustering_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def clustering_main(args: argparse.Namespace) -> int:
-    rows, pilot_inputs = load_pilot_frame(args.results)
+    artifact_root = os.path.dirname(os.path.realpath(args.out))
+    rows, pilot_inputs = load_pilot_frame(args.results, artifact_root)
     if not rows:
         raise SystemExit(f"no results found under {args.results!r}")
     result = measure_clustering(
@@ -990,18 +1032,26 @@ def main(args: argparse.Namespace) -> int:
         attempt_cap=args.attempt_cap,
     )
     clustering_range, provenance = CLUSTERING_RANGE, None
+    clustering_artifact_root = None
     if args.clustering:
         clustering_range, payload = load_clustering_input(args.clustering)
+        clustering_path = os.path.realpath(args.clustering)
+        clustering_artifact_root = os.path.dirname(clustering_path)
+        power_root = (
+            os.path.dirname(os.path.realpath(args.out)) if args.out else os.getcwd()
+        )
+        portable_path = os.path.relpath(clustering_path, power_root)
         provenance = (
-            {**payload, "path": args.clustering}
+            {**payload, "path": portable_path}
             if isinstance(payload, dict)
-            else {"path": args.clustering, "range": clustering_range,
+            else {"path": portable_path, "range": clustering_range,
                   "input_type": "hand_authored_range"}
         )
 
     result = run(truth, args.simulations, args.seed, clustering_range,
                  draws=args.draws, prior_sd=args.prior_sd,
-                 clustering_provenance=provenance)
+                 clustering_provenance=provenance,
+                 clustering_artifact_root=clustering_artifact_root)
     if provenance and result["clustering_artifact_problems"]:
         provenance["input_type"] = "invalid_clustering_artifact"
     print(f"power simulation: {args.simulations} sweeps per clustering setting, "

@@ -169,7 +169,7 @@ def test_only_the_exact_release_configuration_can_pass_the_gate(monkeypatch):
                 "scope_selectivity": True, "entry_point_effect": True,
                 "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
-    monkeypatch.setattr(power, "_pilot_binding_problems", lambda payload: [])
+    monkeypatch.setattr(power, "_pilot_binding_problems", lambda *args: [])
     exact = power.run(power.Truth(), simulations=500, seed=1,
                       clustering_range=power.CLUSTERING_RANGE,
                       clustering_provenance=_valid_refusal_artifact())
@@ -225,7 +225,7 @@ def test_unchanged_range_refusal_is_release_eligible_provenance(monkeypatch):
                 "scope_selectivity": True, "entry_point_effect": True,
                 "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
-    monkeypatch.setattr(power, "_pilot_binding_problems", lambda payload: [])
+    monkeypatch.setattr(power, "_pilot_binding_problems", lambda *args: [])
     artifact = _valid_refusal_artifact()
     result = power.run(
         power.Truth(), power.RELEASE_SIMULATIONS, seed=1,
@@ -262,14 +262,14 @@ def test_forged_narrowed_artifacts_are_diagnostic(monkeypatch, mutate, problem):
 
 
 def test_valid_narrowed_artifact_is_reconstructed_without_problems(monkeypatch):
-    monkeypatch.setattr(power, "_pilot_binding_problems", lambda payload: [])
+    monkeypatch.setattr(power, "_pilot_binding_problems", lambda *args: [])
     assert power.clustering_artifact_problems(_valid_narrowed_artifact()) == []
 
 
 def test_clustering_artifact_must_reproduce_from_hashed_pilot_inputs(monkeypatch):
     rows = _pilot_rows()
     inputs = {
-        "results_dir": "/recorded/pilot",
+        "results_path": "sizing",
         "files": [{"path": "run.json", "sha256": "a" * 64}],
         "combined_sha256": "b" * 64,
     }
@@ -277,19 +277,42 @@ def test_clustering_artifact_must_reproduce_from_hashed_pilot_inputs(monkeypatch
         rows, power.RELEASE_PRIOR_SD, power.RELEASE_SEED,
         power.RELEASE_INTERVAL_LEVEL, inputs,
     )
-    monkeypatch.setattr(power, "load_pilot_frame", lambda path: (rows, inputs))
-    assert power.clustering_artifact_problems(artifact) == []
+    monkeypatch.setattr(power, "load_pilot_frame", lambda *args: (rows, inputs))
+    assert power.clustering_artifact_problems(artifact, "/bundle") == []
 
     forged = copy.deepcopy(artifact)
     forged["source"]["runs"] += 1
     power._seal_artifact(forged)
-    assert "does not reproduce" in " ".join(power.clustering_artifact_problems(forged))
+    assert "does not reproduce" in " ".join(
+        power.clustering_artifact_problems(forged, "/bundle")
+    )
 
     changed_inputs = {**inputs, "combined_sha256": "c" * 64}
-    monkeypatch.setattr(power, "load_pilot_frame", lambda path: (rows, changed_inputs))
+    monkeypatch.setattr(power, "load_pilot_frame", lambda *args: (rows, changed_inputs))
     assert "input hashes differ" in " ".join(
-        power.clustering_artifact_problems(artifact)
+        power.clustering_artifact_problems(artifact, "/bundle")
     )
+
+
+def test_clustering_pilot_inputs_resolve_relative_to_artifact_root(monkeypatch):
+    rows = _pilot_rows()
+    inputs = {
+        "results_path": "sizing",
+        "files": [{"path": "run.json", "sha256": "a" * 64}],
+        "combined_sha256": "b" * 64,
+    }
+    artifact = power.measure_clustering(
+        rows, power.RELEASE_PRIOR_SD, power.RELEASE_SEED,
+        power.RELEASE_INTERVAL_LEVEL, inputs,
+    )
+
+    def relocated(path, artifact_root):
+        assert path == "/new/bundle/sizing"
+        assert artifact_root == "/new/bundle"
+        return rows, inputs
+
+    monkeypatch.setattr(power, "load_pilot_frame", relocated)
+    assert power.clustering_artifact_problems(artifact, "/new/bundle") == []
 
 
 def test_sizing_pilot_requires_complete_frozen_schedule(monkeypatch):
@@ -469,7 +492,7 @@ def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path, monkey
     refusal hands back the a-priori bracket and a narrowed range mixes measured
     values with a carried-through `cell_sd`, and `run` has to accept either."""
     refused_rows = _pilot_rows()
-    refused_inputs = {"results_dir": str(tmp_path / "refused"), "files": [],
+    refused_inputs = {"results_path": "refused", "files": [],
                       "combined_sha256": power._canonical_sha256([])}
     refused = power.measure_clustering(
         refused_rows, glmm.DEFAULT_PRIOR_SD, seed=1, pilot_inputs=refused_inputs
@@ -479,7 +502,7 @@ def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path, monkey
                     exposure={entry: 1.0 for entry in power.ENTRY_POINTS}),
         power.CLUSTERING_RANGE[1], seed=5,
     )
-    narrowed_inputs = {"results_dir": str(tmp_path / "narrowed"), "files": [],
+    narrowed_inputs = {"results_path": "narrowed", "files": [],
                        "combined_sha256": power._canonical_sha256([])}
     narrowed = power.measure_clustering(
         narrowed_rows, glmm.DEFAULT_PRIOR_SD, seed=1, pilot_inputs=narrowed_inputs,
@@ -491,7 +514,7 @@ def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path, monkey
         (narrowed, narrowed_rows, narrowed_inputs),
     ):
         monkeypatch.setattr(
-            power, "load_pilot_frame", lambda path, r=rows, i=inputs: (r, i)
+            power, "load_pilot_frame", lambda *args, r=rows, i=inputs: (r, i)
         )
         path = tmp_path / f"clustering_{measured['narrowed']}.json"
         path.write_text(json.dumps(measured))

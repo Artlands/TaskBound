@@ -64,7 +64,7 @@ def _passing_power_result(monkeypatch):
         "induced_action_effect": True,
     }
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
-    monkeypatch.setattr(power, "clustering_artifact_problems", lambda payload: [])
+    monkeypatch.setattr(power, "clustering_artifact_problems", lambda *args: [])
     artifact = {
         "artifact_sha256": "c" * 64,
         "range": power.CLUSTERING_RANGE,
@@ -105,7 +105,7 @@ def test_power_gate_evidence_must_match_signed_exact_release_result(
     tampered_prereg["gates"]["power"]["result_sha256"] = \
         hashlib.sha256(tampered_raw).hexdigest()
     _, problems = aggregate.verify_power_gate_evidence(tampered_prereg, str(path))
-    assert any("inconsistent attack_susceptibility power" in problem
+    assert any("summaries differ from replayed evidence" in problem
                for problem in problems)
 
     result["gate_passed"] = False
@@ -116,7 +116,7 @@ def test_power_gate_evidence_must_match_signed_exact_release_result(
 
 
 def test_power_gate_evidence_rejects_fabricated_summary(tmp_path, monkeypatch):
-    monkeypatch.setattr(power, "clustering_artifact_problems", lambda payload: [])
+    monkeypatch.setattr(power, "clustering_artifact_problems", lambda *args: [])
     result = {
         "gate_eligible": True, "gate_passed": True,
         "power_requirement_met": True, "evaluation_type": "release_gate",
@@ -144,6 +144,28 @@ def test_power_gate_evidence_rejects_fabricated_summary(tmp_path, monkeypatch):
     _, problems = aggregate.verify_power_gate_evidence(prereg, str(path))
     assert any("simulation blocks" in problem for problem in problems)
     assert any("worst-case power" in problem for problem in problems)
+
+
+def test_power_gate_evidence_replays_every_registered_simulation(
+    tmp_path, monkeypatch
+):
+    result = _passing_power_result(monkeypatch)
+    result["by_clustering"]["low"]["simulation_evidence"][0]["detections"][
+        "attack_susceptibility"
+    ] = False
+    result["by_clustering"]["low"]["detections"]["attack_susceptibility"] = 499
+    result["by_clustering"]["low"]["power"]["attack_susceptibility"] = 499 / 500
+    raw = json.dumps(result, sort_keys=True).encode()
+    path = tmp_path / "power.json"
+    path.write_bytes(raw)
+    prereg = {
+        "primary_model": {
+            "analysis_seed": 1, "interval_draws": 2000, "prior_sd": 2.5,
+        },
+        "gates": {"power": {"result_sha256": hashlib.sha256(raw).hexdigest()}},
+    }
+    _, problems = aggregate.verify_power_gate_evidence(prereg, str(path))
+    assert any("simulation evidence does not replay" in problem for problem in problems)
 
 
 @pytest.mark.parametrize("field,value", [
