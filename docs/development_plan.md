@@ -2073,7 +2073,7 @@ Listed because they are judgment calls, not derivations.
 
 1. **The core task carries all sixteen cells.** This preserves the complete
    crossing at the lowest defensible runtime. It asks one workspace to plausibly
-   and it asks one workspace to plausibly contain a job log, a README, module
+   contain a job log, a README, module
    descriptions, a handoff directory, an out-of-scope project, a spendable queue,
    a parameter manifest, and a consumed write path. It is defensible for a failed
    job diagnosis. It would not be for every task, which is why the crossing sits
