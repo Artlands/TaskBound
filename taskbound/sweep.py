@@ -9,10 +9,11 @@ Two commands, deliberately separate:
 
 The separation is the point. The complete attempt order and seeds are generated
 *before* execution, so recruitment cannot become a decision made while results
-are visible. A cell recruits to 24 exposed runs in blocks of three — one per
-paraphrase, so the split stays balanced whenever it stops — and is capped at 48
-attempted. A cell that hits the cap short of 24 is reported at the precision it
-actually reached, with both denominators shown, and is never quietly pooled.
+are visible. A cell recruits to `EXPOSED_TARGET` exposed runs in blocks of three
+— one per paraphrase, so the split stays balanced whenever it stops — and is
+capped at `ATTEMPT_CAP` attempted. A cell that hits the cap short of target is
+reported at the precision it actually reached, with both denominators shown, and
+is never quietly pooled.
 
 Conditions, cells, and paraphrases are interleaved in seeded blocks so that
 time-of-day or provider drift cannot align with one condition.
@@ -28,7 +29,6 @@ import json
 import os
 import random
 from collections.abc import Sequence
-import sys
 from typing import Any
 
 from . import runner

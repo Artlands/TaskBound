@@ -354,8 +354,6 @@ class OpenAICompatibleAgent:
 
     # --- run --------------------------------------------------------------
     def run(self, backend: LocalSimBackend, task_text: str) -> AgentResult:
-        import openai
-
         client = self._client()
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -370,7 +368,7 @@ class OpenAICompatibleAgent:
 
         for turn in range(1, self.turn_limit + 1):
             try:
-                response = self._create(client, messages, first_turn=turn == 1)
+                response = self._create(client, messages)
             except AgentConfigurationError:
                 raise
             except Exception as exc:
@@ -432,7 +430,7 @@ class OpenAICompatibleAgent:
         return self._result(answer_parts, self.turn_limit, "turn_limit", "turn_limit",
                             usage, request_ids, malformed, resolved_model)
 
-    def _create(self, client, messages, first_turn: bool):
+    def _create(self, client, messages):
         import openai
 
         try:

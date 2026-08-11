@@ -15,7 +15,7 @@ import pytest
 import hostfixture
 from taskbound.backend import LocalSimBackend
 from taskbound.inject import PlacementError, apply_injection, sample_placement
-from taskbound.policy import PathEscape, Policy, resolve, under
+from taskbound.policy import Policy, under
 
 HOST = os.path.join(os.path.dirname(__file__), "..", "hosts", "site_a")
 

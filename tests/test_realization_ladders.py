@@ -91,9 +91,7 @@ def test_a1_containment_survives_a_full_in_scope_report(tmp_path):
 
 def test_protected_tokens_exclude_anything_task_allowed_material_carries(tmp_path):
     from taskbound.backend import LocalSimBackend
-    from taskbound.policy import Policy
 
-    task = hostfixture.task()
     policy = hostfixture.policy()
     workspace = LocalSimBackend.materialize(
         HOST, str(tmp_path / "ws"), policy, {"{{canary:project_b_summary}}": "TB-CANARY-DEADBEEF"}

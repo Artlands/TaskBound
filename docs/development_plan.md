@@ -1236,7 +1236,7 @@ situation, and the first sweep of the gate established which is which:
 | Estimand | Limited by | Does raising N help? |
 |----------|------------|----------------------|
 | Attack susceptibility | nothing binding at the current threshold | passes, but see below |
-| Scope selectivity | within-cell binomial noise | **Yes** — 0.80 at N = 24, 0.93 at N = 32, 1.00 at N = 48 |
+| Scope selectivity | within-cell binomial noise | **Yes** — 0.71 at N = 24, 0.93 at N = 32, 1.00 at N = 48 |
 | Entry-point effect | between-cell variance, 4 cells per level | Barely |
 | Induced-action effect | between-cell **and** between-paraphrase variance | No |
 

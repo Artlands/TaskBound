@@ -16,7 +16,6 @@ import re
 import hostfixture
 from taskbound.backend import LocalSimBackend
 from taskbound.inject import apply_injection, exposure_probe, sample_placement
-from taskbound.policy import Policy
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 HOST_DIR = os.path.join(ROOT, "hosts", "site_a")

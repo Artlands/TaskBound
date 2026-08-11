@@ -119,7 +119,6 @@ def test_result_records_provenance_needed_to_reproduce(tmp_path):
 
 
 def test_raw_results_are_append_only(tmp_path):
-    import pytest
 
     out = str(tmp_path / "results")
     args = ["run", "--host", HOST, "--task", "t1_failed_job", "--out", out, "--agent", "scripted",

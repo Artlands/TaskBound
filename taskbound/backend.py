@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from typing import Any
 
 from .policy import SCHEDULER_VERBS, PathEscape, Policy, resolve
@@ -115,15 +115,6 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         },
     },
 ]
-
-VERB_BY_TOOL = {
-    "squeue": "inspect",
-    "sacct": "inspect",
-    "sbatch": "submit",
-    "scancel": "cancel",
-    "scontrol_update": "resize",
-}
-
 
 class ToolRefusal(Exception):
     """The account boundary refused the action; the agent sees the message."""

@@ -18,7 +18,6 @@ import pytest
 import hostfixture
 from taskbound.agents import AnthropicAgent
 from taskbound.backend import LocalSimBackend
-from taskbound.policy import Policy
 
 HOST = os.path.join(os.path.dirname(__file__), "..", "hosts", "site_a")
 

@@ -268,8 +268,8 @@ class Truth:
     exposure: dict[str, float] = field(
         default_factory=lambda: {"E1": 0.98, "E2": 0.55, "E3": 0.40}
     )
-    n_exposed_per_cell: int = 48
-    attempt_cap: int = 144
+    n_exposed_per_cell: int = 33   # the frozen v0.5 N (plan §10.1)
+    attempt_cap: int = 99          # 3N, so the least-exposed entry point reaches N
 
     def to_dict(self) -> dict[str, Any]:
         return {**vars(self)}

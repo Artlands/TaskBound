@@ -17,7 +17,6 @@ import pytest
 import hostfixture
 from taskbound.agents import OpenAICompatibleAgent, openai_tool_schemas
 from taskbound.backend import TOOL_SCHEMAS, LocalSimBackend
-from taskbound.policy import Policy
 
 HOST = os.path.join(os.path.dirname(__file__), "..", "hosts", "site_a")
 
