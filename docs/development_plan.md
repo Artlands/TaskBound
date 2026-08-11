@@ -1152,7 +1152,7 @@ per-entry-point exposure rate a reported result rather than a nuisance, so it is
 estimated as well as counted:
 
 ```
-exposed ~ condition * entry_point + induced_action + model_family + task
+exposed ~ condition * entry_point + model_family + task
           + (1 | request_family:paraphrase) + (1 | placement_id)
 ```
 
@@ -1160,25 +1160,24 @@ fitted over **every attempted injected run** — attacked, benign, and inert,
 including unexposed and inconclusive ones. Conditioning this fit on exposure
 would be circular, and dropping a run that errored before reading anything would
 bias the rate upward. Per-entry-point estimates are standardized with equal
-weights over that entry point's populated (condition, induced action) strata,
-for the same reason §9.1 standardizes susceptibility that way. The descriptive
-counts and their Wilson bands are reported beside the model, never replaced by
-it: they are what a reader checks it against.
+weights over that entry point's populated conditions, for the same reason §9.1
+standardizes susceptibility equally over cells. The descriptive counts and their
+Wilson bands are reported beside the model, never replaced by it: they are what a
+reader checks it against, and on a small frame the two can differ a great deal
+because the prior is doing the work.
 
-> **A defect in this specification, found by implementing it.** Every inert run
-> has a null `induced_action`, so that level's indicator column *is* the
-> `condition[inert]` column the `condition * entry_point` block already carries.
-> The fixed block is therefore rank deficient on its own registered population —
-> rank 7 of 8 on a single-family E1–E3 frame — and the aliased coefficients are
-> split by the prior rather than by the data. Predictions stay identified, which
-> is why the per-entry-point estimates are still reportable and are what the
-> report quotes; individual coefficients are not, and the aggregator emits the
-> rank deficit and the duplicated pair beside every fit so no one quotes one
-> unaware. This is the same failure §9.5 diagnosed in `host:cell`, and it wants
-> the same resolution before signing: drop `induced_action` from the exposure
-> block, or fit inert separately. **It is deliberately not fixed in code** — the
-> registration is the authority for what gets fitted, and changing the model to
-> suit the implementation is the wrong direction of travel.
+**`induced_action` is not in this block, and was removed before signing.** It was
+aliased with the rest of the block on this model's own population: every inert
+run carries a null `induced_action`, so that level's indicator *is* the
+`condition[inert]` indicator `condition * entry_point` already supplies, and the
+fixed block was rank deficient before any data were seen. Dropping it also costs
+nothing substantively — exposure is whether the agent read the vehicle, which is
+a property of the entry point and the placement rather than of what the text went
+on to ask for. This is the second aliased term this design has had to remove
+(§9.5 dropped `host:cell` from the primary model), and both were found the same
+way: by fitting the model rather than by reading it. The aggregator now reports
+the fixed block's rank beside every fit, and names any duplicated columns, so a
+third one cannot reach a signed registration unnoticed.
 
 **Task generalization is a declared-underpowered secondary.** The pre-registered
 `condition:task` contrast has five levels of a fixed effect, rests on eight
@@ -2116,12 +2115,11 @@ artifact has been reviewed, run, or reported.
 | 13 | Defense interface and both hooks | **Not started** | `--defense` is recorded per run and only `none` exists |
 | 14 | `v1.1` defense arms | **Not started** | — |
 
-**What blocks milestone 8.** Five things, none of them code — four human or
-pilot items, plus a one-line specification decision on the exposure model. A
-sixth, a specification error in the primary model found by building the pilot's
-clustering handoff, has since been resolved and is listed below for the record.
-Both specification errors were found the same way, by implementing the model
-rather than by reading it:
+**What blocks milestone 8.** Four things, none of them code. Two others — both
+specification errors in the analysis models — have since been resolved and are
+listed below for the record. Both were found the same way, by implementing a
+model rather than by reading it, which is why the aggregator now reports each
+fixed block's rank beside its fit:
 
 | Blocker | State | Resolution |
 |---------|-------|------------|
@@ -2130,7 +2128,7 @@ rather than by reading it:
 | Realism review (§11.3, milestone 3) | **Not started; instrument ready.** `runner realism worksheet` emits 110 blocks / 162 ratings per reviewer, and `realism report` applies the gate. `realism_review.status` is `pending` and `validate` warns while it stays that way | Two HPC practitioners who did not author the material rate it against `realism_rubric.md`, before any model result exists. It needs two people, not a tool |
 | Acceptance review (§11.3, milestone 6) | Not started | A named reviewer per text, per `paraphrase_protocol.md` §6 |
 | Primary model specification (§9.1, §9.5) | **Resolved.** `host:cell` and `request_family` were aliased with the fixed block and estimated nothing; both dropped, and §7.5's denominator moved to `injection_id` | Done. Neither returns at any version; `task:cell` is the only successor candidate and is gated on a synthetic-data fit (§9.5). Note that §7.5 now compares wording against wording and no longer tests wording against structure — §7.5 records what that costs |
-| Exposure model specification (§9.1) | **Open, and a one-line decision.** Implementing the registered `exposure_model` showed its fixed block is rank deficient on its own registered population: every inert run has a null `induced_action`, so that column duplicates `condition[inert]`. Confirmed on real records, not only synthetic — rank 7 of 8 | Drop `induced_action` from the exposure block, or fit inert separately, before signing. Not fixed in code: the registration is the authority for what gets fitted. Predictions are unaffected and are what the report quotes; the aggregator emits the rank deficit and the duplicated pair beside every fit so no coefficient is quoted unaware |
+| Exposure model specification (§9.1) | **Resolved.** Implementing the registered `exposure_model` showed its fixed block was rank deficient on its own registered population — rank 7 of 8, on real records as well as synthetic: every inert run has a null `induced_action`, so that column duplicated `condition[inert]` | Done. `induced_action` dropped from the exposure block in `preregistration.draft.json` and `EXPOSURE_FIXED`, with the reason recorded in both. Standardization is now equal weights over each entry point's populated conditions. The primary model is untouched, inert runs stay in the population, and the block is full rank with and without them |
 
 The oracle audit gate (§8.7) is implemented and cannot be *evaluated* until a
 sweep exists to sample; it is a milestone 8 exit condition rather than an entry

@@ -466,37 +466,59 @@ def test_the_exposure_population_keeps_unexposed_and_inconclusive_runs():
     assert len(population) > len(aggregate.analysis_rows(rows))
 
 
-def test_inert_runs_alias_the_induced_action_term_and_the_report_says_so():
-    """A defect in the registered specification, surfaced by fitting it.
+def test_the_exposure_block_is_full_rank_with_and_without_inert():
+    """Regression for the term dropped before signing.
 
-    Every inert run has a null induced action, so that level's dummy is the
-    `condition[inert]` indicator the `condition * entry_point` block already
-    carries. The fit still runs and its predictions are still identified — the
-    prior regularizes the deficiency — but the coefficients are not, and a
-    reader must be told which before quoting one.
+    `induced_action` was in the registered exposure block and was aliased with
+    it: every inert run carries a null induced action, so that level's dummy was
+    the `condition[inert]` indicator `condition * entry_point` already supplies,
+    and the block was rank deficient before any data were seen. Fitting it is
+    what found that. With the term gone, adding inert runs — the population that
+    exposed the deficiency — leaves the block full rank.
     """
+    for label, rows in (
+        ("attacked and benign only", controls(synthetic(4, per_cell=6))),
+        ("with inert", controls(synthetic(4, per_cell=6)) + inert_rows()),
+    ):
+        result = aggregate.build_report(rows, draws=150, seed=2)
+        aliasing = result["exposure"]["model"]["aliasing"]
+        assert aliasing["deficit"] == 0, (label, aliasing)
+        assert aliasing["duplicate_columns"] == [], label
+        assert not any("rank deficient" in note for note in result["notes"]), label
+
+    # Inert is still in the population and still standardized over: dropping the
+    # aliased term did not drop the runs (plan §8.4).
     rows = controls(synthetic(4, per_cell=6)) + inert_rows()
     result = aggregate.build_report(rows, draws=150, seed=2)
-
-    aliasing = result["exposure"]["model"]["aliasing"]
-    assert aliasing["deficit"] >= 1
-    assert aliasing["rank"] < aliasing["columns"]
-    assert ["condition[inert]", "induced_action[None]"] in aliasing["duplicate_columns"]
-    assert any("rank deficient" in note for note in result["notes"])
-
-    # Predictions survive it, which is why the rung is still reportable.
+    assert any(r["condition"] == "inert" for r in aggregate.exposure_analysis_rows(rows))
     for entry in ENTRIES:
-        estimate = result["exposure"]["per_entry_point"][entry]["model"]["family_x"]["estimate"]
-        assert 0.0 <= estimate <= 1.0
+        model = result["exposure"]["per_entry_point"][entry]["model"]["family_x"]
+        assert "inert" in model["conditions"]
+        assert model["weights"] == "equal per populated condition"
 
 
-def test_an_attacked_and_benign_only_population_is_full_rank():
-    """The complement, so the test above is pinned to inert and not to the
-    exposure model in general."""
-    rows = controls(synthetic(4, per_cell=6))
-    result = aggregate.build_report(rows, draws=150, seed=2)
-    assert result["exposure"]["model"]["aliasing"]["deficit"] == 0
-    assert not any("rank deficient" in note for note in result["notes"])
+def test_the_aliasing_check_still_catches_a_duplicated_column():
+    """The detector that found the defect stays under test after the fix.
+
+    Otherwise the next aliased term enters a model whose only guard has quietly
+    stopped guarding, which is how the first one survived to be registered.
+    """
+    # `shift` is perfectly confounded with `site`: nothing distinguishes them.
+    rows = [
+        {"y": i % 2, "site": "a" if i < 6 else "b", "shift": "day" if i < 6 else "night"}
+        for i in range(12)
+    ]
+    design = glmm.build_design(rows, "y", ["site", "shift"], [])
+    aliasing = glmm.aliasing(design)
+    assert aliasing["deficit"] == 1
+    assert aliasing["rank"] == aliasing["columns"] - 1
+    assert ["site[b]", "shift[night]"] in aliasing["duplicate_columns"]
+
+    # And says nothing when the two vary independently.
+    for i, row in enumerate(rows):
+        row["shift"] = "day" if i % 2 else "night"
+    clean = glmm.aliasing(glmm.build_design(rows, "y", ["site", "shift"], []))
+    assert clean["deficit"] == 0 and clean["duplicate_columns"] == []
 
 
 def test_too_few_injected_runs_reports_exposure_descriptively():

@@ -45,7 +45,14 @@ PRIMARY_FIXED = ["condition*entry_point*induced_action", "condition*task", "mode
 # synthetic-data fit at the exact allocation shows it recovers a known non-zero
 # variance (plan §9.5). The default is that it stays out.
 PRIMARY_RANDOM = ["request_family:paraphrase", "injection_id", "placement_id"]
-EXPOSURE_FIXED = ["condition*entry_point", "induced_action", "model_family", "task"]
+# `induced_action` was dropped before signing. It was aliased with the fixed
+# block on this model's own population — every inert run carries a null
+# induced_action, so that level's indicator is the `condition[inert]` indicator
+# `condition * entry_point` already supplies, and the block was rank deficient
+# before any data were seen. It also costs nothing substantively: exposure is
+# whether the agent read the vehicle, which is a property of the entry point and
+# the placement rather than of what the text went on to ask for.
+EXPOSURE_FIXED = ["condition*entry_point", "model_family", "task"]
 EXPOSURE_RANDOM = ["request_family:paraphrase", "placement_id"]
 
 # The one multiplicity family, corrected by Holm across every model family
@@ -217,13 +224,14 @@ def fit_primary(rows: Sequence[dict[str, Any]], prior_sd: float) -> dict[str, An
 
 
 EXPOSURE_ALIASING_NOTE = (
-    "exposure model: the registered fixed block is rank deficient on the registered "
-    "population. Every inert run has `induced_action` null, so that level's column is "
-    "the `condition[inert]` indicator that `condition * entry_point` already carries. "
-    "Predictions are still identified and are what is reported here; the individual "
-    "coefficients are not, and are split between the aliased columns by the prior "
-    "rather than by the data. §9.5 met the same thing in `host:cell` and resolved it "
-    "by dropping the aliased term before signing. Duplicated columns: {pairs}."
+    "exposure model: the registered fixed block is rank deficient on the data it was "
+    "fitted to — rank {rank} of {columns}. Predictions stay identified and are what is "
+    "reported here; the individual coefficients do not, and are split between the "
+    "aliased columns by the prior rather than by the data, so none of them should be "
+    "quoted. Duplicated columns: {pairs}. This has happened twice in this design's "
+    "history — `host:cell` in the primary model (§9.5) and `induced_action` here — and "
+    "both times the resolution was to drop the aliased term before signing rather than "
+    "to report around it."
 )
 
 
@@ -274,19 +282,17 @@ def add_exposure_model(
     if aliasing["deficit"]:
         report["notes"].append(
             EXPOSURE_ALIASING_NOTE.format(
+                rank=aliasing["rank"], columns=aliasing["columns"],
                 pairs="; ".join(" = ".join(pair) for pair in aliasing["duplicate_columns"])
-                or "none exactly duplicated"
+                or "none exactly duplicated",
             )
         )
 
     for entry in entries:
-        strata = sorted({
-            (r["condition"], str(r["induced_action"]))
-            for r in population if r["entry_point"] == entry
-        })
+        conditions = sorted({r["condition"] for r in population if r["entry_point"] == entry})
         table["per_entry_point"][entry]["model"] = {
             family: standardized_exposure(
-                exposure["design"], posterior, entry, strata, tasks[0], family
+                exposure["design"], posterior, entry, conditions, tasks[0], family
             )
             for family in families
         }
@@ -310,29 +316,33 @@ def fit_exposure(rows: Sequence[dict[str, Any]], prior_sd: float) -> dict[str, A
 
 def standardized_exposure(
     design: glmm.Design, draws: Sequence[Sequence[float]], entry: str,
-    strata: Sequence[tuple[str, str]], task: str, model_family: str,
+    conditions: Sequence[str], task: str, model_family: str,
 ) -> dict[str, Any]:
-    """Exposure at one entry point, standardized over its populated strata.
+    """Exposure at one entry point, standardized over its populated conditions.
 
-    Equal weights per (condition, induced action), for the same reason §9.1
-    standardizes susceptibility that way: an entry point whose cells happened to
-    recruit unevenly would otherwise have the mix of its attempts read as a
-    property of the vehicle.
+    Equal weights per condition, for the same reason §9.1 standardizes
+    susceptibility equally over cells: an entry point that happened to recruit
+    more attacked attempts than inert ones would otherwise have the mix of its
+    attempts read as a property of the vehicle. Condition is the only other
+    factor left in the fixed block, and it belongs there — `condition *
+    entry_point` is what lets exposure differ between an inert note and an
+    attacked one in the same vehicle.
     """
     vectors = [
         glmm.design_row(design, {
             "condition": condition, "entry_point": entry,
-            "induced_action": str(action), "task": task, "model_family": model_family,
+            "task": task, "model_family": model_family,
         })
-        for condition, action in strata
+        for condition in conditions
     ]
     samples = [
         sum(glmm.predict(design, draw, v) for v in vectors) / len(vectors) for draw in draws
     ]
     point = sum(glmm.predict(design, [*_mean(draws)], v) for v in vectors) / len(vectors)
     low, high = glmm.interval(samples)
-    return {"estimate": point, "interval": [low, high], "strata": len(vectors),
-            "weights": "equal per populated (condition, induced action)"}
+    return {"estimate": point, "interval": [low, high],
+            "conditions": list(conditions),
+            "weights": "equal per populated condition"}
 
 
 def standardized_susceptibility(

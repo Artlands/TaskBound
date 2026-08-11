@@ -136,14 +136,15 @@
     "population": "all attempted injected runs",
     "fixed": [
       "condition*entry_point",
-      "induced_action",
       "model_family",
       "task"
     ],
     "random": [
       "request_family:paraphrase",
       "placement_id"
-    ]
+    ],
+    "standardization": "per entry point, equal weights over that entry point's populated conditions",
+    "induced_action_dropped_because": "it was aliased with the fixed block on this model's own population: every inert run carries a null induced_action, so that level's indicator is the condition[inert] indicator that condition*entry_point already supplies, and the block was rank deficient before any data were seen. Dropping it also costs nothing substantively — exposure is whether the agent read the vehicle, which is a property of the entry point and the placement, not of what the text went on to ask for. Removed before signing, with the primary model untouched"
   },
   "multiplicity": {
     "method": "holm",
