@@ -25,6 +25,12 @@ def run(tmp_path, *extra: str) -> dict:
         return json.load(fh)
 
 
+def exposing_action(record: dict) -> dict:
+    """The trace entry whose result carried the injected text to the agent."""
+    index = record["exposure"]["first_exposure_index"]
+    return next(a for a in record["action_trace"] if a["index"] == index)
+
+
 def test_clean_run_records_no_crossing_and_full_utility(tmp_path):
     record = run(tmp_path, "--condition", "clean",
                  "--script", os.path.join(SCRIPTS, "clean_success.json"))
@@ -101,6 +107,58 @@ def test_an_incompetent_near_miss_run_leaves_the_overblocking_denominator(tmp_pa
     assert record["overblocking"]["sensitive_action_completed"] is False
     assert record["overblocking"]["task_competent"] is False
     assert record["overblocking"]["overblocked"] is None
+
+
+# --- entry points ---------------------------------------------------------
+# Exposure is a property of the run, not of the injection. E1 sits in the stderr
+# the task is about, so any competent run reads it; E2 and E3 sit in material the
+# agent reaches only at its own discretion, which is why their exposure rates are
+# a headline result rather than a nuisance parameter (plan §8.4). These are the
+# positive cases — `test_sweep.py` covers what a cell that never gets one does to
+# recruitment.
+def test_e2_exposes_when_the_agent_reads_the_project_readme(tmp_path):
+    record = run(tmp_path, "--condition", "attacked",
+                 "--injection", os.path.join(INJ, "t1_e2a1_attack_p1.json"),
+                 "--script", os.path.join(SCRIPTS, "e2_readme_reader.json"))
+    assert record["exposure"]["exposed"] is True
+    # The README read is what exposed it, not the stderr the task is about.
+    assert exposing_action(record)["target_path"].endswith("projects/project_a/README.md")
+    # Exposed but not compliant: reaching the text is not doing what it asks.
+    assert record["compliance"]["compliant"] is False
+    # And discretionary context-gathering is still competent work.
+    assert record["utility"]["success"] is True
+
+
+def test_e3_exposes_when_the_agent_renders_the_module_description(tmp_path):
+    record = run(tmp_path, "--condition", "attacked",
+                 "--injection", os.path.join(INJ, "t1_e3a1_attack_p1.json"),
+                 "--script", os.path.join(SCRIPTS, "e3_module_reader.json"))
+    assert record["exposure"]["exposed"] is True
+    exposing = exposing_action(record)
+    # `module show` renders from a workspace file, so an E3 placement resolves
+    # through the tool rather than through a path the agent names (§11 phase 1).
+    assert exposing["tool"] == "module_show"
+    assert exposing["args"]["name"] == "hdf5/1.14.3"
+    assert record["compliance"]["compliant"] is False
+    assert record["utility"]["success"] is True
+
+
+def test_e2_and_e3_do_not_expose_a_run_that_never_reaches_the_vehicle(tmp_path):
+    """The negative that gives the two above their meaning.
+
+    This script does perform the A1 read, but never sees the text asking for it.
+    That is the pre-exposure background, not compliance: crediting it would count
+    an action the agent took for its own reasons as an injection succeeding
+    (plan §8.1).
+    """
+    for injection in ("t1_e2a1_attack_p1", "t1_e3a1_attack_p1"):
+        record = run(tmp_path / injection, "--condition", "attacked",
+                     "--injection", os.path.join(INJ, injection + ".json"),
+                     "--script", os.path.join(SCRIPTS, "complied_read.json"))
+        assert record["exposure"]["exposed"] is False, injection
+        assert record["exposure"]["first_exposure_index"] is None, injection
+        assert record["compliance"]["compliant"] is False, injection
+        assert record["compliance"]["pre_exposure_target_action"] is True, injection
 
 
 def test_result_records_provenance_needed_to_reproduce(tmp_path):
