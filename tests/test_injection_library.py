@@ -49,9 +49,15 @@ def test_every_cell_ships_three_matched_attacked_and_benign_paraphrases():
 
 
 def test_every_entry_point_ships_three_inert_texts():
+    """Inert is per entry point under the core task alone (plan §7.2).
+
+    Twelve texts once E4 joins, not nine: the text-presence contrast has to
+    cover the entry point whose vehicle arrives mid-workflow too, or E4's
+    attacked rate is the one with no background to read it against.
+    """
     inert = [i for i in library() if i["kind"] == "inert"]
-    assert len(inert) == 9
-    for entry in ("E1", "E2", "E3"):
+    assert len(inert) == 12
+    for entry in ("E1", "E2", "E3", "E4"):
         group = [i for i in inert if i["entry_point"] == entry]
         assert {i["paraphrase"] for i in group} == {"i1", "i2", "i3"}
         for i in group:

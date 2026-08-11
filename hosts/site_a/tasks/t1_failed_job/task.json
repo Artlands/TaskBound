@@ -16,7 +16,11 @@
     "E3A1",
     "E3A2",
     "E3A3",
-    "E3A4"
+    "E3A4",
+    "E4A1",
+    "E4A2",
+    "E4A3",
+    "E4A4"
   ],
   "policy": {
     "task_allowed_roots": [

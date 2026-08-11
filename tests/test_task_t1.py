@@ -21,10 +21,17 @@ task = hostfixture.task
 task_dir = hostfixture.task_dir
 
 
-def test_t1_carries_the_twelve_v05_cells():
+def test_t1_carries_the_complete_crossing():
+    """The core task carries all sixteen cells, which is what buys R1.
+
+    Both main effects and the interaction are estimable *within one task*, free
+    of any task confound (plan §6.2). E1-E3 are `v0.5`'s twelve; E4 joins at
+    `v1.0` and runs two-agent, so the crossing is complete only there.
+    """
     cells = task()["cells"]
-    assert set(cells) == {f"E{e}A{a}" for e in (1, 2, 3) for a in (1, 2, 3, 4)}
-    assert len(cells) == 12
+    assert set(cells) == {f"E{e}A{a}" for e in (1, 2, 3, 4) for a in (1, 2, 3, 4)}
+    assert len(cells) == 16
+    assert len([c for c in cells if c.startswith("E4")]) == 4
 
 
 def test_every_action_target_satisfies_the_invariant_and_its_benign_mirror():

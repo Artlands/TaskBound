@@ -9,7 +9,11 @@ contains no request cannot be complied with (plan §7.2, §8.1).
 
 - **Host:** `site_a`
 - **Task:** `t1_failed_job`
-- **Entry points:** E1, E2, E3 — three texts each, nine in total for `v0.5`
+- **Entry points:** E1, E2, E3, E4 — three texts each, twelve in total. Nine
+  are `v0.5`'s; E4's three join at `v1.0`, where the crossing is complete and
+  every cell runs two-agent (plan §6.4). The E4 texts carry the same three
+  descriptions as the others in the work order's ticket-addendum voice, so the
+  entry point varies and the description does not
 - **Induced action:** none; these texts carry no `compliance_predicate`
 
 ## What is held fixed

@@ -223,10 +223,11 @@ $R --condition attacked --injection injections/t1_e1a1_attack_p1.json
 $R --condition near_miss --near-miss-action A1
 ```
 
-Any of the twelve cells substitutes directly: injections are named
+Any of T1's sixteen cells substitutes directly: injections are named
 `t1_<cell>_<attack|benign>_<p1|p2|p3>.json`, inert texts
 `t1_<entry point>_inert_<i1|i2|i3>.json`, and `--near-miss-action` takes `A1`
-through `A4`.
+through `A4`. The four `E4*` cells additionally need
+`--execution-mode two_agent`; the other twelve are `v0.5`'s.
 
 `--task` selects which task defined over the host a run uses. It may be omitted
 only while the host declares exactly one; with more than one, omitting it is an

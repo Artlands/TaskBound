@@ -1436,10 +1436,10 @@ variance rather than by N — see §9.5.
 Stated at N = 33 and a 3N cap, matching §10.1. N = 33 is a floor (§9.5): if the
 sizing pilot raises it, every figure here scales with it.
 
-The table below is the complete `v1.0` design. The material on disk supports
-**1,980** of these 2,277 runs: T1's four E4 cells and its E4 inert set are
-milestone 9 and are not authored, so T1 currently contributes 12 cells rather
-than 16. `sweep plan` takes `--task` and `--entry-point`, so a release plans its
+The table below is the complete `v1.0` design, and the material on disk now
+supports **all 2,277** of these runs: T1's four E4 cells and its E4 inert set
+were the last gap and are authored, so T1 contributes its full 16.
+`sweep plan` takes `--task` and `--entry-point`, so a release plans its
 own scope rather than whatever the host happens to carry — `v0.5` is
 `--task t1_failed_job --entry-point E1 --entry-point E2 --entry-point E3`.
 
@@ -2054,7 +2054,7 @@ artifact has been reviewed, run, or reported.
 | 6 | T1's twelve E1–E3 cells | **Partial** | 36 attacked, 36 benign, 9 inert texts; four near-miss tasks and the A3 manifest twin. **Acceptance review has not happened**; every text records `accepted_by: PENDING_ACCEPTANCE_REVIEW` |
 | 7 | Sweep driver and aggregator; freeze the pilot protocol | **Done** | `taskbound/{sweep,glmm,aggregate,power}.py`; five tables, mixed-effects fit and its fallback, variance decomposition, all tested on synthetic data. Pilot protocol frozen in `docs/pilot_protocol.md` |
 | 8 | Pilot, gates, sign the pre-registration, run `v0.5` | **Not started** | `preregistration.draft.json` names every item still to freeze. Blocked — see below |
-| 9 | Two-agent execution mode and T1's four E4 cells | **Partial** | `--execution-mode two_agent` runs planner → worker → planner in `taskbound/agents.py`: two adapters at one configuration, separate contexts, the planner resuming its own across turns 1 and 3, the actor recorded per action, and one turn budget for the run rather than one per role turn. Delegation costs no tool, so the tool contract is byte-identical to the bridge arm's. Each task naming an E4 cell declares the `work_order` its workflow is driven from. T4's and T5's E4 cells are runnable; **T1's four E4 cells and its E4 inert set are not authored**. §11 phase 3's peer-agent A4 consumer is also not built: two-agent runs still score A4 level 3 with the scripted reader, which records itself as such and so understates rather than inflates |
+| 9 | Two-agent execution mode and T1's four E4 cells | **Partial** | `--execution-mode two_agent` runs planner → worker → planner in `taskbound/agents.py`: two adapters at one configuration, separate contexts, the planner resuming its own across turns 1 and 3, the actor recorded per action, and one turn budget for the run rather than one per role turn. Delegation costs no tool, so the tool contract is byte-identical to the bridge arm's. Each task naming an E4 cell declares the `work_order` its workflow is driven from. T1 now carries the complete 4 × 4 crossing: 12 attacked + 12 benign E4 texts across its four request families, plus 3 E4 inert, each smoke-run end to end against its declared predicate. Worst pairwise similarity 0.34 against a 0.50 threshold; the shipped maximum is unchanged at 0.37. **Acceptance review has not happened**; every text records `accepted_by: PENDING_ACCEPTANCE_REVIEW`. §11 phase 3's peer-agent A4 consumer is not built: two-agent runs still score A4 level 3 with the scripted reader, which records itself as such and so understates rather than inflates |
 | 10 | T2–T5 workspace material, tasks, policies, near-miss twins | **Partial** | Post-processing pipeline and its config, build tree and build config, archive and staging areas, reports directory, and seven new vehicles are in `hosts/site_a/workspace/`. Four tasks with policies, scope derivations, near-miss twins, two A3 manifest pairs, and 40 calibration fixtures — all calibrating. **Realism review has not happened** |
 | 11 | T2–T5's eight cells, 8 request families | **Partial** | 24 attacked + 24 benign texts across 8 request families, one entry-point rendering each; specs committed beside them. Worst pairwise similarity 0.32 against a 0.50 threshold. **Acceptance review has not happened**; every text records `accepted_by: PENDING_ACCEPTANCE_REVIEW` |
 | 12 | Pilot the expanded design, amend, run `v1.0` | **Not started** | — |
