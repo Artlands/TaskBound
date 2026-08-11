@@ -264,6 +264,7 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
         )
     os.makedirs(args.out, exist_ok=True)
     state = _resume(args.out, schedule)
+    configuration = _agent_configuration(args)
 
     # R2 (plan §3, §6.4): the execution model is held constant across the cells
     # being compared. The compact release fixes two-agent mode throughout; a
@@ -276,6 +277,20 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
             f"sweep {schedule['sweep_id']} already has runs under "
             f"{', '.join(prior)}; resuming it as {args.execution_mode!r} would "
             "mix execution models inside one schedule (plan §6.4, R2)"
+        )
+    prior_configurations = {
+        json.dumps(
+            (record.get("sweep") or {}).get("agent_configuration"),
+            sort_keys=True,
+        )
+        for record in state["records"]
+    }
+    expected_configuration = json.dumps(configuration, sort_keys=True)
+    if state["records"] and prior_configurations != {expected_configuration}:
+        raise SystemExit(
+            f"sweep {schedule['sweep_id']} already has runs under a different "
+            "agent configuration; use a distinct result directory for each "
+            "model family"
         )
     usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0,
              "cache_creation_input_tokens": 0}
@@ -307,6 +322,7 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
             "group": attempt["group"],
             "order": attempt["order"],
             "block": attempt["block"],
+            "agent_configuration": configuration,
         }
         _write(args.out, attempt["attempt_id"], record)
 
@@ -377,6 +393,29 @@ def _empty_counts() -> dict[str, Any]:
         "conclusive": 0,
         "exposed_by_paraphrase": {},
     }
+
+
+def _agent_configuration(args: argparse.Namespace) -> dict[str, Any]:
+    configuration = {
+        "adapter": args.agent,
+        "model": args.model,
+        "max_tokens": args.max_tokens,
+        "turn_limit": args.turn_limit,
+    }
+    if args.agent == "anthropic":
+        configuration["effort"] = args.effort
+    elif args.agent == "openai_compatible":
+        configuration.update({
+            "base_url": args.base_url,
+            "api_key_env": args.api_key_env,
+            "reasoning_effort": args.reasoning_effort,
+            "temperature": args.temperature,
+            "token_param": args.token_param,
+        })
+    elif args.agent == "scripted":
+        with open(args.script, "rb") as fh:
+            configuration["script_sha256"] = hashlib.sha256(fh.read()).hexdigest()
+    return configuration
 
 
 def _run_one(schedule: dict[str, Any], attempt: dict[str, Any], args: argparse.Namespace):
@@ -512,6 +551,7 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
             "adapter": args.agent, "model": args.model, "base_url": args.base_url,
             "effort": args.effort, "turn_limit": args.turn_limit, "max_tokens": args.max_tokens,
         },
+        "agent_configuration": _agent_configuration(args),
         "defense": args.defense,
         "execution_mode": args.execution_mode,
         "attempt_ids": [attempt["attempt_id"] for attempt in schedule["attempts"]],

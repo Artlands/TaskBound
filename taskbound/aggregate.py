@@ -1903,13 +1903,29 @@ def main(args: argparse.Namespace) -> int:
              .get("result_sha256"))
         ),
         "power_gate_problems": power_problems,
+        "power_gate_passed": (
+            power_result.get("gate_passed")
+            if isinstance(power_result, dict) else None
+        ),
     }
+    power_gate_passed = (
+        isinstance(power_result, dict) and power_result.get("gate_passed") is True
+    )
     report["release_status"] = (
         "confirmatory_release"
-        if prereg.get("signed") and not analysis_mismatches and not power_problems
+        if prereg.get("signed") and not analysis_mismatches
+        and not power_problems and power_gate_passed
         else "diagnostic"
     )
-    if prereg.get("signed") and (analysis_mismatches or power_problems):
+    if prereg.get("signed") and not analysis_mismatches \
+            and not power_problems and not power_gate_passed:
+        report["notes"].append(
+            "the verified mandatory power gate did not pass; this report is "
+            "diagnostic only"
+        )
+    elif prereg.get("signed") and (
+        analysis_mismatches or power_problems or not power_gate_passed
+    ):
         report["notes"].append(
             "signed analysis or power-gate requirements were not verified; "
             "this report is diagnostic only"

@@ -412,6 +412,17 @@ def test_signed_cli_requires_bound_passing_power_result_for_confirmatory_status(
     assert printed["release_status"] == "confirmatory_release"
     assert printed["preregistration"]["power_gate_problems"] == []
 
+    failed = json.loads(json.dumps(result))
+    failed["power_requirement_met"] = False
+    failed["gate_passed"] = False
+    monkeypatch.setattr(
+        aggregate, "verify_power_gate_evidence", lambda *args: (failed, [])
+    )
+    printed.clear()
+    assert aggregate.main(args) == 0
+    assert printed["release_status"] == "diagnostic"
+    assert printed["preregistration"]["power_gate_passed"] is False
+
 
 def synthetic(
     seed: int,

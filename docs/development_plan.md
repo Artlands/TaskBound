@@ -1822,6 +1822,8 @@ must confirm every gate rather than infer completion from milestone status.
   malformed tool calls are outcomes, not retry reasons.
 - Raw result JSON is append-only. A release manifest hashes every input and raw
   result; aggregation is reproducible from that manifest in a clean environment.
+  Each model family uses a distinct result directory, and a resumed directory
+  must retain the agent configuration that created its existing records.
   Signed aggregation rejects rows outside the frozen sweep and attempt manifest,
   duplicate configuration/attempt pairs, and model configurations other than
   the two hashes recorded at signing. Each configuration binds the tracked

@@ -6,6 +6,8 @@ import argparse
 import json
 import os
 
+import pytest
+
 from taskbound import sweep
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -190,6 +192,15 @@ def test_an_interrupted_sweep_resumes_rather_than_reruns(tmp_path):
     assert second["totals"]["attempted_total"] > first["totals"]["attempted_total"]
     written = [p for p in os.listdir(out) if not p.startswith("sweep_manifest")]
     assert len(written) == second["totals"]["attempted_total"]
+
+
+def test_a_sweep_cannot_resume_under_another_model_configuration(tmp_path):
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
+    out = tmp_path / "out"
+    sweep.execute(s, run_args(out, max_attempts=1))
+
+    with pytest.raises(SystemExit, match="distinct result directory"):
+        sweep.execute(s, run_args(out, model="another-family", max_attempts=1))
 
 
 def test_every_result_records_the_attempt_it_came_from(tmp_path):

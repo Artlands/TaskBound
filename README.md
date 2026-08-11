@@ -286,12 +286,16 @@ never a decision made with results visible.
 # available for diagnostics, but a release schedule uses the full preset.
 
 .venv/bin/python -m taskbound.runner sweep run \
-  --schedule schedules/v10_compact_seed1.json --out results \
+  --schedule schedules/v10_compact_seed1.json --out results/claude-opus-5 \
   --agent anthropic --model claude-opus-5 \
   --canary-seed "$TB_CANARY_SEED" \
   --spend-ceiling 250 --price-in 5 --price-cached 0.5 --price-out 25 \
   --price-date 2026-08-11 --execution-mode two_agent --verbose
 ```
+
+Run the second registered model family against the same frozen schedule with
+its own `--out` directory. A directory can be resumed only with the exact agent
+configuration that started it; aggregation combines the two family directories.
 
 What the driver does that a shell loop cannot:
 
