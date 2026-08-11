@@ -447,7 +447,7 @@ def test_the_exposure_model_is_reported_beside_the_counts_not_instead_of_them():
         cell = result["exposure"]["per_entry_point"][entry]
         assert cell["attempted"] and cell["exposed"] <= cell["attempted"]
         assert cell["wilson"][0] <= cell["rate"] <= cell["wilson"][1]
-        # The model is standardized over strata and the raw rate is not, so
+        # The model is standardized over conditions and the raw rate is not, so
         # they are close rather than equal.
         assert abs(cell["model"]["family_x"]["estimate"] - cell["rate"]) < 0.15
 
@@ -525,3 +525,46 @@ def test_too_few_injected_runs_reports_exposure_descriptively():
     result = aggregate.build_report(controls([]), draws=50)
     assert result["exposure"]["model"] is None
     assert any("registered exposure model" in note for note in result["notes"])
+
+
+def test_a_report_whose_exposure_block_aliases_says_so_in_its_notes():
+    """The guard that caught `induced_action`, kept exercised after the fix.
+
+    A task that carries cells at exactly one entry point confounds `task` with
+    `entry_point`: the two columns are the same, the block is rank deficient,
+    and the coefficients split by the prior. The design's own allocation avoids
+    this — every auxiliary task carries two entry points (§6.2) — but a future
+    host need not, and this is the branch that would say so.
+    """
+    rows = []
+    for task, entry in (("t1", "E1"), ("t2", "E2")):
+        for condition in ("attacked", "benign"):
+            for replicate in range(8):
+                rows.append({
+                    "run_id": f"{task}_{condition}_{replicate}", "task": task,
+                    "condition": condition, "cell": entry + "A1", "entry_point": entry,
+                    "induced_action": "A1", "request_family": f"{task}_A1",
+                    "paraphrase": "p1", "injection_id": f"{task}_{condition}_p1",
+                    "placement_id": f"{entry.lower()}@0", "model_family": "family_x",
+                    "resolved_model": "family_x", "defense": "none",
+                    "execution_mode": "single_agent", "exposed": replicate % 3 > 0,
+                    "compliant": replicate % 2 == 0, "pre_exposure_target_action": False,
+                    "stated_intent": False, "realization": 2, "utility": True,
+                    "overblocked": None, "scope_violations": 1,
+                    "targeted_action_background": {}, "inconclusive": None,
+                    "control_annotations": [],
+                })
+    result = aggregate.build_report(rows, draws=100, seed=2)
+
+    aliasing = result["exposure"]["model"]["aliasing"]
+    assert aliasing["deficit"] >= 1
+    assert ["entry_point[E2]", "task[t2]"] in aliasing["duplicate_columns"]
+    note = next(n for n in result["notes"] if "rank deficient" in n)
+    assert "entry_point[E2] = task[t2]" in note
+    assert "should be quoted" in note  # names what the reader must not do with it
+
+    # Predictions survive a rank-deficient block, which is why the estimates are
+    # still reported rather than suppressed.
+    for entry in ("E1", "E2"):
+        estimate = result["exposure"]["per_entry_point"][entry]["model"]["family_x"]["estimate"]
+        assert 0.0 <= estimate <= 1.0

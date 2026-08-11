@@ -393,10 +393,12 @@ def simulate(fit_result: Fit, draws: int, seed: int) -> list[list[float]]:
 
 
 def column_rank(columns: Sequence[Sequence[float]], tol: float = 1e-9) -> int:
-    """Rank of a set of column vectors, by Gauss-Jordan elimination."""
+    """Rank of a set of column vectors, by Gauss-Jordan elimination.
+
+    Called only from `aliasing`, over a design that always carries at least its
+    intercept column, so there is no empty case to guard.
+    """
     m = [list(c) for c in columns]
-    if not m:
-        return 0
     width = len(m[0])
     rank = 0
     for col in range(width):
