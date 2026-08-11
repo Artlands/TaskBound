@@ -29,8 +29,11 @@ rather than seconds. It runs once, before signing.
 from __future__ import annotations
 
 import argparse
+import glob
+import hashlib
 import json
 import math
+import os
 import random
 from dataclasses import asdict, dataclass, field
 from typing import Any, Sequence
@@ -88,8 +91,72 @@ UNMEASURABLE_KNOBS = ("cell_sd",)
 SD_CEILING = 5.0
 
 
+def _canonical_sha256(value: Any) -> str:
+    encoded = json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _artifact_core(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: value for key, value in payload.items()
+        if key not in {"artifact_sha256", "path", "input_type"}
+    }
+
+
+def load_pilot_frame(results_dir: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    root = os.path.realpath(results_dir)
+    rows = []
+    inputs = []
+    for path in sorted(glob.glob(os.path.join(root, "**", "*.json"), recursive=True)):
+        with open(path, encoding="utf-8") as fh:
+            record = json.load(fh)
+        if "run_id" not in record or "action_trace" not in record:
+            continue
+        rows.append(aggregate._row(record))
+        inputs.append({
+            "path": os.path.relpath(path, root),
+            "sha256": _canonical_sha256(record),
+        })
+    aggregate.validate_compact_scope(rows)
+    manifest = {
+        "results_dir": root,
+        "files": inputs,
+        "combined_sha256": _canonical_sha256(inputs),
+    }
+    return rows, manifest
+
+
+def _fit_provenance(primary: dict[str, Any]) -> dict[str, Any]:
+    fit = primary["fit"]
+    numerical_fit = {
+        "beta": fit.beta,
+        "u": fit.u,
+        "log_sd": fit.log_sd,
+        "precision_chol": fit.precision_chol,
+        "diagnostics": fit.diagnostics,
+    }
+    return {
+        "fixed_terms": list(aggregate.PRIMARY_FIXED),
+        "random_terms": list(aggregate.PRIMARY_RANDOM),
+        "method": fit.method,
+        "used_fallback": primary["used_fallback"],
+        "converged": fit.converged,
+        "n_evaluations": fit.n_evaluations,
+        "fit_sha256": _canonical_sha256(numerical_fit),
+    }
+
+
+def _seal_artifact(payload: dict[str, Any]) -> dict[str, Any]:
+    payload.pop("artifact_sha256", None)
+    payload["artifact_sha256"] = _canonical_sha256(_artifact_core(payload))
+    return payload
+
+
 def measure_clustering(
-    rows: Sequence[dict[str, Any]], prior_sd: float, seed: int, level: float = 0.95
+    rows: Sequence[dict[str, Any]], prior_sd: float, seed: int, level: float = 0.95,
+    pilot_inputs: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Turn a sizing pilot into the clustering range the gate is evaluated across.
 
@@ -125,6 +192,8 @@ def measure_clustering(
         "converged": getattr(fit, "converged", False),
         "at_variance_boundary": (fit.diagnostics.get("at_variance_boundary") or []
                                  if not primary["used_fallback"] else None),
+        "pilot_inputs": pilot_inputs,
+        "fit_provenance": _fit_provenance(primary),
     }
 
     if primary["used_fallback"] or not getattr(fit, "log_sd", None):
@@ -147,7 +216,7 @@ def measure_clustering(
             + " — the pilot did not resolve them, so their point estimates are "
               "floor artifacts rather than measurements", point)
         result["unmapped_components"] = unmapped
-        return result
+        return _seal_artifact(result)
 
     drawn = aggregate.log_sd_samples(primary, prior_sd, seed)
     if drawn is None:
@@ -155,7 +224,7 @@ def measure_clustering(
             source, "the profiled surface has no usable curvature, so no interval "
                     "can be drawn around the measured components", point)
         result["unmapped_components"] = unmapped
-        return result
+        return _seal_artifact(result)
 
     names, draws = drawn
     ceiling = math.log(SD_CEILING)
@@ -188,7 +257,7 @@ def measure_clustering(
               "a larger pilot is needed before the range can narrow", point)
         result["components"] = components
         result["unmapped_components"] = unmapped
-        return result
+        return _seal_artifact(result)
 
     # The unmeasurable knobs keep their a-priori values, rung for rung, so the
     # gate still spans the bracket nobody has narrowed instead of pretending a
@@ -218,7 +287,7 @@ def measure_clustering(
                 values[knob] = pick(components[knob])
         return {"label": label, **values}
 
-    return {
+    return _seal_artifact({
         "artifact_type": CLUSTERING_ARTIFACT_TYPE,
         "artifact_version": CLUSTERING_ARTIFACT_VERSION,
         "measured": True,
@@ -234,7 +303,7 @@ def measure_clustering(
             rung("measured", 1, lambda c: c["estimate"]),
             rung("measured_high", 2, lambda c: c["interval"][1]),
         ],
-    }
+    })
 
 
 def _unnarrowed(source: dict[str, Any], reason: str,
@@ -245,7 +314,7 @@ def _unnarrowed(source: dict[str, Any], reason: str,
     reading the result does not have to know which branch produced it. It is
     None only when the fit produced no components to report.
     """
-    return {
+    return _seal_artifact({
         "artifact_type": CLUSTERING_ARTIFACT_TYPE,
         "artifact_version": CLUSTERING_ARTIFACT_VERSION,
         "measured": False,
@@ -256,7 +325,7 @@ def _unnarrowed(source: dict[str, Any], reason: str,
         "range": [dict(c) for c in CLUSTERING_RANGE],
         "note": "the a-priori CLUSTERING_RANGE is retained unchanged; the gate is "
                 "no easier to pass than it was before the pilot ran",
-    }
+    })
 
 
 def load_clustering_artifact(path: str) -> dict[str, Any]:
@@ -278,12 +347,10 @@ def load_clustering_input(path: str) -> tuple[list[dict[str, Any]], Any]:
     entries = payload.get("range") if isinstance(payload, dict) else payload
     if not isinstance(entries, list) or not entries:
         raise SystemExit(f"{path!r} carries no clustering range")
-    for entry in entries:
-        if not isinstance(entry, dict):
-            raise SystemExit(f"{path!r} carries a non-object clustering rung")
-        missing = [k for k in KNOBS if k not in entry]
-        if missing:
-            raise SystemExit(f"{path!r}: rung {entry.get('label')!r} is missing {missing}")
+    range_problems = _clustering_range_problems(entries)
+    if range_problems:
+        raise SystemExit(f"{path!r} carries an invalid clustering range: "
+                         + "; ".join(range_problems))
     return list(entries), payload
 
 
@@ -300,6 +367,9 @@ def clustering_artifact_problems(payload: Any) -> list[str]:
         problems.append("artifact_type does not identify `runner clustering`")
     if payload.get("artifact_version") != CLUSTERING_ARTIFACT_VERSION:
         problems.append("unsupported artifact_version")
+    claimed_digest = payload.get("artifact_sha256")
+    if claimed_digest != _canonical_sha256(_artifact_core(payload)):
+        problems.append("artifact_sha256 does not bind the recorded artifact")
     source = payload.get("source")
     expected_settings = {
         "prior_sd": RELEASE_PRIOR_SD,
@@ -321,18 +391,7 @@ def clustering_artifact_problems(payload: Any) -> list[str]:
     if not isinstance(entries, list):
         problems.append("range must be a list")
         entries = []
-    for entry in entries:
-        if not isinstance(entry, dict):
-            problems.append("range contains a non-object rung")
-            continue
-        missing = [k for k in KNOBS if k not in entry]
-        if missing:
-            problems.append(f"rung {entry.get('label')!r} is missing {missing}")
-        for knob in KNOBS:
-            if knob in entry and not _nonnegative_finite(entry[knob]):
-                problems.append(
-                    f"rung {entry.get('label')!r} has invalid {knob}"
-                )
+    problems.extend(_clustering_range_problems(entries))
     measured = payload.get("measured")
     narrowed = payload.get("narrowed")
     if measured is True and narrowed is True:
@@ -344,7 +403,59 @@ def clustering_artifact_problems(payload: Any) -> list[str]:
             problems.append("unchanged-range refusal did not retain the registered range")
     else:
         problems.append("measured/narrowed state is not a clustering-step outcome")
+    if not problems:
+        problems.extend(_pilot_binding_problems(payload))
     return problems
+
+
+def _clustering_range_problems(entries: Sequence[Any]) -> list[str]:
+    problems = []
+    labels = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            problems.append("range contains a non-object rung")
+            continue
+        label = entry.get("label")
+        if not isinstance(label, str) or not label.strip():
+            problems.append("range rung has a missing or non-string label")
+        else:
+            labels.append(label)
+        missing = [k for k in KNOBS if k not in entry]
+        if missing:
+            problems.append(f"rung {label!r} is missing {missing}")
+        for knob in KNOBS:
+            if knob in entry and not _nonnegative_finite(entry[knob]):
+                problems.append(f"rung {label!r} has invalid {knob}")
+    if len(labels) != len(set(labels)):
+        problems.append("range rung labels must be unique")
+    return problems
+
+
+def _pilot_binding_problems(payload: dict[str, Any]) -> list[str]:
+    source = payload["source"]
+    recorded_inputs = source.get("pilot_inputs")
+    if not isinstance(recorded_inputs, dict):
+        return ["source has no canonical pilot input manifest"]
+    results_dir = recorded_inputs.get("results_dir")
+    if not isinstance(results_dir, str) or not results_dir:
+        return ["pilot input manifest has no results directory"]
+    try:
+        rows, actual_inputs = load_pilot_frame(results_dir)
+    except (OSError, ValueError, json.JSONDecodeError, SystemExit) as exc:
+        return [f"pilot inputs cannot be verified: {exc}"]
+    if actual_inputs != recorded_inputs:
+        return ["canonical pilot input hashes differ from the recorded inputs"]
+    settings = source["settings"]
+    reproduced = measure_clustering(
+        rows,
+        settings["prior_sd"],
+        settings["seed"],
+        settings["level"],
+        actual_inputs,
+    )
+    if _artifact_core(reproduced) != _artifact_core(payload):
+        return ["artifact does not reproduce from the recorded pilot fit"]
+    return []
 
 
 def _positive_integer(value: Any) -> bool:
@@ -651,6 +762,10 @@ def run(
 ) -> dict[str, Any]:
     if simulations <= 0:
         raise ValueError("simulations must be positive")
+    clustering_problems = clustering_artifact_problems(clustering_provenance)
+    if isinstance(clustering_provenance, dict) \
+            and clustering_provenance.get("range") != list(clustering_range):
+        clustering_problems.append("evaluated range differs from the clustering artifact")
     estimands = ("attack_susceptibility", "scope_selectivity",
                  "entry_point_effect", "induced_action_effect")
     confirmatory = ("attack_susceptibility",)
@@ -705,10 +820,6 @@ def run(
         for name, registered in registered_analysis.items()
         if actual_analysis.get(name) != registered
     }
-    clustering_problems = clustering_artifact_problems(clustering_provenance)
-    if isinstance(clustering_provenance, dict) \
-            and clustering_provenance.get("range") != list(clustering_range):
-        clustering_problems.append("evaluated range differs from the clustering artifact")
     gate_eligible = (
         simulations == RELEASE_SIMULATIONS
         and not truth_mismatches
@@ -780,10 +891,12 @@ def add_clustering_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def clustering_main(args: argparse.Namespace) -> int:
-    rows = aggregate.load_frame(args.results)
+    rows, pilot_inputs = load_pilot_frame(args.results)
     if not rows:
         raise SystemExit(f"no results found under {args.results!r}")
-    result = measure_clustering(rows, args.prior_sd, args.seed, args.level)
+    result = measure_clustering(
+        rows, args.prior_sd, args.seed, args.level, pilot_inputs
+    )
 
     print(f"clustering measured from {len(rows)} runs under {args.results!r}")
     if not result["narrowed"]:
@@ -829,12 +942,12 @@ def main(args: argparse.Namespace) -> int:
             else {"path": args.clustering, "range": clustering_range,
                   "input_type": "hand_authored_range"}
         )
-        if isinstance(payload, dict) and clustering_artifact_problems(payload):
-            provenance["input_type"] = "invalid_clustering_artifact"
 
     result = run(truth, args.simulations, args.seed, clustering_range,
                  draws=args.draws, prior_sd=args.prior_sd,
                  clustering_provenance=provenance)
+    if provenance and result["clustering_artifact_problems"]:
+        provenance["input_type"] = "invalid_clustering_artifact"
     print(f"power simulation: {args.simulations} sweeps per clustering setting, "
           f"N={args.n_exposed} exposed per cell")
     if provenance and provenance.get("narrowed", False):

@@ -487,13 +487,17 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
         "finished_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
         "release": runner.RELEASE,
         "git_commit": runner._git_commit(),
-        "schedule": {k: schedule[k] for k in ("host", "seed", "exposed_target", "attempt_cap")},
+        "schedule": {
+            k: schedule[k]
+            for k in ("host", "seed", "exposed_target", "attempt_cap", "attempts")
+        },
         "agent": {
             "adapter": args.agent, "model": args.model, "base_url": args.base_url,
             "effort": args.effort, "turn_limit": args.turn_limit, "max_tokens": args.max_tokens,
         },
         "defense": args.defense,
         "execution_mode": args.execution_mode,
+        "attempt_ids": [attempt["attempt_id"] for attempt in schedule["attempts"]],
         "stopped_early": stopped_early,
         "groups": groups,
         "totals": {

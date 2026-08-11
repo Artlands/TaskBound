@@ -47,7 +47,7 @@ def _valid_narrowed_artifact():
         "interval": [None, None],
         "measurable": False,
     }
-    return {
+    return power._seal_artifact({
         "artifact_type": power.CLUSTERING_ARTIFACT_TYPE,
         "artifact_version": power.CLUSTERING_ARTIFACT_VERSION,
         "measured": True,
@@ -73,7 +73,7 @@ def _valid_narrowed_artifact():
             {"label": "measured_high", "paraphrase_sd": 0.6, "cell_sd": 0.6,
              "injection_sd": 0.3, "placement_sd": 0.2},
         ],
-    }
+    })
 
 
 def test_compact_power_defaults_match_the_release_allocation():
@@ -169,6 +169,7 @@ def test_only_the_exact_release_configuration_can_pass_the_gate(monkeypatch):
                 "scope_selectivity": True, "entry_point_effect": True,
                 "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
+    monkeypatch.setattr(power, "_pilot_binding_problems", lambda payload: [])
     exact = power.run(power.Truth(), simulations=500, seed=1,
                       clustering_range=power.CLUSTERING_RANGE,
                       clustering_provenance=_valid_refusal_artifact())
@@ -224,6 +225,7 @@ def test_unchanged_range_refusal_is_release_eligible_provenance(monkeypatch):
                 "scope_selectivity": True, "entry_point_effect": True,
                 "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
+    monkeypatch.setattr(power, "_pilot_binding_problems", lambda payload: [])
     artifact = _valid_refusal_artifact()
     result = power.run(
         power.Truth(), power.RELEASE_SIMULATIONS, seed=1,
@@ -259,8 +261,35 @@ def test_forged_narrowed_artifacts_are_diagnostic(monkeypatch, mutate, problem):
     assert any(problem in message for message in result["clustering_artifact_problems"])
 
 
-def test_valid_narrowed_artifact_is_reconstructed_without_problems():
+def test_valid_narrowed_artifact_is_reconstructed_without_problems(monkeypatch):
+    monkeypatch.setattr(power, "_pilot_binding_problems", lambda payload: [])
     assert power.clustering_artifact_problems(_valid_narrowed_artifact()) == []
+
+
+def test_clustering_artifact_must_reproduce_from_hashed_pilot_inputs(monkeypatch):
+    rows = _pilot_rows()
+    inputs = {
+        "results_dir": "/recorded/pilot",
+        "files": [{"path": "run.json", "sha256": "a" * 64}],
+        "combined_sha256": "b" * 64,
+    }
+    artifact = power.measure_clustering(
+        rows, power.RELEASE_PRIOR_SD, power.RELEASE_SEED,
+        power.RELEASE_INTERVAL_LEVEL, inputs,
+    )
+    monkeypatch.setattr(power, "load_pilot_frame", lambda path: (rows, inputs))
+    assert power.clustering_artifact_problems(artifact) == []
+
+    forged = copy.deepcopy(artifact)
+    forged["source"]["runs"] += 1
+    power._seal_artifact(forged)
+    assert "does not reproduce" in " ".join(power.clustering_artifact_problems(forged))
+
+    changed_inputs = {**inputs, "combined_sha256": "c" * 64}
+    monkeypatch.setattr(power, "load_pilot_frame", lambda path: (rows, changed_inputs))
+    assert "input hashes differ" in " ".join(
+        power.clustering_artifact_problems(artifact)
+    )
 
 
 @pytest.mark.parametrize("field,value", [
@@ -359,6 +388,22 @@ def test_load_clustering_rejects_a_range_missing_a_knob(tmp_path):
     assert "cell_sd" in str(excinfo.value)
 
 
+@pytest.mark.parametrize("mutate,problem", [
+    (lambda rung: rung.update(label=None), "non-string label"),
+    (lambda rung: rung.update(paraphrase_sd=float("nan")), "invalid paraphrase_sd"),
+    (lambda rung: rung.update(cell_sd=-0.1), "invalid cell_sd"),
+])
+def test_diagnostic_clustering_ranges_are_validated_before_simulation(
+    tmp_path, mutate, problem
+):
+    rung = dict(power.CLUSTERING_RANGE[0])
+    mutate(rung)
+    path = tmp_path / "range.json"
+    path.write_text(json.dumps([rung]))
+    with pytest.raises(SystemExit, match=problem):
+        power.load_clustering_input(str(path))
+
+
 def test_ad_hoc_clustering_range_can_run_only_as_a_diagnostic(tmp_path, monkeypatch):
     path = tmp_path / "range.json"
     path.write_text(json.dumps([power.CLUSTERING_RANGE[0]]))
@@ -397,21 +442,35 @@ def test_ad_hoc_clustering_cli_reports_diagnostic_without_crashing(
     assert "DIAGNOSTIC ONLY" in output
 
 
-def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path):
+def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path, monkeypatch):
     """The writer and the reader are the same contract, on both branches: a
     refusal hands back the a-priori bracket and a narrowed range mixes measured
     values with a carried-through `cell_sd`, and `run` has to accept either."""
-    refused = power.measure_clustering(_pilot_rows(), glmm.DEFAULT_PRIOR_SD, seed=1)
+    refused_rows = _pilot_rows()
+    refused_inputs = {"results_dir": str(tmp_path / "refused"), "files": [],
+                      "combined_sha256": power._canonical_sha256([])}
+    refused = power.measure_clustering(
+        refused_rows, glmm.DEFAULT_PRIOR_SD, seed=1, pilot_inputs=refused_inputs
+    )
+    narrowed_rows = power.generate(
+        power.Truth(n_exposed_per_cell=36, attempt_cap=108,
+                    exposure={entry: 1.0 for entry in power.ENTRY_POINTS}),
+        power.CLUSTERING_RANGE[1], seed=5,
+    )
+    narrowed_inputs = {"results_dir": str(tmp_path / "narrowed"), "files": [],
+                       "combined_sha256": power._canonical_sha256([])}
     narrowed = power.measure_clustering(
-        power.generate(
-            power.Truth(n_exposed_per_cell=36, attempt_cap=108,
-                        exposure={entry: 1.0 for entry in power.ENTRY_POINTS}),
-            power.CLUSTERING_RANGE[1], seed=5,
-        ), glmm.DEFAULT_PRIOR_SD, seed=1,
+        narrowed_rows, glmm.DEFAULT_PRIOR_SD, seed=1, pilot_inputs=narrowed_inputs,
     )
     assert refused["narrowed"] is False and narrowed["narrowed"] is True
 
-    for measured in (refused, narrowed):
+    for measured, rows, inputs in (
+        (refused, refused_rows, refused_inputs),
+        (narrowed, narrowed_rows, narrowed_inputs),
+    ):
+        monkeypatch.setattr(
+            power, "load_pilot_frame", lambda path, r=rows, i=inputs: (r, i)
+        )
         path = tmp_path / f"clustering_{measured['narrowed']}.json"
         path.write_text(json.dumps(measured))
         assert power.load_clustering(str(path)) == measured["range"]

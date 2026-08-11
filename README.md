@@ -320,6 +320,10 @@ which emits the five tables of plan §11 phase 5 — headline, factor effects,
 variance decomposition, exposure, and the full descriptive grid — with
 intervals from the pre-registered mixed-effects model. Without a signed
 pre-registration it says so, at the top, in the text.
+With a signed pre-registration, aggregation additionally requires the registered
+sweep id, membership in its immutable attempt manifest, one result per
+configuration/attempt pair, and exactly the two frozen model-configuration
+hashes. Development aggregation remains available but is explicitly diagnostic.
 
 ### Before a sweep is worth running
 

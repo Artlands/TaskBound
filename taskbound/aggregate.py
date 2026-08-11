@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import hashlib
 import json
 import math
 import os
@@ -82,16 +83,115 @@ COMPACT_CELLS = {
 
 
 # --- the analysis frame --------------------------------------------------
-def load_frame(results_dir: str) -> list[dict[str, Any]]:
+def load_frame(
+    results_dir: str, preregistration: dict[str, Any] | None = None
+) -> list[dict[str, Any]]:
     rows = []
+    manifests = []
     for path in sorted(glob.glob(os.path.join(results_dir, "**", "*.json"), recursive=True)):
         with open(path, encoding="utf-8") as fh:
             record = json.load(fh)
         if "run_id" not in record or "action_trace" not in record:
+            if {"sweep_id", "groups", "totals"} <= set(record):
+                manifests.append(record)
             continue  # a sweep manifest, not a run
         rows.append(_row(record))
     validate_compact_scope(rows)
+    if preregistration and preregistration.get("signed"):
+        validate_release_binding(rows, preregistration, manifests)
     return rows
+
+
+def _canonical_sha256(value: Any) -> str:
+    encoded = json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def model_configuration_sha256(record: dict[str, Any]) -> str:
+    return _canonical_sha256(record.get("agent") or {})
+
+
+def validate_release_binding(
+    rows: Sequence[dict[str, Any]],
+    preregistration: dict[str, Any],
+    manifests: Sequence[dict[str, Any]],
+) -> None:
+    allocation = preregistration.get("allocation") or {}
+    expected_sweep = allocation.get("sweep_id")
+    family_spec = preregistration.get("model_families") or {}
+    expected_configs = family_spec.get("configuration_sha256")
+    digest_chars = set("0123456789abcdef")
+    if not isinstance(expected_sweep, str) or not expected_sweep \
+            or expected_sweep.startswith("PENDING"):
+        raise SystemExit("signed pre-registration has no frozen sweep_id")
+    if not isinstance(expected_configs, list) or len(expected_configs) != 2 \
+            or len(set(expected_configs)) != 2 \
+            or any(not isinstance(value, str) or len(value) != 64
+                   or set(value) - digest_chars for value in expected_configs):
+        raise SystemExit(
+            "signed pre-registration must freeze exactly two model configuration hashes"
+        )
+
+    matching_manifests = [m for m in manifests if m.get("sweep_id") == expected_sweep]
+    if not matching_manifests:
+        raise SystemExit("signed release results have no matching sweep manifest")
+    allowed_attempts: set[str] = set()
+    for manifest in matching_manifests:
+        attempt_ids = manifest.get("attempt_ids")
+        if not isinstance(attempt_ids, list) or not attempt_ids \
+                or len(attempt_ids) != len(set(attempt_ids)) \
+                or not all(isinstance(value, str) and value for value in attempt_ids):
+            raise SystemExit("signed release sweep manifest has no unique attempt membership")
+        schedule = manifest.get("schedule")
+        required_schedule_keys = {"host", "seed", "exposed_target", "attempt_cap", "attempts"}
+        if not isinstance(schedule, dict) or not required_schedule_keys <= set(schedule):
+            raise SystemExit("signed release sweep manifest has no reproducible schedule")
+        sweep_payload = {
+            key: schedule[key]
+            for key in ("host", "seed", "exposed_target", "attempt_cap", "attempts")
+        }
+        reproduced_sweep = "sweep_" + hashlib.sha256(
+            json.dumps(sweep_payload, sort_keys=True).encode()
+        ).hexdigest()[:12]
+        scheduled_ids = [
+            attempt.get("attempt_id") for attempt in schedule["attempts"]
+            if isinstance(attempt, dict)
+        ] if isinstance(schedule["attempts"], list) else []
+        if reproduced_sweep != expected_sweep or scheduled_ids != attempt_ids:
+            raise SystemExit(
+                "signed release sweep manifest does not reproduce its sweep identity"
+            )
+        allowed_attempts.update(attempt_ids)
+
+    invalid = []
+    seen = set()
+    observed_configs = set()
+    for row in rows:
+        sweep_id = row.get("sweep_id")
+        attempt_id = row.get("attempt_id")
+        config = row.get("model_configuration_sha256")
+        if sweep_id != expected_sweep:
+            invalid.append(f"{row['run_id']}: sweep_id={sweep_id!r}")
+        if attempt_id not in allowed_attempts:
+            invalid.append(f"{row['run_id']}: attempt_id={attempt_id!r}")
+        if config not in expected_configs:
+            invalid.append(f"{row['run_id']}: model_configuration_sha256={config!r}")
+        membership = (config, attempt_id)
+        if membership in seen:
+            invalid.append(f"{row['run_id']}: duplicate attempt membership {membership!r}")
+        seen.add(membership)
+        observed_configs.add(config)
+    if observed_configs != set(expected_configs):
+        invalid.append(
+            "observed model configurations do not equal the two registered hashes"
+        )
+    if invalid:
+        preview = "; ".join(invalid[:5])
+        remainder = f"; and {len(invalid) - 5} more" if len(invalid) > 5 else ""
+        raise SystemExit(f"results do not match the signed release allocation: "
+                         f"{preview}{remainder}")
 
 
 def validate_compact_scope(rows: Sequence[dict[str, Any]]) -> None:
@@ -151,6 +251,7 @@ def _row(record: dict[str, Any]) -> dict[str, Any]:
     injection = record.get("injection") or {}
     placement = record.get("placement") or {}
     agent = record.get("agent") or {}
+    sweep = record.get("sweep") or {}
     return {
         "run_id": record["run_id"],
         "host": record["host"]["id"],
@@ -168,6 +269,9 @@ def _row(record: dict[str, Any]) -> dict[str, Any]:
         # endpoints cannot give an immutable snapshot (plan §6.6).
         "model_family": (agent.get("sampling") or {}).get("model") or agent.get("adapter"),
         "resolved_model": agent.get("resolved_model"),
+        "model_configuration_sha256": model_configuration_sha256(record),
+        "sweep_id": sweep.get("sweep_id"),
+        "attempt_id": sweep.get("attempt_id"),
         "defense": record.get("defense"),
         "execution_mode": record.get("execution_mode"),
         "exposed": bool(record["exposure"]["exposed"]),
@@ -1143,7 +1247,7 @@ def main(args: argparse.Namespace) -> int:
     if args.preregistration and os.path.isfile(args.preregistration):
         with open(args.preregistration, encoding="utf-8") as fh:
             prereg = json.load(fh)
-    rows = load_frame(args.results)
+    rows = load_frame(args.results, prereg)
     if not rows:
         raise SystemExit(f"no results found under {args.results!r}")
     report = build_report(
@@ -1158,6 +1262,9 @@ def main(args: argparse.Namespace) -> int:
         "signed": prereg.get("signed", False),
         "id": prereg.get("preregistration_id"),
     }
+    report["release_status"] = (
+        "confirmatory_release" if prereg.get("signed") else "diagnostic"
+    )
     if not prereg.get("signed"):
         report["notes"].append(
             "no signed pre-registration: everything here is exploratory and must be labelled "

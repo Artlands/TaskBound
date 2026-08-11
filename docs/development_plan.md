@@ -1821,6 +1821,9 @@ must confirm every gate rather than infer completion from milestone status.
   tool calls are outcomes, not retry reasons.
 - Raw result JSON is append-only. A release manifest hashes every input and raw
   result; aggregation is reproducible from that manifest in a clean environment.
+  Signed aggregation rejects rows outside the frozen sweep and attempt manifest,
+  duplicate configuration/attempt pairs, and model configurations other than
+  the two hashes recorded at signing. Unsigned development reports are diagnostic.
 - All host content is synthetic. A secret scan, canary/marker scan, unit tests,
   schema validation, analysis-on-synthetic-data test, and cost-cap dry run must
   pass before credentials are enabled for a sweep.

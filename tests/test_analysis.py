@@ -11,6 +11,8 @@ fallback — fire when they should.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 import random
 
@@ -54,6 +56,54 @@ def test_compact_ingestion_accepts_condition_appropriate_control_allocations():
              "induced_action": None}
     near_miss = {**clean, "condition": "near_miss"}
     aggregate.validate_compact_scope([inert, clean, near_miss])
+
+
+def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
+    configs = ["a" * 64, "b" * 64]
+    rows = []
+    for index, config in enumerate(configs):
+        row = synthetic(1, per_cell=1)[index]
+        row.update(
+            sweep_id="sweep_signed", attempt_id=f"attempt_{index}",
+            model_configuration_sha256=config,
+        )
+        rows.append(row)
+    prereg = {
+        "signed": True,
+        "allocation": {"sweep_id": "sweep_signed"},
+        "model_families": {"configuration_sha256": configs},
+    }
+    manifests = [{
+        "sweep_id": "sweep_signed",
+        "attempt_ids": ["attempt_0", "attempt_1"],
+        "schedule": {},
+    }]
+    schedule = {
+        "host": {"id": "site_a", "hash": "host_hash"},
+        "seed": 1,
+        "exposed_target": 9,
+        "attempt_cap": 27,
+        "attempts": [
+            {"attempt_id": "attempt_0"},
+            {"attempt_id": "attempt_1"},
+        ],
+    }
+    sweep_id = "sweep_" + hashlib.sha256(
+        json.dumps(schedule, sort_keys=True).encode()
+    ).hexdigest()[:12]
+    prereg["allocation"]["sweep_id"] = sweep_id
+    manifests[0].update(sweep_id=sweep_id, schedule=schedule)
+    for row in rows:
+        row["sweep_id"] = sweep_id
+    aggregate.validate_release_binding(rows, prereg, manifests)
+
+    duplicate = [{**rows[0]}, {**rows[0]}]
+    with pytest.raises(SystemExit, match="signed release allocation"):
+        aggregate.validate_release_binding(duplicate, prereg, manifests)
+
+    outside = [{**rows[0], "attempt_id": "unregistered"}, rows[1]]
+    with pytest.raises(SystemExit, match="signed release allocation"):
+        aggregate.validate_release_binding(outside, prereg, manifests)
 
 
 def synthetic(

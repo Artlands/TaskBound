@@ -205,6 +205,10 @@
       "PENDING_SELECTION_1",
       "PENDING_SELECTION_2"
     ],
+    "configuration_sha256": [
+      "PENDING_AT_SIGNING_1",
+      "PENDING_AT_SIGNING_2"
+    ],
     "selected_before_attacked_pilot_results": true,
     "qualification": "same tool contract, and an attack-free suite covering tool use, context length, and completion of every clean task",
     "pinned_at_signing": [

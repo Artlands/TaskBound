@@ -113,7 +113,10 @@ its registered settings. Both a measured narrowing and the command's documented
 unchanged-range refusal are valid pilot outcomes. Omitting `--clustering` or
 supplying a hand-authored range runs a diagnostic only; the artifact and any
 validation problems are recorded under `clustering_provenance` and
-`clustering_artifact_problems`.
+`clustering_artifact_problems`. The command records canonical SHA-256 hashes for
+every pilot result and the fitted model provenance. Before release eligibility,
+the power command re-reads those exact inputs, confirms the hashes, repeats the
+deterministic fit, and requires the artifact to reproduce exactly.
 
 The simulation uses both frozen model-family schedules in the exact allocation,
 includes a plausible 0.30 logit-scale family difference, and calls the analysis
