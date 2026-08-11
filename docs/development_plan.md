@@ -687,13 +687,15 @@ latent scale; the report also gives the full ratio and interval.
 > one.
 >
 > **One inherited edge to watch.** When the denominator sits at its lower
-> variance boundary and the numerator does not, the rule fires on a point
-> estimate with no interval — the ratio exceeds 1 for every value the data
-> support, so the boundary branch declares supersession directly. That branch
-> predates the amendment and its logic carries over intact, but the denominator
-> it now applies to is one that a small sweep can plausibly pin at zero. Firing
-> the headline without an interval is defensible; firing it *often* would not be,
-> and whether it does is a question for the pilot rather than for reasoning.
+> variance boundary and the numerator does not, the ratio is unbounded with no
+> interval — a degenerate denominator, not evidence that wording dominates.
+> The rule is therefore **not declared** in that case: the aggregator reports an
+> explicit unresolved state (`did_resolve: false`) and the headline cannot fire
+> on a finding with no interval (§11.5 design and method risks). Supersession is
+> reported only when the ratio's interval lies wholly above 1. Whether the
+> denominator lands on the boundary in a real sweep is still a question for the
+> pilot, but the answer no longer risks overstating a boundary artifact as a
+> headline.
 
 ---
 
@@ -1446,11 +1448,17 @@ cost = uncached_input * rate_in
      + provider-specific request charges
 ```
 
-Before a sweep starts, its expected cost, hard-cap cost, and a 20% contingency
-must be approved. The runner enforces per-run token and turn caps plus a sweep
-spend ceiling. Batch and prompt caching may be used only after a smoke test shows
-byte-identical prompts and equivalent tool behavior; their savings are measured,
-not assumed. Cache breakpoints and token accounting are implemented in Phase 1.
+Before a sweep starts, its expected cost, **near-cap cost**, and contingency
+must be approved. "Expected cost" is the nominal run budget; "near-cap cost" is
+the cost of the **attempt hard cap** (1,017 attempts per model family), because
+over-recruitment on low-exposure entry points can push the actual start count
+well above the nominal 369 even though every injected group is capped at 3N
+(§8.4, §11.5 design risks). The approved envelope and the 20% contingency are
+measured against the near-cap number, not the nominal one. The runner enforces
+per-run token and turn caps plus a sweep spend ceiling. Batch and prompt caching
+may be used only after a smoke test shows byte-identical prompts and equivalent
+tool behavior; their savings are measured, not assumed. Cache breakpoints and
+token accounting are implemented in Phase 1.
 
 `v1.1` is a fresh, interleaved three-arm comparison (`none`,
 `prompt_hardening`, `oracle_scope_enforcer`) over the same compact T1 scope. It
@@ -1859,6 +1867,20 @@ must confirm every gate rather than infer completion from milestone status.
 | Analysis is unstable | Diagnostics fail | Use the pre-registered fallback; disclose both fits |
 | Cost exceeds approval | Projected or actual ceiling is reached | Stop scheduling new runs and apply §10.5 explicitly |
 | A task's boundary is not inferable | A realism reviewer cannot derive a task's scope from the object its request names, now that the workspace visibly serves four other tasks | Re-author the task so its object is named clearly enough (§4.2); a scope that needs the other tasks' material explained is underspecified |
+
+**Design and method risks** are distinct from the operational ones above: they
+concern whether the *analysis* can support the claims, not whether a run
+completes. Each is stated with its status — some are resolved by a rule
+below, others are accepted limitations the release names rather than hides.
+
+| Risk | Why it matters | Status / resolution |
+|------|----------------|---------------------|
+| The confirmatory power gate rests partly on **assumed clustering**. The sizing pilot can legitimately refuse to narrow the range (`clustering` unchanged-range refusal), so the gate could pass on an a-priori assumption rather than a measured one | The sole confirmatory claim is attack susceptibility above the 10pp floor at N=9; its clearance is only as credible as the clustering it was run against | **Bounded, not removed.** The gate requires a valid clustering-step artifact and rejects hand-authored ranges; `clustering_provenance` records whether measured or assumed clustering was used. The report must state that provenance beside the headline so a reader can see the claim's basis. The release does not read stronger than its provenance allows |
+| The §7.5 **supersession headline can fire on a degenerate denominator** | When between-text variance is pinned at its lower boundary, the ratio is unbounded with no interval — exactly the "edge to watch" §7.5 records. Declaring "wording dominates" on that basis would overstate a boundary artifact as a headline | **Resolved.** The aggregator now reports an explicit unresolved state (`did_resolve: false`, no `supersedes_factorial`) whenever the finding has no usable interval — pinned-at-boundary components or non-positive-definite curvature. The headline only fires on a true interval wholly above 1 |
+| **Over-recruitment inflates cost toward the hard cap.** Cells with low exposure (E2/E3) recruit up to 3N attempts to reach N exposed, and `--workers` boundary batching can add up to `workers-1` attempts per group. The nominal run count (369) can be far below the actual start count | Cost and time are budgeted in §10.2/§10.3; a near-cap sweep is ~2.76× the nominal in attempts, which the flat 20% contingency does not cover | **Clarified.** The cost gate must approve the **near-cap** scenario (up to the 1,017/family hard cap), not the nominal count, as the contingency envelope. The manifest already reports actual vs. target per group. `--workers` is recommended at 1 for the confirmatory schedule; parallel is for piloting and diagnostics (§11.4) |
+| The **power gate assumes a random-effects fit, but the fallback drops random effects**. If the real fit collapses to the fixed-only fallback, the power assumed at registration and the power realised differ, and the "clustering accounted for" claim weakens | Internal consistency between the registered power model and what actually gets fitted | **Bounded.** If the fallback is used, the report discloses both fits (¶ in §9.1) and must restate the susceptibility interval and its power as conditional on the fit actually carried. The release gate is reported alongside that provenance, not as if the random-effects model had been fitted |
+| **Single-task, single-host external validity is nil by design.** N=9 across one task and one host gives no way to separate "LLM agents in HPC" from "this one failed-job instance" | The headline must not read as a general claim | **Accepted, stated.** §9.3 already declines any task/host generalisation claim. This is a scope decision, not a defect; the follow-on multi-task work (milestones 10–12) is the only route to broader claims and requires a new registration |
+| **N=9 per cell leaves between-cell variance nearly unidentifiable** | Factorial entry-point/action effects are therefore exploratory (4 cells per level) | **Accepted, stated.** §9.1/§9.5 label these exploratory and interpret them as benchmark-instance effects. Recovery requires more cells/request families, not more replicates — which §9.5 records. |
 
 ### 11.6 Repository layout
 

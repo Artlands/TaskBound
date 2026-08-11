@@ -1121,31 +1121,40 @@ def variance_decomposition(
         "ratio_interval": None,
         "at_variance_boundary": boundary,
         "supersedes_factorial": None,
+        "did_resolve": True,
     }
     if boundary:
         # A component pinned at its lower boundary has no usable curvature, so
-        # no interval can be drawn from the profiled surface. Which components
-        # are pinned still decides the question §7.5 asks.
+        # no interval can be drawn from the profiled surface. The §7.5 rule is
+        # "the ratio's *interval* lies wholly above 1", so with no interval the
+        # finding is NOT estimable: the headline must not fire on a degenerate
+        # denominator. That is the boundary-artifact edge §7.5 records.
         paraphrase_pinned = "request_family:paraphrase" in boundary
         text_pinned = "injection_id" in boundary
         if text_pinned and not paraphrase_pinned:
-            # Between-text variance is indistinguishable from zero while
-            # between-paraphrase variance is not: the ratio exceeds 1 for every
-            # value the data support, which is the supersession condition.
-            result["supersedes_factorial"] = True
+            # Between-text variance is pinned at zero while between-paraphrase
+            # is not: the ratio is unbounded, but that unboundedness is an
+            # artifact of the pinned denominator, not evidence that wording
+            # dominates. Report it as unresolved rather than as a headline.
+            result["supersedes_factorial"] = None
+            result["did_resolve"] = False
             result["note"] = ("between-text variance is at its lower boundary while "
-                              "between-paraphrase variance is not; the ratio exceeds 1 "
-                              "throughout, and no interval can be drawn from the profiled surface")
+                              "between-paraphrase variance is not; the ratio is unbounded "
+                              "but no interval exists, so §7.5 supersession is not declared "
+                              "and the finding is reported as unresolved")
         elif paraphrase_pinned and not text_pinned:
             result["supersedes_factorial"] = False
             result["note"] = "between-paraphrase variance is at its lower boundary"
         else:
             result["note"] = ("variance components are at their lower boundary; the ratio is a "
-                              "point estimate and the supersession rule is not applied")
+                              "point estimate with no interval and the supersession rule is "
+                              "reported as unresolved")
+            result["did_resolve"] = False
         return result
 
     samples = _variance_ratio_samples(primary, prior_sd, seed)
     if samples is None:
+        result["did_resolve"] = False
         result["note"] = "the profiled curvature was not positive definite; no interval"
         return result
     low, high = glmm.interval(samples)

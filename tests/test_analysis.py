@@ -16,6 +16,7 @@ import json
 import math
 import random
 import argparse
+import types
 
 import pytest
 
@@ -735,6 +736,24 @@ def test_the_supersession_rule_stays_quiet_when_the_text_beats_the_slot():
     result = report(12, paraphrase_sd=0.05, injection_sd=1.4, exposure=(1.0, 1.0, 1.0))
     assert result["variance_decomposition"]["paraphrase_to_text_ratio"] < 1
     assert not any(n.startswith("HEADLINE:") for n in result["notes"])
+
+
+def test_the_supersession_headline_does_not_fire_on_a_degenerate_denominator():
+    """§7.5's boundary edge: when between-text variance is pinned at zero, the
+    ratio is unbounded but has no interval, so supersession must be reported as
+    unresolved rather than declared as a headline (plan §11.5 design risks)."""
+    fit = types.SimpleNamespace(
+        log_sd=[1.0],
+        sd={"request_family:paraphrase": 1.0, "injection_id": 0.0},
+        variance={"request_family:paraphrase": 1.0, "injection_id": 0.0},
+        diagnostics={"at_variance_boundary": ["injection_id"]},
+    )
+    variance = aggregate.variance_decomposition({"fit": fit}, prior_sd=2.5, seed=1)
+    assert variance["available"] is True
+    assert variance["supersedes_factorial"] is None
+    assert variance["did_resolve"] is False
+    assert variance["ratio_interval"] is None
+    assert "unresolved" in variance["note"]
 
 
 def test_the_interaction_is_one_omnibus_test_and_never_per_cell():
