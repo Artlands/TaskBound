@@ -487,6 +487,35 @@ def test_ad_hoc_clustering_cli_reports_diagnostic_without_crashing(
     assert "DIAGNOSTIC ONLY" in output
 
 
+def test_failed_release_gate_blocks_nine_run_design(monkeypatch, capsys):
+    estimands = (
+        "attack_susceptibility", "scope_selectivity",
+        "entry_point_effect", "induced_action_effect",
+    )
+    monkeypatch.setattr(power, "run", lambda *args, **kwargs: {
+        "clustering_artifact_problems": [],
+        "by_clustering": {
+            "conservative": {
+                "converged": 500,
+                "simulations": 500,
+                "power": {name: 0.79 for name in estimands},
+            }
+        },
+        "worst_case_power": {name: 0.79 for name in estimands},
+        "gate_eligible": True,
+        "gate_passed": False,
+    })
+    parser = argparse.ArgumentParser()
+    power.add_arguments(parser)
+    args = parser.parse_args(["--simulations", "500"])
+
+    assert power.main(args) == 1
+    output = capsys.readouterr().out
+    assert "Release is blocked at the registered N = 9" in output
+    assert "separately versioned design" in output
+    assert "pilot may raise" not in output
+
+
 def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path, monkeypatch):
     """The writer and the reader are the same contract, on both branches: a
     refusal hands back the a-priori bracket and a narrowed range mixes measured

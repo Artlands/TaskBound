@@ -199,6 +199,27 @@ def test_two_agent_result_preserves_every_resolved_model():
     assert len(result.resolved_models) == len(result.request_ids) == 3
 
 
+def test_partial_planner_error_ends_workflow_with_provenance():
+    from taskbound.agents import AgentResult
+
+    class FailingPlanner(_ProvenanceAgent):
+        def run(self, backend, task_text, role=None, budget=None):
+            return AgentResult(
+                answer="partial order", turns=2, stop_reason="error",
+                inconclusive="error", request_ids=["planner-request"],
+                resolved_models=["snapshot-a"], adapter_error="connection reset",
+            )
+
+    planner = FailingPlanner([])
+    worker = _ProvenanceAgent(["snapshot-b"])
+    result = TwoAgentWorkflow(planner, worker).run(backend=None, task_text="go")
+
+    assert result.inconclusive == "error"
+    assert result.request_ids == ["planner-request"]
+    assert result.resolved_models == ["snapshot-a"]
+    assert result.adapter_error == "connection reset"
+
+
 def test_a_budget_stops_granting_turns_once_it_is_spent():
     budget = TurnBudget(2)
     assert budget.spend() and budget.spend()

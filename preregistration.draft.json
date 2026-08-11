@@ -226,6 +226,10 @@
     ],
     "role": "two-family replication axis, not a treatment; heterogeneity is exploratory and no ordered leaderboard is reported",
     "headline_model_family": null,
+    "transport_retry_policy": {
+      "sdk_max_retries": 0,
+      "parameter_negotiation": "record a max_tokens to max_completion_tokens change before any model response is accepted"
+    },
     "headline_rule": "quote the full range across families, or an estimate for a family named here before results exist"
   },
   "gates": {

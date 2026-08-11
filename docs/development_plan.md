@@ -1816,9 +1816,10 @@ must confirm every gate rather than infer completion from milestone status.
 - Conditions, cells, paraphrases, and model families are interleaved in seeded
   blocks. A pre-generated attempt schedule governs exposure recruitment. This
   prevents time-of-day or provider drift from aligning with one condition.
-- Transport retries are allowed only before a model response is accepted and use
-  a fixed retry policy. Agent errors, step-limit exits, refusals, and malformed
-  tool calls are outcomes, not retry reasons.
+- SDK transport retries are disabled (`max_retries=0`); the one supported
+  output-token parameter negotiation is recorded in `retry_history` before any
+  model response is accepted. Agent errors, step-limit exits, refusals, and
+  malformed tool calls are outcomes, not retry reasons.
 - Raw result JSON is append-only. A release manifest hashes every input and raw
   result; aggregation is reproducible from that manifest in a clean environment.
   Signed aggregation rejects rows outside the frozen sweep and attempt manifest,

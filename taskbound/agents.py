@@ -96,6 +96,8 @@ class AgentResult:
     # What the endpoint says it actually ran, which may be more specific than
     # the requested id — the closest thing to a snapshot on most servers.
     resolved_models: list[str | None] = field(default_factory=list)
+    adapter_error: str | None = None
+    retry_history: list[dict[str, Any]] = field(default_factory=list)
     # One entry per role turn in a multi-agent run; empty single-agent. Feeds
     # the role-specific rates §6.4 keeps as secondary diagnostics.
     segments: list[dict[str, Any]] = field(default_factory=list)
@@ -276,6 +278,17 @@ class AnthropicAgent:
     def system_prompts(self) -> dict[str, str]:
         return {"agent": SYSTEM_PROMPT}
 
+    def runtime_provenance(self) -> dict[str, Any]:
+        import anthropic
+
+        return {
+            "sdk": {
+                "package": "anthropic",
+                "version": getattr(anthropic, "__version__", "unknown"),
+            },
+            "transport_retry_policy": {"max_retries": 0},
+        }
+
     def preflight(self) -> dict[str, Any]:
         """Verify credentials and model access without spending a token.
 
@@ -286,7 +299,7 @@ class AnthropicAgent:
         import anthropic
 
         try:
-            client = anthropic.Anthropic()
+            client = anthropic.Anthropic(max_retries=0)
             model = client.models.retrieve(self.model)
         except Exception as exc:
             if _is_configuration_error(exc):
@@ -310,7 +323,7 @@ class AnthropicAgent:
 
         role = role or Role()
         budget = budget if budget is not None else TurnBudget(self.turn_limit)
-        client = anthropic.Anthropic()
+        client = anthropic.Anthropic(max_retries=0)
         # Stable prefix first, volatile task text after the breakpoint. The
         # prefix is the role's prompt, so a resumed planner keeps its cache.
         system = [
@@ -342,9 +355,14 @@ class AnthropicAgent:
                     output_config={"effort": self.effort},
                 )
             except Exception as exc:
-                if _is_configuration_error(exc):
+                if turn == 1 and not request_ids and _is_configuration_error(exc):
                     raise AgentConfigurationError(str(exc)) from exc
-                raise
+                return AgentResult(
+                    answer="\n\n".join(answer_parts), turns=turn,
+                    stop_reason="error", inconclusive="error", usage=usage,
+                    request_ids=request_ids, resolved_models=resolved_models,
+                    adapter_error=f"{type(exc).__name__}: {exc}",
+                )
             request_ids.append(getattr(response, "_request_id", "") or "")
             resolved_models.append(getattr(response, "model", None))
             for key in usage:
@@ -440,6 +458,17 @@ class OpenAICompatibleAgent:
     def system_prompts(self) -> dict[str, str]:
         return {"agent": SYSTEM_PROMPT}
 
+    def runtime_provenance(self) -> dict[str, Any]:
+        import openai
+
+        return {
+            "sdk": {
+                "package": "openai",
+                "version": getattr(openai, "__version__", "unknown"),
+            },
+            "transport_retry_policy": {"max_retries": 0},
+        }
+
     # --- client -----------------------------------------------------------
     def _client(self):
         import openai
@@ -453,7 +482,7 @@ class OpenAICompatibleAgent:
             # Local servers commonly authenticate nothing but the SDK insists.
             key = "not-needed"
         try:
-            return openai.OpenAI(api_key=key, base_url=self.base_url)
+            return openai.OpenAI(api_key=key, base_url=self.base_url, max_retries=0)
         except Exception as exc:
             raise AgentConfigurationError(str(exc)) from exc
 
@@ -518,18 +547,24 @@ class OpenAICompatibleAgent:
         answer_parts: list[str] = []
         malformed = 0
         resolved_models: list[str | None] = []
+        retry_history: list[dict[str, Any]] = []
 
         turn = 0
         while budget.spend():
             turn += 1
             try:
-                response = self._create(client, messages)
+                response = self._create(client, messages, retry_history)
             except AgentConfigurationError:
                 raise
             except Exception as exc:
                 if turn == 1 and _is_openai_configuration_error(exc):
                     raise AgentConfigurationError(_openai_reason(exc)) from exc
-                raise
+                return self._result(
+                    answer_parts, turn, "error", "error", usage, request_ids,
+                    malformed, resolved_models,
+                    adapter_error=f"{type(exc).__name__}: {exc}",
+                    retry_history=retry_history,
+                )
 
             request_ids.append(getattr(response, "_request_id", None) or response.id or "")
             resolved_models.append(getattr(response, "model", None))
@@ -553,6 +588,7 @@ class OpenAICompatibleAgent:
                 return self._result(
                     answer_parts, turn, stop, "max_tokens" if finish == "length" else None,
                     usage, request_ids, malformed, resolved_models,
+                    retry_history=retry_history,
                 )
 
             messages.append(
@@ -586,9 +622,10 @@ class OpenAICompatibleAgent:
                 )
 
         return self._result(answer_parts, turn, "turn_limit", "turn_limit",
-                            usage, request_ids, malformed, resolved_models)
+                            usage, request_ids, malformed, resolved_models,
+                            retry_history=retry_history)
 
-    def _create(self, client, messages):
+    def _create(self, client, messages, retry_history):
         import openai
 
         try:
@@ -598,11 +635,19 @@ class OpenAICompatibleAgent:
             # Translating the parameter happens before any output is accepted, so
             # it is a config fix rather than a retry of a model response (§11.4).
             if self.token_param == "max_tokens" and "max_completion_tokens" in str(exc):
+                retry_history.append({
+                    "kind": "parameter_negotiation",
+                    "from": "max_tokens",
+                    "to": "max_completion_tokens",
+                })
                 self.token_param = "max_completion_tokens"
                 return client.chat.completions.create(**self._request_kwargs(messages))
             raise
 
-    def _result(self, parts, turns, stop, inconclusive, usage, ids, malformed, models):
+    def _result(
+        self, parts, turns, stop, inconclusive, usage, ids, malformed, models,
+        adapter_error=None, retry_history=None,
+    ):
         return AgentResult(
             answer="\n\n".join(parts),
             turns=turns,
@@ -612,6 +657,8 @@ class OpenAICompatibleAgent:
             request_ids=ids,
             malformed_tool_calls=malformed,
             resolved_models=models,
+            adapter_error=adapter_error,
+            retry_history=retry_history or [],
         )
 
 
@@ -651,6 +698,9 @@ class TwoAgentWorkflow:
     def system_prompts(self) -> dict[str, str]:
         return {"planner": PLANNER_SYSTEM_PROMPT, "worker": WORKER_SYSTEM_PROMPT}
 
+    def runtime_provenance(self) -> dict[str, Any]:
+        return getattr(self.planner, "runtime_provenance", lambda: {})()
+
     def run(self, backend: LocalSimBackend, task_text: str) -> AgentResult:
         budget = TurnBudget(getattr(self.planner, "turn_limit", 30))
         planner = Role(actor="planner", system_prompt=PLANNER_SYSTEM_PROMPT)
@@ -661,16 +711,22 @@ class TwoAgentWorkflow:
             opening += f"\n\nThe request came in on the work order at {self.work_order}."
 
         order = self.planner.run(backend, opening, role=planner, budget=budget)
+        if order.inconclusive == "error":
+            return self._merge([order])
         if not order.answer.strip():
             # No work order means no second turn to inherit it: the workflow did
             # not happen, and saying so is more honest than running a worker on
             # an empty instruction and scoring whatever it invents.
-            return self._merge([order], inconclusive="no_work_order")
+            return self._merge(
+                [order], inconclusive=order.inconclusive or "no_work_order"
+            )
 
         report = self.worker.run(
             backend, WORK_ORDER_FRAMING.format(order=order.answer),
             role=worker, budget=budget,
         )
+        if report.inconclusive == "error":
+            return self._merge([order, report])
         closing = self.planner.run(
             backend, WORKER_REPORT_FRAMING.format(report=report.answer),
             role=planner, budget=budget,
@@ -703,6 +759,8 @@ class TwoAgentWorkflow:
             request_ids=[rid for p in parts for rid in p.request_ids],
             malformed_tool_calls=sum(p.malformed_tool_calls for p in parts),
             resolved_models=[model for p in parts for model in p.resolved_models],
+            adapter_error=next((p.adapter_error for p in parts if p.adapter_error), None),
+            retry_history=[event for p in parts for event in p.retry_history],
             segments=[
                 {"actor": actor, "turns": p.turns, "stop_reason": p.stop_reason,
                  "inconclusive": p.inconclusive}

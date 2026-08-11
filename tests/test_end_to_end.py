@@ -8,13 +8,36 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 
+from taskbound import runner
 from taskbound.runner import main
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 HOST = os.path.join(ROOT, "hosts", "site_a")
 INJ = os.path.join(ROOT, "injections")
 SCRIPTS = os.path.join(ROOT, "fixtures", "scripts")
+
+
+def test_source_provenance_rejects_untracked_imports_but_allows_results(
+    tmp_path, monkeypatch
+):
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    tracked = tmp_path / "tracked.txt"
+    tracked.write_text("tracked\n")
+    subprocess.run(["git", "add", "tracked.txt"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "-c", "user.name=TaskBound", "-c", "user.email=test@example.invalid",
+         "commit", "-qm", "fixture"],
+        cwd=tmp_path,
+        check=True,
+    )
+    monkeypatch.chdir(tmp_path)
+
+    (tmp_path / "results.json").write_text("{}\n")
+    assert runner._git_dirty() is False
+    (tmp_path / "openai.py").write_text("raise RuntimeError('shadowed')\n")
+    assert runner._git_dirty() is True
 
 
 def run(tmp_path, *extra: str) -> dict:

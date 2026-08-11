@@ -55,6 +55,9 @@ def test_model_configuration_hash_uses_frozen_inputs_not_resolved_response():
     record["git_commit"] = "abc123"
     record["git_source_sha256"] = "b" * 64
     assert aggregate.model_configuration_sha256(record) != digest
+    record["git_source_sha256"] = "a" * 64
+    record["agent"]["transport_retry_policy"] = {"max_retries": 0}
+    assert aggregate.model_configuration_sha256(record) != digest
 
 
 def _passing_power_result(monkeypatch):

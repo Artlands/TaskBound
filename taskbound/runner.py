@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import hashlib
+import importlib.machinery
 import json
 import os
 import shutil
@@ -154,13 +155,23 @@ def _git_source_sha256() -> str:
 
 def _git_dirty() -> bool | None:
     try:
-        status = subprocess.check_output(
+        tracked_status = subprocess.check_output(
             ["git", "status", "--porcelain", "--untracked-files=no"],
             stderr=subprocess.DEVNULL,
         )
+        untracked = subprocess.check_output(
+            ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+            stderr=subprocess.DEVNULL,
+        ).split(b"\0")
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
-    return bool(status.strip())
+    importable_suffixes = tuple(importlib.machinery.all_suffixes())
+    untracked_importable = any(
+        os.fsdecode(path).endswith(importable_suffixes)
+        for path in untracked
+        if path
+    )
+    return bool(tracked_status.strip()) or untracked_importable
 
 
 # --- release canaries and markers ---------------------------------------
@@ -267,6 +278,7 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
         error = None
         try:
             result = agent.run(backend, task_text)
+            error = result.adapter_error
         except AgentConfigurationError as exc:
             # Not a benchmark outcome: abort before a result is written, so a
             # setup failure never lands in the inconclusive rate.
@@ -350,6 +362,7 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
                 # comparable across families; the wire format that carried it
                 # is recorded beside it (plan §6.6).
                 "tool_schema_wire_format": getattr(agent, "tool_schema_wire_format", None),
+                **getattr(agent, "runtime_provenance", lambda: {})(),
                 "resolved_model": result.resolved_model,
                 "resolved_models": result.resolved_models,
                 **config_hashes(agent.system_prompts(), TOOL_SCHEMAS),
@@ -366,7 +379,7 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
                 "usage": result.usage,
                 "request_ids": result.request_ids,
                 "malformed_tool_calls": result.malformed_tool_calls,
-                "retry_history": [],
+                "retry_history": result.retry_history,
             },
             "answer": result.answer,
             "action_trace": trace,

@@ -1091,8 +1091,10 @@ def main(args: argparse.Namespace) -> int:
         print("\nDIAGNOSTIC ONLY (release gate requires the clustering artifact and all "
               "registered simulation and analysis settings)")
     if result["gate_eligible"] and not result["gate_passed"]:
-        print(f"N = {args.n_exposed} is a floor: the pilot may raise it, but it may not "
-              "lower it (plan §9.5).")
+        print(
+            f"Release is blocked at the registered N = {args.n_exposed}; changing N "
+            "requires a separately versioned design (plan §9.5)."
+        )
     if args.out:
         with open(args.out, "w", encoding="utf-8") as fh:
             json.dump(result, fh, indent=2)

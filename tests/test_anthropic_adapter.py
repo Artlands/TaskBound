@@ -35,11 +35,12 @@ class Usage:
 
 
 class Response:
-    def __init__(self, content, stop_reason):
+    def __init__(self, content, stop_reason, model="stub-model"):
         self.content = content
         self.stop_reason = stop_reason
         self.usage = Usage()
         self._request_id = "req_stub"
+        self.model = model
 
 
 class StubMessages:
@@ -66,16 +67,22 @@ def stub_anthropic(monkeypatch):
     installed.
     """
     module = types.ModuleType("anthropic")
+    module.__version__ = "1.2.3-test"
     for name in ("AuthenticationError", "PermissionDeniedError", "NotFoundError"):
         setattr(module, name, type(name, (Exception,), {}))
 
+    client_kwargs: dict = {}
+
     def install(responses):
         messages = StubMessages(responses)
-        module.Anthropic = lambda *a, **k: types.SimpleNamespace(messages=messages)
+        module.Anthropic = lambda *a, **k: (
+            client_kwargs.update(k), types.SimpleNamespace(messages=messages)
+        )[1]
         monkeypatch.setitem(sys.modules, "anthropic", module)
         return messages
 
     install.module = module
+    install.client_kwargs = client_kwargs
     return install
 
 
@@ -121,6 +128,11 @@ def test_stable_prefix_is_cached_and_tools_are_declared(stub_anthropic):
     assert call["system"][0]["cache_control"] == {"type": "ephemeral"}
     assert {t["name"] for t in call["tools"]} >= {"read_file", "sacct", "module_show"}
     assert "temperature" not in call and "thinking" not in call  # rejected on Opus 5
+    assert stub_anthropic.client_kwargs["max_retries"] == 0
+    assert AnthropicAgent().runtime_provenance() == {
+        "sdk": {"package": "anthropic", "version": "1.2.3-test"},
+        "transport_retry_policy": {"max_retries": 0},
+    }
 
 
 def test_turn_limit_is_an_outcome_not_a_retry(stub_anthropic):
@@ -171,6 +183,43 @@ def test_a_transport_error_mid_run_stays_an_outcome(stub_anthropic, tmp_path):
         record = json.load(fh)
     assert record["outcome"]["inconclusive"] == "error"
     assert "connection reset" in record["outcome"]["adapter_error"]
+
+
+def test_a_mid_run_error_preserves_successful_response_provenance(stub_anthropic):
+    stub_anthropic([
+        Response(
+            [Block(type="tool_use", id="tu", name="squeue", input={})],
+            "tool_use",
+            model="snapshot-a",
+        ),
+        RuntimeError("connection reset"),
+    ])
+    with tempfile.TemporaryDirectory() as tmp:
+        result = AnthropicAgent().run(make_backend(tmp), "task")
+
+    assert result.inconclusive == "error"
+    assert result.request_ids == ["req_stub"]
+    assert result.resolved_models == ["snapshot-a"]
+    assert result.usage["input_tokens"] == 100
+    assert "connection reset" in result.adapter_error
+
+
+def test_a_mid_run_authentication_error_preserves_provenance(stub_anthropic):
+    stub_anthropic([
+        Response(
+            [Block(type="tool_use", id="tu", name="squeue", input={})],
+            "tool_use",
+            model="snapshot-a",
+        ),
+        stub_anthropic.module.AuthenticationError("credential expired"),
+    ])
+    with tempfile.TemporaryDirectory() as tmp:
+        result = AnthropicAgent().run(make_backend(tmp), "task")
+
+    assert result.inconclusive == "error"
+    assert result.request_ids == ["req_stub"]
+    assert result.resolved_models == ["snapshot-a"]
+    assert "credential expired" in result.adapter_error
 
 
 def test_refusal_and_max_tokens_are_recorded(stub_anthropic):

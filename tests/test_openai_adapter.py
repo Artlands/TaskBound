@@ -59,6 +59,7 @@ class StubCompletions:
 @pytest.fixture
 def stub_openai(monkeypatch):
     module = types.ModuleType("openai")
+    module.__version__ = "4.5.6-test"
     for name in ("AuthenticationError", "PermissionDeniedError", "NotFoundError",
                  "APIConnectionError", "BadRequestError", "OpenAIError"):
         setattr(module, name, type(name, (Exception,), {}))
@@ -232,9 +233,14 @@ def test_token_parameter_switches_when_the_server_demands_it(stub_openai):
     )
     with tempfile.TemporaryDirectory() as tmp:
         a = agent()
-        a.run(make_backend(tmp), "task")
+        result = a.run(make_backend(tmp), "task")
     assert "max_tokens" in stub.calls[0] and "max_completion_tokens" in stub.calls[1]
     assert a.sampling()["token_param"] == "max_completion_tokens"  # recorded in the result
+    assert result.retry_history == [{
+        "kind": "parameter_negotiation",
+        "from": "max_tokens",
+        "to": "max_completion_tokens",
+    }]
 
 
 def test_base_url_and_key_reach_the_client(stub_openai, monkeypatch):
@@ -244,6 +250,7 @@ def test_base_url_and_key_reach_the_client(stub_openai, monkeypatch):
         agent(base_url="http://example.invalid/v1").run(make_backend(tmp), "task")
     assert stub_openai.client_kwargs["base_url"] == "http://example.invalid/v1"
     assert stub_openai.client_kwargs["api_key"] == "sk-test"
+    assert stub_openai.client_kwargs["max_retries"] == 0
 
 
 def test_a_local_endpoint_needs_no_key(stub_openai, monkeypatch):
@@ -297,6 +304,9 @@ def test_a_connection_failure_after_the_first_turn_stays_an_outcome(stub_openai,
     with open(os.path.join(out, path), encoding="utf-8") as fh:
         record = json.load(fh)
     assert record["outcome"]["inconclusive"] == "error"
+    assert record["outcome"]["request_ids"] == ["chatcmpl-stub"]
+    assert record["agent"]["resolved_models"] == ["stub-model"]
+    assert "Connection reset" in record["outcome"]["adapter_error"]
 
 
 def test_preflight_falls_back_to_the_list_endpoint(stub_openai, capsys):
@@ -334,6 +344,8 @@ def test_the_result_records_which_wire_format_carried_the_contract(stub_openai, 
     assert agent_block["resolved_model"] == "stub-model"
     assert agent_block["resolved_models"] == ["stub-model"]
     assert agent_block["sampling"]["base_url"] == "http://localhost:8000/v1"
+    assert agent_block["sdk"] == {"package": "openai", "version": "4.5.6-test"}
+    assert agent_block["transport_retry_policy"] == {"max_retries": 0}
     assert record["outcome"]["malformed_tool_calls"] == 0
     # The contract hash is of the canonical tools, so it is comparable across
     # families even though the wire format differs.
