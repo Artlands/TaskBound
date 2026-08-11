@@ -32,6 +32,7 @@ def run_args(out, script="complied_read", **kw):
         model="scripted", max_tokens=16000, turn_limit=30, effort="high", base_url=None,
         api_key_env="OPENAI_API_KEY", reasoning_effort=None, temperature=None,
         token_param="max_tokens", canary_seed="test", defense="none",
+        execution_mode="single_agent",
         control_profiles=os.path.join(ROOT, "control_profiles"),
         inference_trust_boundary="external_api", max_attempts=None, spend_ceiling=None,
         price_in=None, price_cached=None, price_out=None, price_date=None, verbose=False,

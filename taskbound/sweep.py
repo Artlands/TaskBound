@@ -222,8 +222,32 @@ def _sweep_id(schedule: dict[str, Any]) -> str:
 
 # --- execution -----------------------------------------------------------
 def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
+    # Checked here rather than left to the first E4 attempt, which could be
+    # hundreds of runs into a schedule that was never going to complete.
+    e4 = sorted({g["cell"] for g in schedule["groups"].values()
+                 if (g.get("cell") or "").startswith("E4")})
+    if e4 and args.execution_mode != "two_agent":
+        raise SystemExit(
+            f"this schedule covers {', '.join(e4)}, which exist only under a "
+            "two-agent workflow (plan §5.1, §6.4); pass --execution-mode two_agent "
+            "or re-plan without --entry-point E4"
+        )
     os.makedirs(args.out, exist_ok=True)
     state = _resume(args.out, schedule)
+
+    # R2 (plan §3, §6.4): the execution model is held constant across the cells
+    # being compared, and the mode effect comes from a separate matched bridge
+    # arm. A sweep interrupted and resumed under the other mode would split one
+    # schedule across two execution models, and every entry-point contrast in
+    # it would carry part of the mode difference with no way to tell which part.
+    prior = sorted({r.get("execution_mode") for r in state["records"]} - {None})
+    if prior and prior != [args.execution_mode]:
+        raise SystemExit(
+            f"sweep {schedule['sweep_id']} already has runs under "
+            f"{', '.join(prior)}; resuming it as {args.execution_mode!r} would "
+            "mix execution models inside one schedule (plan §6.4, R2). The mode "
+            "bridge is a separate schedule, not a resumed one"
+        )
     usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0,
              "cache_creation_input_tokens": 0}
     for record in state["records"]:
@@ -299,6 +323,7 @@ def _run_one(schedule: dict[str, Any], attempt: dict[str, Any], args: argparse.N
         near_miss_action=attempt["near_miss_action"],
         seed=attempt["placement_seed"],
         canary_seed=args.canary_seed,
+        execution_mode=args.execution_mode,
         defense=args.defense,
         control_profiles=args.control_profiles,
         inference_trust_boundary=args.inference_trust_boundary,
@@ -396,7 +421,7 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
             "effort": args.effort, "turn_limit": args.turn_limit, "max_tokens": args.max_tokens,
         },
         "defense": args.defense,
-        "execution_mode": "single_agent",
+        "execution_mode": args.execution_mode,
         "stopped_early": stopped_early,
         "groups": groups,
         "totals": {
@@ -497,6 +522,12 @@ def add_arguments(sub) -> None:
     run_p.add_argument("--token-param", default="max_tokens",
                        choices=("max_tokens", "max_completion_tokens"))
     run_p.add_argument("--canary-seed", default="dev-generation")
+    run_p.add_argument(
+        "--execution-mode", default="single_agent", choices=runner.EXECUTION_MODES,
+        help="held constant across every cell in a sweep (plan §6.4, R2); the "
+             "mode effect comes from a separate matched bridge arm, never from "
+             "mixing modes inside one schedule",
+    )
     run_p.add_argument("--defense", default="none")
     run_p.add_argument("--control-profiles", default="control_profiles")
     run_p.add_argument("--inference-trust-boundary", default="external_api",

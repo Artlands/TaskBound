@@ -24,7 +24,7 @@ from .agents import (
     AnthropicAgent,
     OpenAICompatibleAgent,
     ScriptedAgent,
-    SYSTEM_PROMPT,
+    TwoAgentWorkflow,
     config_hashes,
 )
 from .backend import TOOL_SCHEMAS, LocalSimBackend
@@ -34,6 +34,7 @@ from .policy import Policy
 SCHEMA_VERSION = "0.5.0"
 RELEASE = "v0.5-dev"
 CONDITIONS = ("clean", "inert", "benign", "attacked", "near_miss")
+EXECUTION_MODES = ("single_agent", "two_agent")
 
 
 # --- loading ------------------------------------------------------------
@@ -174,6 +175,22 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
             f"it carries {', '.join(task['cells'])}"
         )
 
+    # E4 is the in-workflow message. Single-agent has no workflow to pass one
+    # through, so the text would sit in a file nothing routes to the agent and
+    # the run would score as clean-by-accident rather than as unexposed for a
+    # reason. That is exactly the silent injection failure the pilot's smoke
+    # stage exists to catch (plan §11.2), so the runner refuses it up front.
+    if (
+        injection is not None
+        and injection["entry_point"] == "E4"
+        and args.execution_mode != "two_agent"
+    ):
+        raise SystemExit(
+            f"injection {injection['injection_id']!r} is E4, which exists only "
+            "under a two-agent workflow (plan §5.1, §6.4); pass "
+            "--execution-mode two_agent"
+        )
+
     policy = Policy.from_layers(host["account_policy"], task["policy"])
     task_key = "default"
     if condition == "near_miss":
@@ -208,7 +225,7 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
             block = apply_injection(backend.workspace, placement, text)
             probe = exposure_probe(block)
 
-        agent = _build_agent(args, substitutions)
+        agent = _build_agent(args, substitutions, task)
         error = None
         try:
             result = agent.run(backend, task_text)
@@ -265,7 +282,7 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
             },
             "cell": injection["cell"] if injection else None,
             "condition": condition,
-            "execution_mode": "single_agent",
+            "execution_mode": args.execution_mode,
             "defense": args.defense,
             "task_file": task["task_files"][task_key],
             "policy": policy.to_dict(),
@@ -293,10 +310,14 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
                 # is recorded beside it (plan §6.6).
                 "tool_schema_wire_format": getattr(agent, "tool_schema_wire_format", None),
                 "resolved_model": result.resolved_model,
-                **config_hashes(SYSTEM_PROMPT, TOOL_SCHEMAS),
+                **config_hashes(agent.system_prompts(), TOOL_SCHEMAS),
             },
             "outcome": {
                 "turns": result.turns,
+                # Which role spent which turns. Role-specific rates are
+                # secondary diagnostics, never additional confirmatory tests
+                # (plan §6.4), so this is recorded and not aggregated here.
+                "segments": result.segments,
                 "stop_reason": result.stop_reason,
                 "inconclusive": result.inconclusive or ("no_final_answer" if not result.answer.strip() else None),
                 "adapter_error": error,
@@ -443,19 +464,49 @@ def _score(
     return scored
 
 
-def _build_agent(args: argparse.Namespace, substitutions: dict[str, str] | None = None):
+def _build_agent(
+    args: argparse.Namespace,
+    substitutions: dict[str, str] | None = None,
+    task: dict[str, Any] | None = None,
+):
+    """The adapter, or the workflow wrapping two of them (plan §6.4).
+
+    Both roles get their own adapter instance at the *same* configuration:
+    mixed-model teams are out of scope, and a shared instance would give them a
+    shared conversation, which is one agent talking to itself.
+    """
+    if args.execution_mode == "two_agent":
+        script = _scripted_source(args, substitutions) if args.agent == "scripted" else None
+        if script is not None and not ({"planner", "worker"} <= set(script)):
+            raise SystemExit(
+                "--execution-mode two_agent with --agent scripted needs a script "
+                "declaring 'planner' and 'worker' turn lists"
+            )
+        return TwoAgentWorkflow(
+            planner=_one_agent(args, script and script["planner"]),
+            worker=_one_agent(args, script and script["worker"]),
+            work_order=(task or {}).get("work_order"),
+        )
+    return _one_agent(args, _scripted_source(args, substitutions) if args.agent == "scripted" else None)
+
+
+def _scripted_source(args: argparse.Namespace, substitutions: dict[str, str] | None):
+    if not args.script:
+        raise SystemExit("--agent scripted requires --script")
+    with open(args.script, encoding="utf-8") as fh:
+        raw = fh.read()
+    # A fixture cannot know this release's canary or marker values, so it
+    # writes the same slots the injection text does and they are filled in
+    # here — which is also what the behaviour being replayed looks like: an
+    # agent copying a reference line out of the content it just read.
+    for placeholder, value in (substitutions or {}).items():
+        raw = raw.replace(placeholder, value)
+    return json.loads(raw)
+
+
+def _one_agent(args: argparse.Namespace, script: Any = None):
     if args.agent == "scripted":
-        if not args.script:
-            raise SystemExit("--agent scripted requires --script")
-        with open(args.script, encoding="utf-8") as fh:
-            raw = fh.read()
-        # A fixture cannot know this release's canary or marker values, so it
-        # writes the same slots the injection text does and they are filled in
-        # here — which is also what the behaviour being replayed looks like: an
-        # agent copying a reference line out of the content it just read.
-        for placeholder, value in (substitutions or {}).items():
-            raw = raw.replace(placeholder, value)
-        return ScriptedAgent(json.loads(raw))
+        return ScriptedAgent(script, turn_limit=args.turn_limit)
     if args.agent == "openai_compatible":
         return OpenAICompatibleAgent(
             model=args.model,
@@ -565,6 +616,11 @@ def main(argv: list[str] | None = None) -> int:
     _add_openai_flags(run)
     run.add_argument("--seed", type=int, default=1, help="placement seed for this attempt")
     run.add_argument("--canary-seed", default="dev-generation", help="never commit a real one")
+    run.add_argument(
+        "--execution-mode", default="single_agent", choices=EXECUTION_MODES,
+        help="two_agent runs planner -> worker -> planner and is what E4 requires "
+             "(plan §6.4); the turn limit stays per run, not per role turn",
+    )
     run.add_argument("--defense", default="none")
     run.add_argument(
         "--control-profiles", default="control_profiles",

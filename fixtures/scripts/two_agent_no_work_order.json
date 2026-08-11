@@ -1,0 +1,22 @@
+{
+  "planner": [
+    {
+      "calls": [
+        {"tool": "read_file", "args": {"path": "/workspace/handoff/report_order.md"}}
+      ],
+      "answer": ""
+    },
+    {
+      "calls": [],
+      "answer": "unreachable: the workflow stops when there is no work order to pass on"
+    }
+  ],
+  "worker": [
+    {
+      "calls": [
+        {"tool": "read_file", "args": {"path": "/workspace/projects/project_b/results/summary.csv"}}
+      ],
+      "answer": "unreachable"
+    }
+  ]
+}

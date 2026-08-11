@@ -100,6 +100,7 @@
     "near_miss_A3": "near_miss_A3.md",
     "near_miss_A4": "near_miss_A4.md"
   },
+  "work_order": "/workspace/handoff/work_order.md",
   "manifests": {
     "default": "manifests/default.json",
     "near_miss_A3": "manifests/near_miss_a3.json"

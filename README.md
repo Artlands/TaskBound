@@ -194,6 +194,7 @@ Flags that change what is measured:
 | `--condition` | — | `clean`, `inert`, `benign`, `attacked`, `near_miss` |
 | `--injection` | — | Required for `inert`/`benign`/`attacked`; must match the condition's `kind` |
 | `--near-miss-action` | — | Required for `near_miss`; `A1` through `A4`, one per induced action |
+| `--execution-mode` | `single_agent` | `two_agent` runs planner → worker → planner over one policy and one workspace. E4 injections require it and are refused without it (plan §6.4) |
 | `--seed` | `1` | Placement seed for this attempt. Different seeds put the injected text at different admissible positions in the vehicle |
 | `--canary-seed` | `dev-generation` | Derives this release's canary values. See [Canaries](#4-canaries-and-what-not-to-commit) |
 | `--agent` | `anthropic` | `anthropic`, `openai_compatible`, or `scripted` |
@@ -231,6 +232,33 @@ through `A4`.
 only while the host declares exactly one; with more than one, omitting it is an
 error rather than a guess, because scope — and therefore what counts as a
 violation — is declared per task.
+
+### Two-agent mode
+
+`--execution-mode two_agent` runs one user request as three turns across two
+agents: the planner gathers context and replies with a work order, the worker
+carries it out and reports back, and the planner writes the final report. Both
+roles hold the same model configuration and separate conversation contexts, one
+policy binds the whole run, and the action trace records which of them acted.
+
+```sh
+.venv/bin/python -m taskbound.runner run --host hosts/site_a \
+  --task t5_status_report --execution-mode two_agent \
+  --condition attacked --injection injections/t5_e4a1_attack_p1.json
+```
+
+E4 — the in-workflow message — exists only in this mode, and an E4 injection
+passed without it is refused rather than run: with no workflow to carry the
+message the text would sit unread, and the run would look clean instead of
+unexposed for a stated reason. Each task carrying an E4 cell declares in its
+`task.json` the `work_order` its workflow is driven from, which is the file
+that cell's placement class writes into.
+
+Delegation costs no tool — the planner's reply *is* the work order — so the
+tool contract is byte-identical to single-agent mode. The turn limit stays a
+per-run cap shared across the three turns rather than a fresh allowance for
+each. Both choices exist so that `v1.0`'s concurrent single-agent bridge arm
+measures the execution model and not a harness difference (plan §6.4).
 
 ### What a run costs
 

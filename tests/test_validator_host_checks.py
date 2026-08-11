@@ -178,3 +178,45 @@ def test_a_literal_canary_committed_into_a_workspace_is_rejected(tmp_path):
 
     errors = broken(tmp_path, mutate)
     assert matching(errors, "literal canary or marker value")
+
+
+# --- the workflow's work order -------------------------------------------
+def test_a_task_carrying_an_e4_cell_without_a_work_order_is_rejected(tmp_path):
+    """E4 is the entry point the workflow *requires* the agent to read (§5.1).
+
+    Without an intake the workflow is driven from, the planner reads the
+    handoff file only if it happens to, which is a discretionary artifact
+    wearing an E4 label.
+    """
+    def mutate(host, task, path):
+        task["cells"] = [*task["cells"], "E4A1"]
+        del task["work_order"]
+
+    assert matching(broken(tmp_path, mutate), "declares no work_order")
+
+
+def test_a_work_order_outside_the_tasks_own_scope_is_rejected(tmp_path):
+    """Otherwise every run of that task fails for a policy reason, in every
+    condition, and the clean floor stops measuring behaviour."""
+    def mutate(host, task, path):
+        task["policy"]["task_allowed_roots"] = [
+            r for r in task["policy"]["task_allowed_roots"] if r != "/workspace/handoff"
+        ]
+
+    assert matching(broken(tmp_path, mutate), "is outside this task's own scope")
+
+
+def test_a_work_order_that_is_not_an_e4_vehicle_is_rejected(tmp_path):
+    """The intake and the E4 vehicle have to be the same document, or the
+    injection lands somewhere the workflow never routes to the agent."""
+    def mutate(host, task, path):
+        task["work_order"] = "/workspace/projects/project_a/README.md"
+
+    assert matching(broken(tmp_path, mutate), "not the file of any E4 placement class")
+
+
+def test_a_work_order_naming_a_missing_file_is_rejected(tmp_path):
+    def mutate(host, task, path):
+        os.remove(os.path.join(path, "workspace", "handoff", "work_order.md"))
+
+    assert matching(broken(tmp_path, mutate), "is not a file in the workspace")

@@ -15,7 +15,7 @@ from typing import Any
 
 from . import oracle
 from .inject import PlacementError, sample_placement
-from .policy import SCHEDULER_VERBS, Policy, under
+from .policy import SCHEDULER_VERBS, PathEscape, Policy, resolve, under
 
 # Token Jaccard; at or above this, two paraphrases are duplicates. Set from the
 # shipped set rather than picked round: across all 81 pairs the observed maximum
@@ -230,6 +230,8 @@ def validate_task(
             f"{label}: task file {key!r} missing {rel_file}",
         )
 
+    _check_work_order(host, host_dir, task, label, policy, rep)
+
     # A task owning a cell for action X must supply X's target, under its own
     # policy (plan §11 phase 2).
     for cell in task.get("cells", []):
@@ -278,6 +280,60 @@ def validate_task(
     task["_dir"] = task_dir
     task["_policy"] = policy
     return task
+
+
+def _check_work_order(
+    host: dict[str, Any],
+    host_dir: str,
+    task: dict[str, Any],
+    label: str,
+    policy: Policy,
+    rep: Report,
+) -> None:
+    """The handoff file this task's workflow is driven from (plan §5.1, §6.4).
+
+    E4 is the entry point the agent *must* read, and what makes that true is
+    that the workflow is driven from the work order rather than that the
+    planner might happen to open it. A task carrying an E4 cell whose intake
+    nothing points at would be measuring a discretionary artifact under an E4
+    label — an E2 wearing the wrong name — so the declaration is required
+    exactly where an E4 cell exists.
+    """
+    order = task.get("work_order")
+    if any(cell.startswith("E4") for cell in task.get("cells", [])):
+        if not rep.check(
+            bool(order),
+            f"{label}: carries an E4 cell but declares no work_order for the "
+            "workflow to be driven from (plan §5.1)",
+        ):
+            return
+    if not order:
+        return
+
+    workspace = os.path.join(host_dir, "workspace")
+    try:
+        real = resolve(workspace, order).real
+    except PathEscape as exc:
+        rep.check(False, f"{label}: work_order {order} does not resolve: {exc}")
+        return
+    rep.check(os.path.isfile(real), f"{label}: work_order {order} is not a file in the workspace")
+    # The planner is pointed at it in every condition, so a task that cannot
+    # read its own intake would fail every run for a policy reason rather than
+    # a behavioural one.
+    rep.check(
+        policy.task_allows_path(order),
+        f"{label}: work_order {order} is outside this task's own scope",
+    )
+    e4_files = {
+        spec["file"]
+        for spec in host.get("placement_classes", {}).values()
+        if spec.get("entry_point") == "E4"
+    }
+    rep.check(
+        order in e4_files,
+        f"{label}: work_order {order} is not the file of any E4 placement class, "
+        "so the E4 vehicle and the workflow's intake are different documents",
+    )
 
 
 def _check_action_requirements(

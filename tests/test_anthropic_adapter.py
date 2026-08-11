@@ -48,7 +48,10 @@ class StubMessages:
         self.calls: list[dict] = []
 
     def create(self, **kwargs):
-        self.calls.append(kwargs)
+        # The adapter mutates one message list for the whole conversation, so a
+        # recorded reference would show every call the *final* state. Snapshot
+        # the list to record what each request actually carried.
+        self.calls.append({**kwargs, "messages": list(kwargs["messages"])})
         item = self.responses.pop(0)
         if isinstance(item, BaseException):
             raise item
@@ -180,3 +183,83 @@ def test_refusal_and_max_tokens_are_recorded(stub_anthropic):
     with tempfile.TemporaryDirectory() as tmp:
         result = AnthropicAgent().run(make_backend(tmp), "task")
     assert result.inconclusive == "max_tokens"
+
+
+# --- roles (plan §6.4) ---------------------------------------------------
+def test_a_role_resumes_its_own_context_and_carries_its_own_prompt(stub_anthropic):
+    """The planner opens and closes one conversation, not two.
+
+    Two agents, three turns (plan §6.4): if the planner's second call started a
+    fresh message list, the workflow would be three agents, and the closing
+    turn would be reasoning about a worker report with no memory of the order
+    it gave or the work order it read to write one.
+    """
+    from taskbound.agents import PLANNER_SYSTEM_PROMPT, Role, TurnBudget
+
+    calls = stub_anthropic(
+        [
+            Response([Block(type="text", text="Read /workspace/logs/job_1842.err.")], "end_turn"),
+            Response([Block(type="text", text="Job 1842 was OOM-killed.")], "end_turn"),
+        ]
+    )
+    planner = Role(actor="planner", system_prompt=PLANNER_SYSTEM_PROMPT)
+    budget = TurnBudget(30)
+    agent = AnthropicAgent()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        backend = make_backend(tmp)
+        first = agent.run(backend, "why did 1842 fail?", role=planner, budget=budget)
+        second = agent.run(backend, "the worker reports: OOM at step 400.",
+                           role=planner, budget=budget)
+
+    assert first.answer.startswith("Read ")
+    assert second.answer == "Job 1842 was OOM-killed."
+
+    # The role's own prompt, on both requests, as the cached stable prefix.
+    assert [c["system"][0]["text"] for c in calls.calls] == [PLANNER_SYSTEM_PROMPT] * 2
+    assert calls.calls[0]["system"][0]["cache_control"] == {"type": "ephemeral"}
+
+    # The second request replays the first exchange rather than restarting it,
+    # including the planner's own reply — a resumed conversation missing the
+    # role's last turn would be a different conversation.
+    opening, closing = (c["messages"] for c in calls.calls)
+    assert len(opening) == 1
+    assert [m["role"] for m in closing] == ["user", "assistant", "user"]
+    assert closing[0] == opening[0]
+    assert closing[-1]["content"].startswith("the worker reports")
+
+    # One shared budget, spent across both turns rather than reset per turn.
+    assert budget.remaining == 28
+
+
+def test_two_roles_do_not_share_a_conversation(stub_anthropic):
+    """Separate contexts are what make the worker inherit the *order* rather
+    than the planner's whole session (plan §6.4)."""
+    from taskbound.agents import (
+        PLANNER_SYSTEM_PROMPT,
+        WORKER_SYSTEM_PROMPT,
+        Role,
+        TurnBudget,
+    )
+
+    calls = stub_anthropic(
+        [
+            Response([Block(type="text", text="stage the inputs")], "end_turn"),
+            Response([Block(type="text", text="staged")], "end_turn"),
+        ]
+    )
+    planner = Role(actor="planner", system_prompt=PLANNER_SYSTEM_PROMPT)
+    worker = Role(actor="worker", system_prompt=WORKER_SYSTEM_PROMPT)
+    budget = TurnBudget(30)
+    agent = AnthropicAgent()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        backend = make_backend(tmp)
+        agent.run(backend, "stage the run inputs", role=planner, budget=budget)
+        agent.run(backend, "Work order: stage the inputs", role=worker, budget=budget)
+
+    assert planner.messages is not worker.messages
+    assert len(worker.messages) == 2  # its own user turn and its own reply
+    assert [c["system"][0]["text"] for c in calls.calls] == [
+        PLANNER_SYSTEM_PROMPT, WORKER_SYSTEM_PROMPT
+    ]

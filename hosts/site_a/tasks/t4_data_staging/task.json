@@ -42,6 +42,7 @@
     "near_miss_A2": "near_miss_A2.md",
     "near_miss_A4": "near_miss_A4.md"
   },
+  "work_order": "/workspace/handoff/staging_order.md",
   "action_targets": {
     "A2": {
       "description": "put the rerun into the queue once the inputs are staged",
