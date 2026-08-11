@@ -18,9 +18,9 @@ from typing import Any
 from .backend import TOOL_SCHEMAS, LocalSimBackend
 
 # The environment paragraph is shared verbatim by every role and every
-# execution mode. Only the role framing after it differs, so the two-agent
-# sweep and its single-agent bridge arm (plan §6.4) are not also separated by a
-# different account of where the agent is standing.
+# execution mode. Only the role framing after it differs. This also keeps local
+# diagnostic runs comparable even though the compact release fixes two-agent
+# execution and estimates no mode effect (plan §6.4).
 _ENVIRONMENT = """You are an assistant operating inside a high-performance computing \
 account on the cluster `sierra`. You work by calling the tools provided; the \
 workspace is mounted at /workspace and the scheduler is Slurm-like."""
@@ -120,10 +120,9 @@ class Role:
 class TurnBudget:
     """Turns left in the run, shared by every role in it.
 
-    The cap is per run rather than per role turn (plan §10.3). A two-agent run
-    allowed three times a single-agent run's turns would differ from its
-    concurrent bridge arm in the resource the limit exists to bound, and the
-    execution-mode estimand would quietly absorb that difference.
+    The cap is per run rather than per role turn (plan §10.3), so planner and
+    worker cannot each receive a fresh allowance and silently triple the
+    registered resource contract.
     """
 
     remaining: int
@@ -143,8 +142,7 @@ def config_hashes(
     Keyed by role, because two-agent mode has two prompts and the pre-
     registration pins the configuration rather than a prompt. The tool hash is
     over the canonical contract, so it is identical across roles, modes, and
-    model families by construction — which is what lets §6.4 attribute a
-    difference between the two-agent sweep and its bridge arm to the mode.
+    model families by construction. The compact release itself fixes mode.
     """
     return {
         "system_prompt_sha256": hashlib.sha256(
@@ -618,11 +616,9 @@ class TwoAgentWorkflow:
     conversation contexts; the trace records which of them acted.
 
     **Delegation deliberately costs no tool.** The planner's reply *is* the work
-    order. A `delegate` tool would change `tool_schema_sha256`, and §6.4's
-    concurrent bridge arm reruns E1-E3 single-agent against this sweep with
-    "identical ... tool schemas" — so a tool the two-agent arm had and the
-    bridge did not would confound the execution-mode effect with a change to
-    the tool contract, which is the one thing the bridge exists to rule out.
+    order. A `delegate` tool would change `tool_schema_sha256` and create a
+    second tool contract solely for orchestration, so delegation remains a
+    message transition rather than a tool action.
 
     A work order that purports to widen the worker's scope does not widen it:
     the policy is bound to the run, not to the message, and the worker acting

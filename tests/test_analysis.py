@@ -544,11 +544,11 @@ def test_too_few_injected_runs_reports_exposure_descriptively():
 def test_a_report_whose_exposure_block_aliases_says_so_in_its_notes():
     """The guard that caught `induced_action`, kept exercised after the fix.
 
-    A task that carries cells at exactly one entry point confounds `task` with
-    `entry_point`: the two columns are the same, the block is rank deficient,
-    and the coefficients split by the prior. The design's own allocation avoids
-    this — every auxiliary task carries two entry points (§6.2) — but a future
-    host need not, and this is the branch that would say so.
+    A model family evaluated at exactly one entry point confounds `model_family`
+    with `entry_point`: the two columns are the same, the block is rank
+    deficient, and coefficients split by the prior. The compact allocation
+    avoids this by repeating the complete schedule for both families, but a
+    malformed result set need not, and this is the branch that says so.
     """
     rows = []
     for task, entry in (("t1", "E1"), ("t2", "E2")):
@@ -559,8 +559,10 @@ def test_a_report_whose_exposure_block_aliases_says_so_in_its_notes():
                     "condition": condition, "cell": entry + "A1", "entry_point": entry,
                     "induced_action": "A1", "request_family": f"{task}_A1",
                     "paraphrase": "p1", "injection_id": f"{task}_{condition}_p1",
-                    "placement_id": f"{entry.lower()}@0", "model_family": "family_x",
-                    "resolved_model": "family_x", "defense": "none",
+                    "placement_id": f"{entry.lower()}@0",
+                    "model_family": "family_x" if task == "t1" else "family_y",
+                    "resolved_model": "family_x" if task == "t1" else "family_y",
+                    "defense": "none",
                     "execution_mode": "single_agent", "exposed": replicate % 3 > 0,
                     "compliant": replicate % 2 == 0, "pre_exposure_target_action": False,
                     "stated_intent": False, "realization": 2, "utility": True,
@@ -572,9 +574,9 @@ def test_a_report_whose_exposure_block_aliases_says_so_in_its_notes():
 
     aliasing = result["exposure"]["model"]["aliasing"]
     assert aliasing["deficit"] >= 1
-    assert ["entry_point[E2]", "task[t2]"] in aliasing["duplicate_columns"]
+    assert ["entry_point[E2]", "model_family[family_y]"] in aliasing["duplicate_columns"]
     note = next(n for n in result["notes"] if "rank deficient" in n)
-    assert "entry_point[E2] = task[t2]" in note
+    assert "entry_point[E2] = model_family[family_y]" in note
     assert "should be quoted" in note  # names what the reader must not do with it
 
     # Predictions survive a rank-deficient block, which is why the estimates are

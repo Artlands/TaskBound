@@ -33,7 +33,7 @@ from typing import Any
 
 from . import runner
 
-EXPOSED_TARGET = 33
+EXPOSED_TARGET = 9
 # Three attempts per exposed run, not two: E3's exposure is around 0.40, so a
 # cap of 2N leaves its cells short of target and the entry-point contrast is
 # read off the arm that got starved. 3N lets the least-exposed entry point
@@ -42,6 +42,7 @@ ATTEMPT_CAP = 3 * EXPOSED_TARGET
 BLOCK = 3  # one attempt per paraphrase, so a stopped group stays balanced
 PARAPHRASES = ("p1", "p2", "p3")
 INERT_PARAPHRASES = ("i1", "i2", "i3")
+DEFAULT_RELEASE_TASKS = ("t1_failed_job",)
 
 
 # --- planning ------------------------------------------------------------
@@ -56,10 +57,11 @@ def plan(
 ) -> dict[str, Any]:
     """Freeze the attempt schedule for one release's scope.
 
-    A release is a subset of what the host carries: `v0.5` is the core task at
-    E1-E3, `v1.0` is every task at E1-E4 (plan §13). The scope is named here
-    rather than inferred, so a schedule records what it was planned to cover and
-    a later sweep cannot silently widen it.
+    A release is a subset of what the host carries. The compact `v1.0` release
+    is the core task at E1-E4; auxiliary tasks remain available for future
+    expansions. The scope is named here rather than inferred, so a schedule
+    records what it was planned to cover and a later sweep cannot silently widen
+    it.
     """
     host = runner.load_host(host_dir)
     injections = _index_injections(injections_dir, host["host_id"])
@@ -236,8 +238,8 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
     state = _resume(args.out, schedule)
 
     # R2 (plan §3, §6.4): the execution model is held constant across the cells
-    # being compared, and the mode effect comes from a separate matched bridge
-    # arm. A sweep interrupted and resumed under the other mode would split one
+    # being compared. The compact release fixes two-agent mode throughout; a
+    # sweep interrupted and resumed under the other mode would split one
     # schedule across two execution models, and every entry-point contrast in
     # it would carry part of the mode difference with no way to tell which part.
     prior = sorted({r.get("execution_mode") for r in state["records"]} - {None})
@@ -245,8 +247,7 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
         raise SystemExit(
             f"sweep {schedule['sweep_id']} already has runs under "
             f"{', '.join(prior)}; resuming it as {args.execution_mode!r} would "
-            "mix execution models inside one schedule (plan §6.4, R2). The mode "
-            "bridge is a separate schedule, not a resumed one"
+            "mix execution models inside one schedule (plan §6.4, R2)"
         )
     usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0,
              "cache_creation_input_tokens": 0}
@@ -444,8 +445,9 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
 
 # --- CLI -----------------------------------------------------------------
 def cmd_plan(args: argparse.Namespace) -> int:
+    tasks = args.tasks if args.tasks is not None else list(DEFAULT_RELEASE_TASKS)
     schedule = plan(args.host, args.injections, args.seed, args.exposed_target,
-                    args.attempt_cap, args.tasks, args.entry_points)
+                    args.attempt_cap, tasks, args.entry_points)
     os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as fh:
         json.dump(schedule, fh, indent=2)
@@ -496,13 +498,13 @@ def add_arguments(sub) -> None:
     plan_p.add_argument("--out", required=True)
     plan_p.add_argument("--seed", type=int, default=1)
     plan_p.add_argument("--exposed-target", type=int, default=EXPOSED_TARGET,
-                        help="N per cell; the pilot may raise it, never lower it (plan §9.5)")
+                        help="N per cell for the compact release (plan §9.5)")
     plan_p.add_argument("--attempt-cap", type=int, default=ATTEMPT_CAP)
     plan_p.add_argument("--task", action="append", dest="tasks",
-                        help="restrict to this task; repeatable. Default: every task the host carries")
+                        help="release task; repeatable. Default: t1_failed_job only")
     plan_p.add_argument("--entry-point", action="append", dest="entry_points",
                         choices=("E1", "E2", "E3", "E4"),
-                        help="restrict to this entry point; repeatable. `v0.5` is E1 E2 E3")
+                        help="restrict to this entry point; repeatable. Default: E1-E4")
 
     run_p = sub.add_parser("run", help="execute a schedule, retaining every attempt")
     run_p.add_argument("--schedule", required=True)
@@ -523,10 +525,10 @@ def add_arguments(sub) -> None:
                        choices=("max_tokens", "max_completion_tokens"))
     run_p.add_argument("--canary-seed", default="dev-generation")
     run_p.add_argument(
-        "--execution-mode", default="single_agent", choices=runner.EXECUTION_MODES,
+        "--execution-mode", default="two_agent", choices=runner.EXECUTION_MODES,
         help="held constant across every cell in a sweep (plan §6.4, R2); the "
-             "mode effect comes from a separate matched bridge arm, never from "
-             "mixing modes inside one schedule",
+             "compact release uses two_agent throughout; single_agent is an "
+             "optional future extension, never mixed inside one schedule",
     )
     run_p.add_argument("--defense", default="none")
     run_p.add_argument("--control-profiles", default="control_profiles")

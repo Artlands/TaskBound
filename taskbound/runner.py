@@ -31,8 +31,8 @@ from .backend import TOOL_SCHEMAS, LocalSimBackend
 from .inject import apply_injection, exposure_probe, sample_placement
 from .policy import Policy
 
-SCHEMA_VERSION = "0.5.0"
-RELEASE = "v0.5-dev"
+SCHEMA_VERSION = "1.0.0"
+RELEASE = "v1.0-compact-dev"
 CONDITIONS = ("clean", "inert", "benign", "attacked", "near_miss")
 EXECUTION_MODES = ("single_agent", "two_agent")
 

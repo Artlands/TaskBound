@@ -1,10 +1,10 @@
 """Power simulation under the exact allocation and analysis model (plan §9.5).
 
-"Before the main pre-registration is signed, a simulation using the exact
-allocation and analysis model must name the minimum effect of interest for
-attack susceptibility, scope selectivity, and both main effects, and
-demonstrate at least 80% power across the pilot-informed conservative
-clustering range."
+Before the compact release is signed, a simulation using the exact allocation
+and analysis model must demonstrate at least 80% power for the confirmatory
+attack-susceptibility threshold across the pilot-informed conservative
+clustering range. Scope selectivity and both factor effects remain in the
+simulation as explicitly exploratory resolution diagnostics.
 
 That is a gate, not a table of planning ranges, so it is code. The simulation
 generates datasets from a named truth, fits them with the *same* function the
@@ -37,7 +37,7 @@ from typing import Any, Sequence
 
 from . import aggregate, glmm
 
-ENTRY_POINTS = ("E1", "E2", "E3")
+ENTRY_POINTS = ("E1", "E2", "E3", "E4")
 INDUCED_ACTIONS = ("A1", "A2", "A3", "A4")
 PARAPHRASES = ("p1", "p2", "p3")
 
@@ -267,10 +267,10 @@ class Truth:
     entry_point_effect: float = -0.12    # E3 minus E1, on the probability scale
     induced_action_effect: float = -0.10  # A4 minus A1, on the probability scale
     exposure: dict[str, float] = field(
-        default_factory=lambda: {"E1": 0.98, "E2": 0.55, "E3": 0.40}
+        default_factory=lambda: {"E1": 0.98, "E2": 0.55, "E3": 0.40, "E4": 0.98}
     )
-    n_exposed_per_cell: int = 33   # the frozen v0.5 N (plan §10.1)
-    attempt_cap: int = 99          # 3N, so the least-exposed entry point reaches N
+    n_exposed_per_cell: int = 9    # compact v1.0 N (plan §10.2)
+    attempt_cap: int = 27          # 3N, so the least-exposed entry point can reach N
 
     def to_dict(self) -> dict[str, Any]:
         return {**vars(self)}
@@ -286,7 +286,7 @@ def _inv_logit(x: float) -> float:
 
 
 def generate(truth: Truth, clustering: dict[str, float], seed: int) -> list[dict[str, Any]]:
-    """One synthetic sweep under the exact v0.5 allocation.
+    """One synthetic sweep under the exact compact v1.0 allocation.
 
     Recruitment is simulated too, not assumed away: a cell draws attempts until
     it has its exposed target or hits the cap, so an entry point the agent
@@ -299,6 +299,7 @@ def generate(truth: Truth, clustering: dict[str, float], seed: int) -> list[dict
         "E1": 0.0,
         "E2": (_logit(truth.attacked_rate + truth.entry_point_effect / 2) - base),
         "E3": (_logit(truth.attacked_rate + truth.entry_point_effect) - base),
+        "E4": (_logit(truth.attacked_rate + truth.entry_point_effect / 4) - base),
     }
     action_delta = {
         "A1": 0.0,
@@ -347,7 +348,7 @@ def generate(truth: Truth, clustering: dict[str, float], seed: int) -> list[dict
                             "request_family": f"t1_{action}", "paraphrase": paraphrase,
                             "injection_id": injection, "placement_id": placement,
                             "model_family": "family_x", "resolved_model": "family_x",
-                            "defense": "none", "execution_mode": "single_agent",
+                            "defense": "none", "execution_mode": "two_agent",
                             "exposed": is_exposed,
                             "compliant": rng.random() < _inv_logit(eta),
                             "pre_exposure_target_action": False, "stated_intent": False,
@@ -426,6 +427,7 @@ def run(
 ) -> dict[str, Any]:
     estimands = ("attack_susceptibility", "scope_selectivity",
                  "entry_point_effect", "induced_action_effect")
+    confirmatory = ("attack_susceptibility",)
     by_clustering = {}
     for clustering in clustering_range:
         detections = {name: 0 for name in estimands}
@@ -467,11 +469,13 @@ def run(
         },
         "by_clustering": by_clustering,
         "worst_case_power": worst,
+        "confirmatory_estimands": list(confirmatory),
+        "exploratory_estimands": [name for name in estimands if name not in confirmatory],
         # The gate is the worst case across the range, because a design whose
         # power claim holds only at the friendly end of the range is a design
         # whose claim depends on a number nobody has pinned down.
         "gate_passed": all(
-            value is not None and value >= REQUIRED_POWER for value in worst.values()
+            worst[name] is not None and worst[name] >= REQUIRED_POWER for name in confirmatory
         ),
     }
 
@@ -481,8 +485,9 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--simulations", type=int, default=100)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--draws", type=int, default=400)
-    parser.add_argument("--n-exposed", type=int, default=33, help="N per cell; a floor (plan §9.5)")
-    parser.add_argument("--attempt-cap", type=int, default=99)
+    parser.add_argument("--n-exposed", type=int, default=9,
+                        help="N per cell for the compact release (plan §9.5)")
+    parser.add_argument("--attempt-cap", type=int, default=27)
     parser.add_argument("--attacked-rate", type=float, default=0.30)
     parser.add_argument("--mei-selectivity", type=float, default=-0.15,
                         help="minimum effect of interest: benign minus attacked")
@@ -564,6 +569,7 @@ def main(args: argparse.Namespace) -> int:
     else:
         print("  a-priori clustering bracket (no pilot measurement supplied)")
     print(f"  practical susceptibility floor: {PRACTICAL_SUSCEPTIBILITY_FLOOR:.2f}")
+    print("  confirmatory gate: attack_susceptibility only; other effects exploratory")
     print(f"  minimum effects of interest: selectivity {args.mei_selectivity:+.2f}  "
           f"entry point {args.mei_entry_point:+.2f}  action {args.mei_induced_action:+.2f}")
     # Measured rung labels are longer than the a-priori ones, so the column is

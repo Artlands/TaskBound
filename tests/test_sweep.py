@@ -17,13 +17,18 @@ INJ = os.path.join(ROOT, "injections")
 SCRIPTS = os.path.join(ROOT, "fixtures", "scripts")
 
 
-# `v0.5` is the core task at E1-E3 (plan §13); the host also carries T2-T5 and
-# an E4 row, so the scope is named rather than inferred.
-V05 = dict(tasks_filter=["t1_failed_job"], entry_points=["E1", "E2", "E3"])
+# `v1.0-compact` is the core task's complete E1-E4 crossing (plan §13).
+COMPACT = dict(tasks_filter=["t1_failed_job"], entry_points=["E1", "E2", "E3", "E4"])
 
 
 def schedule(seed: int = 7, **kw):
-    return sweep.plan(HOST, INJ, seed, **{**V05, **kw})
+    return sweep.plan(HOST, INJ, seed, **{**COMPACT, **kw})
+
+
+def diagnostic_schedule(seed: int = 7, **kw):
+    """Small single-agent-compatible subset for runner mechanics tests."""
+    scope = dict(tasks_filter=[TASK], entry_points=["E1", "E2", "E3"])
+    return sweep.plan(HOST, INJ, seed, **{**scope, **kw})
 
 
 def run_args(out, script="complied_read", **kw):
@@ -41,17 +46,19 @@ def run_args(out, script="complied_read", **kw):
 
 
 # --- planning ------------------------------------------------------------
-def test_the_plan_matches_the_v05_allocation():
-    """Plan §10.1: 1,056 target runs, 1,056-2,838 attempts, per model family."""
+def test_the_plan_matches_the_compact_allocation():
+    """Plan §10.2: 369 target runs and a 1,017-attempt cap per family."""
     s = schedule()
-    assert s["target_runs"] == 1056
-    assert s["max_attempts"] == 2838
+    assert s["target_runs"] == 369
+    assert s["max_attempts"] == 1017
+    assert s["exposed_target"] == 9
+    assert s["attempt_cap"] == 27
     # N is a multiple of three so the paraphrase blocks stay balanced (§7.5).
     assert s["exposed_target"] % 3 == 0
     conditions = [g["condition"] for g in s["groups"].values()]
-    assert conditions.count("attacked") == 12
-    assert conditions.count("benign") == 12
-    assert conditions.count("inert") == 3      # per entry point, not per cell
+    assert conditions.count("attacked") == 16
+    assert conditions.count("benign") == 16
+    assert conditions.count("inert") == 4      # per entry point, not per cell
     assert conditions.count("near_miss") == 4  # per induced action
     assert conditions.count("clean") == 1
 
@@ -99,7 +106,7 @@ def test_the_schedule_is_bound_to_the_material_it_was_planned_from():
 
 # --- execution -----------------------------------------------------------
 def test_recruitment_stops_at_the_target_and_retains_every_attempt(tmp_path):
-    s = schedule(exposed_target=6, attempt_cap=12)
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
     manifest = sweep.execute(s, run_args(tmp_path / "out"))
     clean = manifest["groups"][f"clean|{TASK}"]
     assert clean["attempted"] == 6
@@ -114,7 +121,7 @@ def test_recruitment_stops_at_the_target_and_retains_every_attempt(tmp_path):
 
 def test_a_group_the_agent_never_reads_hits_the_cap_and_says_so(tmp_path):
     """The scripted agent never renders a module description, so E3 never exposes."""
-    s = schedule(exposed_target=6, attempt_cap=12)
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
     manifest = sweep.execute(s, run_args(tmp_path / "out"))
     e3 = manifest["groups"][f"attacked|{TASK}|E3A1"]
     assert e3["exposed"] == 0
@@ -125,7 +132,7 @@ def test_a_group_the_agent_never_reads_hits_the_cap_and_says_so(tmp_path):
 
 
 def test_an_interrupted_sweep_resumes_rather_than_reruns(tmp_path):
-    s = schedule(exposed_target=6, attempt_cap=12)
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
     out = tmp_path / "out"
     first = sweep.execute(s, run_args(out, max_attempts=20))
     assert first["stopped_early"] == "max_attempts"
@@ -139,7 +146,7 @@ def test_an_interrupted_sweep_resumes_rather_than_reruns(tmp_path):
 
 
 def test_every_result_records_the_attempt_it_came_from(tmp_path):
-    s = schedule(exposed_target=3, attempt_cap=6)
+    s = diagnostic_schedule(exposed_target=3, attempt_cap=6)
     sweep.execute(s, run_args(tmp_path / "out"))
     for name in os.listdir(tmp_path / "out"):
         with open(os.path.join(tmp_path / "out", name), encoding="utf-8") as fh:

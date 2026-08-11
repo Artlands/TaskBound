@@ -33,17 +33,16 @@ from . import glmm
 DRAWS = 2000
 BOOTSTRAP = 2000
 
-PRIMARY_FIXED = ["condition*entry_point*induced_action", "condition*task", "model_family"]
+PRIMARY_FIXED = ["condition*entry_point*induced_action", "model_family"]
 # `host:cell` and `request_family` were dropped after §9.5 showed both aliased
 # with the fixed block: `condition * entry_point * induced_action` is saturated
 # at one parameter per (condition, cell), which spans every populated cell, and
 # `request_family`'s four levels are the four induced actions that
 # `induced_action` already carries. Neither estimated anything, and refitting
 # without them moves every reported contrast by less than 0.005. Neither returns
-# at any version: `host:cell` cannot exist in a single-host design, and
-# `task:cell` — the only successor candidate — enters the model only if a
-# synthetic-data fit at the exact allocation shows it recovers a known non-zero
-# variance (plan §9.5). The default is that it stays out.
+# in the compact release: `host:cell` cannot exist in a single-host design, and
+# a one-task allocation has no task-level variance to estimate. Any future
+# multi-task amendment must validate its random-effects structure anew.
 PRIMARY_RANDOM = ["request_family:paraphrase", "injection_id", "placement_id"]
 # `induced_action` was dropped before signing. It was aliased with the fixed
 # block on this model's own population — every inert run carries a null
@@ -52,7 +51,7 @@ PRIMARY_RANDOM = ["request_family:paraphrase", "injection_id", "placement_id"]
 # before any data were seen. It also costs nothing substantively: exposure is
 # whether the agent read the vehicle, which is a property of the entry point and
 # the placement rather than of what the text went on to ask for.
-EXPOSURE_FIXED = ["condition*entry_point", "model_family", "task"]
+EXPOSURE_FIXED = ["condition*entry_point", "model_family"]
 EXPOSURE_RANDOM = ["request_family:paraphrase", "placement_id"]
 
 # The one multiplicity family, corrected by Holm across every model family
@@ -427,7 +426,7 @@ def interaction_omnibus(
     """One omnibus test, never sixteen per-cell claims (plan §9.1, §9.3)."""
     reduced_fixed = [
         "condition*entry_point", "condition*induced_action", "entry_point*induced_action",
-        "condition*task", "model_family",
+        "model_family",
     ]
     reduced_design = glmm.build_design(rows, "compliant", reduced_fixed, PRIMARY_RANDOM)
     reduced = glmm.fit(reduced_design, prior_sd=prior_sd)
@@ -696,19 +695,24 @@ def build_report(
     }
 
     for family in families:
+        scope_selectivity = standardized_contrast(
+            primary["design"], posterior, cells, tasks[0], family,
+            left={"condition": "benign"}, right={"condition": "attacked"},
+        )
+        scope_selectivity["status"] = "exploratory in the compact N=9 release"
         report["headline"][family] = {
             **headline_descriptive(rows, family),
             "attack_susceptibility": standardized_susceptibility(
                 primary["design"], posterior, cells, tasks[0], family
             ),
-            "scope_selectivity": standardized_contrast(
-                primary["design"], posterior, cells, tasks[0], family,
-                left={"condition": "benign"}, right={"condition": "attacked"},
-            ),
+            "scope_selectivity": scope_selectivity,
         }
 
     report["factor_effects"] = factor_effects(primary, posterior, cells, tasks[0], families)
     report["factor_effects"]["interaction_omnibus"] = interaction_omnibus(fitted, primary, prior_sd)
+    report["factor_effects"]["interaction_omnibus"]["status"] = (
+        "exploratory in the compact release"
+    )
     report["variance_decomposition"] = variance_decomposition(primary, prior_sd, seed)
 
     report["multiplicity"] = holm({
@@ -721,7 +725,7 @@ def build_report(
     if headline_family is None:
         report["notes"].append(
             "no headline family named in the pre-registration: quote the full range across "
-            "families, never the maximum of three noisy estimates (plan §9.3)"
+            "families, never the maximum of two noisy estimates (plan §9.3)"
         )
     return report
 
@@ -903,6 +907,7 @@ def factor_effects(primary, posterior, cells, task, families) -> dict[str, Any]:
         entry_samples.append(samples)
     effects["entry_point_effect"] = {
         "contrasts": entry_contrasts,
+        "status": "exploratory in the compact release",
         "identification": "paired within request family and paraphrase; benchmark-instance "
                           "effect, not a population-wide entry-point effect (plan §6.3)",
         **_joint_wald(entry_samples),
@@ -920,6 +925,7 @@ def factor_effects(primary, posterior, cells, task, families) -> dict[str, Any]:
         action_samples.append(samples)
     effects["induced_action_effect"] = {
         "contrasts": action_contrasts,
+        "status": "exploratory in the compact release",
         "identification": "unpaired and bundled with the authored operations and targets; "
                           "benchmark-instance effect only (plan §6.3)",
         **_joint_wald(action_samples),
@@ -938,6 +944,7 @@ def factor_effects(primary, posterior, cells, task, families) -> dict[str, Any]:
         effects["model_family_heterogeneity"] = {
             "contrasts": heterogeneity,
             **_joint_wald(heterogeneity_samples),
+            "status": "exploratory replication diagnostic",
             "note": "replication axis, not a treatment: no ordered leaderboard (plan §9.3)",
         }
     return effects

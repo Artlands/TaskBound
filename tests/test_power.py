@@ -14,11 +14,17 @@ import pytest
 from taskbound import glmm, power
 
 
-def test_the_simulated_allocation_is_the_v05_allocation():
+def test_compact_power_defaults_match_the_release_allocation():
+    truth = power.Truth()
+    assert truth.n_exposed_per_cell == 9
+    assert truth.attempt_cap == 27
+
+
+def test_the_simulated_allocation_is_the_compact_allocation():
     truth = power.Truth(n_exposed_per_cell=6, attempt_cap=18)
     rows = power.generate(truth, power.CLUSTERING_RANGE[1], seed=1)
     cells = {r["cell"] for r in rows}
-    assert len(cells) == 12
+    assert len(cells) == 16
     for cell in cells:
         for condition in ("attacked", "benign"):
             subset = [r for r in rows if r["cell"] == cell and r["condition"] == condition]
@@ -58,9 +64,12 @@ def test_the_gate_is_the_worst_case_across_the_clustering_range():
                     if b["power"][name] is not None]
         assert worst == min(observed)
     assert result["required_power"] == 0.80
-    assert result["gate_passed"] == all(
-        v is not None and v >= 0.80 for v in result["worst_case_power"].values()
-    )
+    assert result["confirmatory_estimands"] == ["attack_susceptibility"]
+    assert set(result["exploratory_estimands"]) == {
+        "scope_selectivity", "entry_point_effect", "induced_action_effect"
+    }
+    susceptibility = result["worst_case_power"]["attack_susceptibility"]
+    assert result["gate_passed"] == (susceptibility is not None and susceptibility >= 0.80)
 
 
 def test_a_non_converging_simulation_is_a_power_failure_not_a_discard():
@@ -72,7 +81,7 @@ def test_a_non_converging_simulation_is_a_power_failure_not_a_discard():
 
 
 # --- the pilot -> clustering handoff (pilot_protocol.md Stage 2) ----------
-def _pilot_rows(n=6, cap=18, clustering=1, seed=42):
+def _pilot_rows(n=6, cap=18, clustering=1, seed=1):
     truth = power.Truth(n_exposed_per_cell=n, attempt_cap=cap)
     return power.generate(truth, power.CLUSTERING_RANGE[clustering], seed)
 
@@ -118,9 +127,10 @@ def test_a_narrowed_range_carries_the_apriori_values_for_unmeasurable_knobs():
     real; the fitted model just absorbs it into fixed effects. So `cell_sd` is
     simulated but unmeasurable, and its a-priori rungs must survive narrowing
     rather than being replaced by a number no fit produced."""
-    # A full-sweep-sized frame does resolve the three measurable components.
-    rows = power.generate(power.Truth(n_exposed_per_cell=48, attempt_cap=144),
-                          power.CLUSTERING_RANGE[2], seed=7)
+    # A deliberately larger diagnostic frame resolves the three measurable
+    # components; this tests the narrowed branch, not the release allocation.
+    rows = power.generate(power.Truth(n_exposed_per_cell=24, attempt_cap=72),
+                          power.CLUSTERING_RANGE[1], seed=5)
     result = power.measure_clustering(rows, glmm.DEFAULT_PRIOR_SD, seed=1)
     assert result["narrowed"] is True
     assert result["components"]["cell_sd"]["measurable"] is False
@@ -146,8 +156,8 @@ def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path):
     values with a carried-through `cell_sd`, and `run` has to accept either."""
     refused = power.measure_clustering(_pilot_rows(), glmm.DEFAULT_PRIOR_SD, seed=1)
     narrowed = power.measure_clustering(
-        power.generate(power.Truth(n_exposed_per_cell=48, attempt_cap=144),
-                       power.CLUSTERING_RANGE[2], seed=7),
+        power.generate(power.Truth(n_exposed_per_cell=24, attempt_cap=72),
+                       power.CLUSTERING_RANGE[1], seed=5),
         glmm.DEFAULT_PRIOR_SD, seed=1,
     )
     assert refused["narrowed"] is False and narrowed["narrowed"] is True

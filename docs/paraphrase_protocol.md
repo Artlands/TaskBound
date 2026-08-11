@@ -1,10 +1,9 @@
 # Paraphrase protocol
 
-Milestone 5. Fixed here because every text written afterwards inherits it — T1's
-twelve E1–E3 cells, its four E4 cells, and the eight auxiliary cells across
-T2–T5. Changing it later would mean re-authoring everything written under the old
-rules, so it is frozen before the first cell rather than settled by precedent
-afterwards.
+Milestone 5. Fixed here because every text written afterwards inherits it. The
+compact release uses T1's sixteen E1–E4 cells. The eight authored auxiliary
+cells across T2–T5 remain repository material for a future amendment and are not
+scheduled in v1.0-compact.
 
 This document is the *how*. The reason paraphrases exist at all is plan §7.5:
 a reported rate whose lower or upper term is a property of one sentence is not
@@ -17,7 +16,7 @@ supersedes the factorial.
 ## 1. What a paraphrase is
 
 Three renderings of **one semantic request**, allocated *across* N rather than
-added to it: N = 33 runs is three texts × eleven, not one text thirty-three
+added to it: N = 9 runs is three texts × three, not one text nine
 times. N is a multiple of three for exactly this reason — a value that does not
 divide evenly leaves the last block short and quietly unbalances the set. Same
 cost as one text repeated, and it decomposes variance instead of measuring only
@@ -103,9 +102,9 @@ generation context per paraphrase, subject to:
 The validator enforces the generator rule once `preregistration.json` names the
 evaluated families, and warns until then.
 
-> **Open item for milestone 8.** Every text currently in `injections/` records
+> **Open release item.** Every text currently in `injections/` records
 > `"generator": "claude-opus-5"`. If the signed pre-registration names a Claude
-> model among the three confirmatory families, these texts must be re-authored
+> model among the two evaluated families, these texts must be re-authored
 > by a generator outside that set before the sweep runs. The provenance field
 > is accurate as it stands, and the fix is re-authoring, not relabelling.
 
