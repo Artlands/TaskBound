@@ -392,6 +392,54 @@ def simulate(fit_result: Fit, draws: int, seed: int) -> list[list[float]]:
     return [sample_normal(mean, fit_result.precision_chol, rng) for _ in range(draws)]
 
 
+def column_rank(columns: Sequence[Sequence[float]], tol: float = 1e-9) -> int:
+    """Rank of a set of column vectors, by Gauss-Jordan elimination."""
+    m = [list(c) for c in columns]
+    if not m:
+        return 0
+    width = len(m[0])
+    rank = 0
+    for col in range(width):
+        pivot = next((i for i in range(rank, len(m)) if abs(m[i][col]) > tol), None)
+        if pivot is None:
+            continue
+        m[rank], m[pivot] = m[pivot], m[rank]
+        head = m[rank][col]
+        for i in range(len(m)):
+            if i != rank and abs(m[i][col]) > tol:
+                factor = m[i][col] / head
+                for j in range(col, width):
+                    m[i][j] -= factor * m[rank][j]
+        rank += 1
+        if rank == len(m):
+            break
+    return rank
+
+
+def aliasing(design: Design) -> dict[str, Any]:
+    """Whether the fixed block is full rank, and which columns duplicate which.
+
+    A rank-deficient block does not stop the fit — the prior regularizes it, and
+    predictions stay identified because the fitted linear predictor is — but the
+    individual coefficients are then split between aliased columns by the prior
+    rather than by the data. §9.5 already had to diagnose this once, for
+    `host:cell`, and reported it as aliasing rather than weak identification.
+    Emitting it beside any fit makes the same mistake self-reporting.
+    """
+    columns = [[row[j] for row in design.x] for j in range(design.p)]
+    rank = column_rank(columns)
+    duplicates: list[list[str]] = []
+    seen: dict[tuple[float, ...], str] = {}
+    for name, column in zip(design.fixed_names, columns):
+        key = tuple(column)
+        if key in seen:
+            duplicates.append([seen[key], name])
+        else:
+            seen[key] = name
+    return {"columns": design.p, "rank": rank, "deficit": design.p - rank,
+            "duplicate_columns": duplicates}
+
+
 def design_row(design: Design, values: dict[str, str]) -> dict[str, float]:
     """The fixed-effect covariate vector for a named combination of levels.
 

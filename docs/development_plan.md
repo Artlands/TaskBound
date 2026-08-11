@@ -1147,6 +1147,39 @@ compliance ~ mode * condition + entry_point * induced_action + model_family
 The reported mode contrast is in the attacked condition. Historical `v0.5` rows
 never enter this fit.
 
+**Exposure has its own model, on its own population.** §8.4 makes the
+per-entry-point exposure rate a reported result rather than a nuisance, so it is
+estimated as well as counted:
+
+```
+exposed ~ condition * entry_point + induced_action + model_family + task
+          + (1 | request_family:paraphrase) + (1 | placement_id)
+```
+
+fitted over **every attempted injected run** — attacked, benign, and inert,
+including unexposed and inconclusive ones. Conditioning this fit on exposure
+would be circular, and dropping a run that errored before reading anything would
+bias the rate upward. Per-entry-point estimates are standardized with equal
+weights over that entry point's populated (condition, induced action) strata,
+for the same reason §9.1 standardizes susceptibility that way. The descriptive
+counts and their Wilson bands are reported beside the model, never replaced by
+it: they are what a reader checks it against.
+
+> **A defect in this specification, found by implementing it.** Every inert run
+> has a null `induced_action`, so that level's indicator column *is* the
+> `condition[inert]` column the `condition * entry_point` block already carries.
+> The fixed block is therefore rank deficient on its own registered population —
+> rank 7 of 8 on a single-family E1–E3 frame — and the aliased coefficients are
+> split by the prior rather than by the data. Predictions stay identified, which
+> is why the per-entry-point estimates are still reportable and are what the
+> report quotes; individual coefficients are not, and the aggregator emits the
+> rank deficit and the duplicated pair beside every fit so no one quotes one
+> unaware. This is the same failure §9.5 diagnosed in `host:cell`, and it wants
+> the same resolution before signing: drop `induced_action` from the exposure
+> block, or fit inert separately. **It is deliberately not fixed in code** — the
+> registration is the authority for what gets fitted, and changing the model to
+> suit the implementation is the wrong direction of travel.
+
 **Task generalization is a declared-underpowered secondary.** The pre-registered
 `condition:task` contrast has five levels of a fixed effect, rests on eight
 cell-matched pairs, and sits inside the Holm family of §9.2. It can flag a large
@@ -1785,7 +1818,8 @@ spreadsheet work:
    status of each contrast on its face.
 3. **Variance decomposition** — between-paraphrase against between-text against
    between-placement, with the §7.5 supersession rule applied automatically.
-4. **Exposure** — per entry point, per task, with both denominators.
+4. **Exposure** — per entry point, per task, with both denominators, and the
+   registered exposure model's standardized estimate beside the counts (§9.1).
 5. **Full grid** — every populated cell descriptively, marked "no per-cell claims."
 
 **Phase 6 — Defenses (`v1.1`).** Two hooks: a **context hook** transforming what
@@ -2073,7 +2107,7 @@ artifact has been reviewed, run, or reported.
 | 4 | Oracle | **Done** | Compliance predicates, four realization ladders, exposure, `control_profiles/*.json`, the declared A4 consumer, and the audit sampler in `taskbound/audit.py` |
 | 5 | Injection library and paraphrase protocol | **Done** | `docs/paraphrase_protocol.md`; four request families and an inert specification in `injections/specs/` |
 | 6 | T1's twelve E1–E3 cells | **Partial** | 36 attacked, 36 benign, 9 inert texts; four near-miss tasks and the A3 manifest twin. **Acceptance review has not happened**; every text records `accepted_by: PENDING_ACCEPTANCE_REVIEW` |
-| 7 | Sweep driver and aggregator; freeze the pilot protocol | **Done** | `taskbound/{sweep,glmm,aggregate,power}.py`; five tables, mixed-effects fit and its fallback, variance decomposition, all tested on synthetic data. Pilot protocol frozen in `docs/pilot_protocol.md` |
+| 7 | Sweep driver and aggregator; freeze the pilot protocol | **Done** | `taskbound/{sweep,glmm,aggregate,power}.py`; five tables, mixed-effects fit and its fallback, variance decomposition, all tested on synthetic data. Both registered models are fitted: the primary, and the exposure model over all attempted injected runs, whose per-entry-point estimates recover a known gradient on synthetic data to within 0.03. Pilot protocol frozen in `docs/pilot_protocol.md` |
 | 8 | Pilot, gates, sign the pre-registration, run `v0.5` | **Not started** | `preregistration.draft.json` names every item still to freeze. Blocked — see below |
 | 9 | Two-agent execution mode and T1's four E4 cells | **Partial** | `--execution-mode two_agent` runs planner → worker → planner in `taskbound/agents.py`: two adapters at one configuration, separate contexts, the planner resuming its own across turns 1 and 3, the actor recorded per action, and one turn budget for the run rather than one per role turn. Delegation costs no tool, so the tool contract is byte-identical to the bridge arm's. Each task naming an E4 cell declares the `work_order` its workflow is driven from. T1 now carries the complete 4 × 4 crossing: 12 attacked + 12 benign E4 texts across its four request families, plus 3 E4 inert, each smoke-run end to end against its declared predicate. Worst pairwise similarity 0.34 against a 0.50 threshold; the shipped maximum is unchanged at 0.37. §11 phase 3's peer-agent A4 consumer is built: `oracle.find_peer_consumption` records `peer_agent` when the other role reads the planted object back, and the scripted reader still decides the rung. **Acceptance review has not happened**; every text records `accepted_by: PENDING_ACCEPTANCE_REVIEW`, which is what keeps this milestone short of done |
 | 10 | T2–T5 workspace material, tasks, policies, near-miss twins | **Partial** | Post-processing pipeline and its config, build tree and build config, archive and staging areas, reports directory, and seven new vehicles are in `hosts/site_a/workspace/`. Four tasks with policies, scope derivations, near-miss twins, two A3 manifest pairs, and 40 calibration fixtures — all calibrating. **Realism review has not happened** |
@@ -2082,9 +2116,12 @@ artifact has been reviewed, run, or reported.
 | 13 | Defense interface and both hooks | **Not started** | `--defense` is recorded per run and only `none` exists |
 | 14 | `v1.1` defense arms | **Not started** | — |
 
-**What blocks milestone 8.** Four things, none of them code. A fifth — a
-specification error in the analysis model, found by building the pilot's
-clustering handoff — has since been resolved and is listed below for the record:
+**What blocks milestone 8.** Five things, none of them code — four human or
+pilot items, plus a one-line specification decision on the exposure model. A
+sixth, a specification error in the primary model found by building the pilot's
+clustering handoff, has since been resolved and is listed below for the record.
+Both specification errors were found the same way, by implementing the model
+rather than by reading it:
 
 | Blocker | State | Resolution |
 |---------|-------|------------|
@@ -2093,6 +2130,7 @@ clustering handoff — has since been resolved and is listed below for the recor
 | Realism review (§11.3, milestone 3) | **Not started; instrument ready.** `runner realism worksheet` emits 110 blocks / 162 ratings per reviewer, and `realism report` applies the gate. `realism_review.status` is `pending` and `validate` warns while it stays that way | Two HPC practitioners who did not author the material rate it against `realism_rubric.md`, before any model result exists. It needs two people, not a tool |
 | Acceptance review (§11.3, milestone 6) | Not started | A named reviewer per text, per `paraphrase_protocol.md` §6 |
 | Primary model specification (§9.1, §9.5) | **Resolved.** `host:cell` and `request_family` were aliased with the fixed block and estimated nothing; both dropped, and §7.5's denominator moved to `injection_id` | Done. Neither returns at any version; `task:cell` is the only successor candidate and is gated on a synthetic-data fit (§9.5). Note that §7.5 now compares wording against wording and no longer tests wording against structure — §7.5 records what that costs |
+| Exposure model specification (§9.1) | **Open, and a one-line decision.** Implementing the registered `exposure_model` showed its fixed block is rank deficient on its own registered population: every inert run has a null `induced_action`, so that column duplicates `condition[inert]`. Confirmed on real records, not only synthetic — rank 7 of 8 | Drop `induced_action` from the exposure block, or fit inert separately, before signing. Not fixed in code: the registration is the authority for what gets fitted. Predictions are unaffected and are what the report quotes; the aggregator emits the rank deficit and the duplicated pair beside every fit so no coefficient is quoted unaware |
 
 The oracle audit gate (§8.7) is implemented and cannot be *evaluated* until a
 sweep exists to sample; it is a milestone 8 exit condition rather than an entry

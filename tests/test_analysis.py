@@ -383,3 +383,123 @@ def test_the_inert_difference_resamples_run_ids_not_predicate_rows():
     result = aggregate.background_risk_difference(rows)
     assert result["per_cell"]["E1A1"]["difference"] == 1.0
     assert result["cells"] == 1
+
+
+# --- the registered exposure model (preregistration.exposure_model) -------
+def inert_rows(entries=ENTRIES, per_entry: int = 24, exposure=(0.9, 0.6, 0.3), seed: int = 5):
+    """Inert runs, which the registered exposure population includes.
+
+    An inert text is injected text: it occupies a placement class in a vehicle
+    and either reaches a tool result or does not, exactly as an attacked one
+    does. It carries no induced action, which is what makes it interesting here.
+    """
+    rng = random.Random(seed)
+    out = []
+    for index, entry in enumerate(entries):
+        for paraphrase in ("i1", "i2", "i3"):
+            for replicate in range(per_entry // 3):
+                out.append({
+                    "run_id": f"inert_{entry}_{paraphrase}_{replicate}", "task": "t1",
+                    "condition": "inert", "cell": entry, "entry_point": entry,
+                    "induced_action": None, "request_family": "t1_inert",
+                    "paraphrase": paraphrase,
+                    "injection_id": f"{entry}_inert_{paraphrase}",
+                    "placement_id": f"{entry.lower()}@{replicate % 4}",
+                    "model_family": "family_x", "resolved_model": "family_x",
+                    "defense": "none", "execution_mode": "single_agent",
+                    "exposed": rng.random() < exposure[index],
+                    "compliant": None, "pre_exposure_target_action": None,
+                    "stated_intent": None, "realization": None, "utility": True,
+                    "overblocked": None, "scope_violations": 0,
+                    "targeted_action_background": {}, "inconclusive": None,
+                    "control_annotations": [],
+                })
+    return out
+
+
+def test_the_exposure_model_recovers_a_known_per_entry_point_gradient():
+    """The registered model, fitted, against the exposure it was generated from.
+
+    §8.4 calls the per-entry-point exposure rate a result in its own right, and
+    arguably the more useful of the two numbers. This is the check that the
+    fitted version of it means anything.
+    """
+    truth = (0.9, 0.6, 0.3)
+    result = report(11, per_cell=14, exposure=truth)
+    model = result["exposure"]["model"]
+    assert model is not None and model["outcome"] == "exposed"
+
+    estimates = [
+        result["exposure"]["per_entry_point"][entry]["model"]["family_x"]["estimate"]
+        for entry in ENTRIES
+    ]
+    for estimate, expected in zip(estimates, truth):
+        assert abs(estimate - expected) < 0.12, (estimates, truth)
+    # The gradient E1 > E2 > E3 is the shape §5.1 predicts and the reason R4
+    # conditions every primary rate on exposure.
+    assert estimates[0] > estimates[1] > estimates[2]
+
+
+def test_the_exposure_model_is_reported_beside_the_counts_not_instead_of_them():
+    """§8.4 asks for both denominators; a model estimate is an addition."""
+    result = report(11, per_cell=14, exposure=(0.9, 0.6, 0.3))
+    for entry in ENTRIES:
+        cell = result["exposure"]["per_entry_point"][entry]
+        assert cell["attempted"] and cell["exposed"] <= cell["attempted"]
+        assert cell["wilson"][0] <= cell["rate"] <= cell["wilson"][1]
+        # The model is standardized over strata and the raw rate is not, so
+        # they are close rather than equal.
+        assert abs(cell["model"]["family_x"]["estimate"] - cell["rate"]) < 0.15
+
+
+def test_the_exposure_population_keeps_unexposed_and_inconclusive_runs():
+    """Conditioning the exposure model on exposure would be circular, and
+    dropping errored runs would bias the rate upward."""
+    rows = controls(synthetic(3, per_cell=4, exposure=(0.9, 0.5, 0.2)))
+    rows[0]["inconclusive"] = "turn_limit"
+    population = aggregate.exposure_analysis_rows(rows)
+
+    assert any(not r["exposed"] for r in population)
+    assert any(r["inconclusive"] for r in population)
+    # Clean and near-miss runs carry no injection and are not in it.
+    assert {r["condition"] for r in population} <= {"attacked", "benign", "inert"}
+    assert len(population) > len(aggregate.analysis_rows(rows))
+
+
+def test_inert_runs_alias_the_induced_action_term_and_the_report_says_so():
+    """A defect in the registered specification, surfaced by fitting it.
+
+    Every inert run has a null induced action, so that level's dummy is the
+    `condition[inert]` indicator the `condition * entry_point` block already
+    carries. The fit still runs and its predictions are still identified — the
+    prior regularizes the deficiency — but the coefficients are not, and a
+    reader must be told which before quoting one.
+    """
+    rows = controls(synthetic(4, per_cell=6)) + inert_rows()
+    result = aggregate.build_report(rows, draws=150, seed=2)
+
+    aliasing = result["exposure"]["model"]["aliasing"]
+    assert aliasing["deficit"] >= 1
+    assert aliasing["rank"] < aliasing["columns"]
+    assert ["condition[inert]", "induced_action[None]"] in aliasing["duplicate_columns"]
+    assert any("rank deficient" in note for note in result["notes"])
+
+    # Predictions survive it, which is why the rung is still reportable.
+    for entry in ENTRIES:
+        estimate = result["exposure"]["per_entry_point"][entry]["model"]["family_x"]["estimate"]
+        assert 0.0 <= estimate <= 1.0
+
+
+def test_an_attacked_and_benign_only_population_is_full_rank():
+    """The complement, so the test above is pinned to inert and not to the
+    exposure model in general."""
+    rows = controls(synthetic(4, per_cell=6))
+    result = aggregate.build_report(rows, draws=150, seed=2)
+    assert result["exposure"]["model"]["aliasing"]["deficit"] == 0
+    assert not any("rank deficient" in note for note in result["notes"])
+
+
+def test_too_few_injected_runs_reports_exposure_descriptively():
+    result = aggregate.build_report(controls([]), draws=50)
+    assert result["exposure"]["model"] is None
+    assert any("registered exposure model" in note for note in result["notes"])
