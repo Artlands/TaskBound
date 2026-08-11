@@ -313,6 +313,7 @@ Then aggregate:
 ```sh
 .venv/bin/python -m taskbound.runner aggregate \
   --results results --preregistration preregistration.json \
+  --power-result pilot/power.json \
   --out reports/v05.json
 ```
 
@@ -323,7 +324,11 @@ pre-registration it says so, at the top, in the text.
 With a signed pre-registration, aggregation additionally requires the registered
 sweep id, membership in its immutable attempt manifest, one result per
 configuration/attempt pair, and exactly the two frozen model-configuration
-hashes. Development aggregation remains available but is explicitly diagnostic.
+hashes. The configuration hash covers the adapter commit and frozen agent
+settings; resolved model ids are checked separately so adapter failures remain
+valid inconclusive attempts. Confirmatory status also requires the exact power
+result whose hash was frozen at signing. Development aggregation remains
+available but is explicitly diagnostic.
 
 ### Before a sweep is worth running
 

@@ -119,7 +119,12 @@ def _canonical_sha256(value: Any) -> str:
 
 
 def model_configuration_sha256(record: dict[str, Any]) -> str:
-    return _canonical_sha256(record.get("agent") or {})
+    agent = dict(record.get("agent") or {})
+    agent.pop("resolved_model", None)
+    return _canonical_sha256({
+        "adapter_commit": record.get("git_commit"),
+        "agent": agent,
+    })
 
 
 def validate_release_binding(
@@ -131,6 +136,9 @@ def validate_release_binding(
     expected_sweep = allocation.get("sweep_id")
     family_spec = preregistration.get("model_families") or {}
     expected_configs = family_spec.get("configuration_sha256")
+    expected_resolved = family_spec.get(
+        "resolved_models_by_configuration_sha256"
+    )
     digest_chars = set("0123456789abcdef")
     if not isinstance(expected_sweep, str) or not expected_sweep \
             or expected_sweep.startswith("PENDING"):
@@ -141,6 +149,15 @@ def validate_release_binding(
                    or set(value) - digest_chars for value in expected_configs):
         raise SystemExit(
             "signed pre-registration must freeze exactly two model configuration hashes"
+        )
+    if not isinstance(expected_resolved, dict) \
+            or set(expected_resolved) != set(expected_configs) \
+            or any(not isinstance(value, str) or not value
+                   or value.startswith("PENDING")
+                   for value in expected_resolved.values()):
+        raise SystemExit(
+            "signed pre-registration must bind each configuration hash to its "
+            "resolved model"
         )
 
     matching_manifests = [m for m in manifests if m.get("sweep_id") == expected_sweep]
@@ -190,12 +207,28 @@ def validate_release_binding(
         sweep_id = row.get("sweep_id")
         attempt_id = row.get("attempt_id")
         config = row.get("model_configuration_sha256")
+        adapter_commit = row.get("adapter_commit")
+        if not isinstance(adapter_commit, str) or len(adapter_commit) != 40 \
+                or set(adapter_commit) - digest_chars:
+            invalid.append(
+                f"{row['run_id']}: adapter_commit={adapter_commit!r}"
+            )
         if sweep_id != expected_sweep:
             invalid.append(f"{row['run_id']}: sweep_id={sweep_id!r}")
         if attempt_id not in schedule_by_attempt:
             invalid.append(f"{row['run_id']}: attempt_id={attempt_id!r}")
         if config not in expected_configs:
             invalid.append(f"{row['run_id']}: model_configuration_sha256={config!r}")
+        elif row.get("resolved_model") is None:
+            if not row.get("inconclusive"):
+                invalid.append(
+                    f"{row['run_id']}: conclusive attempt has no resolved_model"
+                )
+        elif row.get("resolved_model") != expected_resolved[config]:
+            invalid.append(
+                f"{row['run_id']}: resolved_model={row.get('resolved_model')!r}, "
+                f"registered={expected_resolved[config]!r}"
+            )
         membership = (config, attempt_id)
         if membership in seen:
             invalid.append(f"{row['run_id']}: duplicate attempt membership {membership!r}")
@@ -297,7 +330,9 @@ def _execution_binding_problems(
                 break
             expected_ids.append(attempt["attempt_id"])
             resolved_paraphrase = _replayed_paraphrase(group, counts, target, attempt)
-            problems.extend(_scheduled_row_problems(row, attempt, resolved_paraphrase))
+            problems.extend(_scheduled_row_problems(
+                row, attempt, resolved_paraphrase, schedule["host"]
+            ))
             counts["attempted"] += 1
             if row["exposed"]:
                 counts["exposed"] += 1
@@ -375,9 +410,12 @@ def _replayed_paraphrase(
 
 
 def _scheduled_row_problems(
-    row: dict[str, Any], attempt: dict[str, Any], paraphrase: str | None
+    row: dict[str, Any], attempt: dict[str, Any], paraphrase: str | None,
+    host: dict[str, Any],
 ) -> list[str]:
     expected = {
+        "host": host["id"],
+        "host_hash": host["hash"],
         "sweep_group": attempt["group"],
         "sweep_order": attempt["order"],
         "sweep_block": attempt["block"],
@@ -385,6 +423,7 @@ def _scheduled_row_problems(
         "task": attempt["task"],
         "condition": attempt["condition"],
         "cell": attempt.get("cell"),
+        "near_miss_action": attempt.get("near_miss_action"),
         "paraphrase": paraphrase,
     }
     problems = [
@@ -536,10 +575,13 @@ def _row(record: dict[str, Any]) -> dict[str, Any]:
     sweep = record.get("sweep") or {}
     return {
         "run_id": record["run_id"],
+        "adapter_commit": record.get("git_commit"),
         "host": record["host"]["id"],
+        "host_hash": record["host"].get("hash"),
         "task": record["task"]["id"],
         "condition": record["condition"],
         "cell": record.get("cell"),
+        "near_miss_action": record.get("near_miss_action"),
         "entry_point": injection.get("entry_point"),
         "induced_action": injection.get("induced_action"),
         "request_family": injection.get("spec_id"),
@@ -1525,8 +1567,80 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--results", default="results")
     parser.add_argument("--out", help="write the full report as JSON")
     parser.add_argument("--preregistration", help="frozen analysis choices (plan §9)")
+    parser.add_argument(
+        "--power-result",
+        help="power-gate result frozen by the signed pre-registration",
+    )
     parser.add_argument("--seed", type=int, default=1, help="simulation and bootstrap seed")
     parser.add_argument("--draws", type=int, default=DRAWS)
+
+
+def verify_power_gate_evidence(
+    preregistration: dict[str, Any], path: str | None
+) -> tuple[dict[str, Any] | None, list[str]]:
+    registered_hash = (
+        ((preregistration.get("gates") or {}).get("power") or {})
+        .get("result_sha256")
+    )
+    problems = []
+    if not isinstance(registered_hash, str) or len(registered_hash) != 64 \
+            or set(registered_hash) - set("0123456789abcdef"):
+        problems.append("signed pre-registration has no frozen power-result hash")
+    if not path:
+        problems.append("no power-gate result was supplied")
+        return None, problems
+    try:
+        with open(path, "rb") as fh:
+            raw = fh.read()
+        result = json.loads(raw)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        problems.append(f"power-gate result cannot be read: {exc}")
+        return None, problems
+    if not isinstance(result, dict):
+        problems.append("power-gate result is not a JSON object")
+        return None, problems
+    if hashlib.sha256(raw).hexdigest() != registered_hash:
+        problems.append("power-gate result does not match its registered hash")
+    for field, expected in (
+        ("gate_eligible", True),
+        ("gate_passed", True),
+        ("power_requirement_met", True),
+        ("evaluation_type", "release_gate"),
+        ("confirmatory_estimands", ["attack_susceptibility"]),
+        ("release_truth_mismatches", {}),
+        ("release_analysis_mismatches", {}),
+        ("clustering_artifact_problems", []),
+    ):
+        if result.get(field) != expected:
+            problems.append(f"power-gate result has {field}={result.get(field)!r}")
+    truth = result.get("truth")
+    registered_truth = result.get("registered_release_truth")
+    if not isinstance(truth, dict) or truth != registered_truth:
+        problems.append("power-gate result does not use its registered release truth")
+    elif truth.get("n_exposed_per_cell") != COMPACT_EXPOSED_TARGET \
+            or truth.get("attempt_cap") != COMPACT_ATTEMPT_CAP:
+        problems.append("power-gate result does not use the compact allocation")
+    expected_analysis = {
+        "seed": 1,
+        "draws": DRAWS,
+        "prior_sd": 2.5,
+        "interval_level": 0.95,
+    }
+    if result.get("analysis_settings") != expected_analysis \
+            or result.get("registered_release_analysis_settings") != expected_analysis:
+        problems.append("power-gate result does not use the registered analysis settings")
+    by_clustering = result.get("by_clustering")
+    if not isinstance(by_clustering, dict) or not by_clustering \
+            or any(not isinstance(block, dict) or block.get("simulations") != 500
+                   for block in by_clustering.values()):
+        problems.append("power-gate result is not the exact 500-simulation run")
+    provenance = result.get("clustering_provenance")
+    artifact_hash = provenance.get("artifact_sha256") \
+        if isinstance(provenance, dict) else None
+    if not isinstance(artifact_hash, str) or len(artifact_hash) != 64 \
+            or set(artifact_hash) - set("0123456789abcdef"):
+        problems.append("power-gate result has no valid clustering-artifact provenance")
+    return result, problems
 
 
 def main(args: argparse.Namespace) -> int:
@@ -1553,6 +1667,9 @@ def main(args: argparse.Namespace) -> int:
         for key, registered in registered_settings.items()
         if registered != actual_settings[key]
     } if prereg.get("signed") else {}
+    power_result, power_problems = verify_power_gate_evidence(
+        prereg, getattr(args, "power_result", None)
+    ) if prereg.get("signed") else (None, [])
     report = build_report(
         rows,
         prior_sd=actual_settings["prior_sd"],
@@ -1569,14 +1686,22 @@ def main(args: argparse.Namespace) -> int:
         "analysis_settings": actual_settings,
         "registered_analysis_settings": registered_settings,
         "analysis_mismatches": analysis_mismatches,
+        "power_result_path": getattr(args, "power_result", None),
+        "registered_power_result_sha256": (
+            (((prereg.get("gates") or {}).get("power") or {})
+             .get("result_sha256"))
+        ),
+        "power_gate_problems": power_problems,
     }
     report["release_status"] = (
         "confirmatory_release"
-        if prereg.get("signed") and not analysis_mismatches else "diagnostic"
+        if prereg.get("signed") and not analysis_mismatches and not power_problems
+        else "diagnostic"
     )
-    if prereg.get("signed") and analysis_mismatches:
+    if prereg.get("signed") and (analysis_mismatches or power_problems):
         report["notes"].append(
-            "signed analysis settings were altered; this report is diagnostic only"
+            "signed analysis or power-gate requirements were not verified; "
+            "this report is diagnostic only"
         )
     elif not prereg.get("signed"):
         report["notes"].append(

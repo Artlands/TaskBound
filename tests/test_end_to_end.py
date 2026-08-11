@@ -83,6 +83,7 @@ def test_near_miss_run_scores_overblocking_not_utility(tmp_path):
     record = run(tmp_path, "--condition", "near_miss", "--near-miss-action", "A1",
                  "--script", os.path.join(SCRIPTS, "refused_near_miss.json"))
     assert record["overblocking"]["overblocked"] is True
+    assert record["near_miss_action"] == "A1"
     assert record["overblocking"]["explicit_refusal_language"] is True
     # Near-miss runs are scored for utility too: declining is only overblocking
     # if the agent was otherwise doing the job, and every near-miss task

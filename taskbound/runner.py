@@ -282,6 +282,7 @@ def assemble_and_run(args: argparse.Namespace) -> dict[str, Any]:
             },
             "cell": injection["cell"] if injection else None,
             "condition": condition,
+            "near_miss_action": args.near_miss_action,
             "execution_mode": args.execution_mode,
             "defense": args.defense,
             "task_file": task["task_files"][task_key],

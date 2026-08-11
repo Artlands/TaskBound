@@ -34,6 +34,60 @@ def test_compact_ingestion_rejects_rows_from_another_release_scope():
     aggregate.validate_compact_scope([row])
 
 
+def test_model_configuration_hash_uses_frozen_inputs_not_resolved_response():
+    record = {
+        "git_commit": "abc123",
+        "agent": {
+            "adapter": "example",
+            "sampling": {"model": "family_x", "turn_limit": 30},
+            "system_prompt_sha256": "prompt",
+            "resolved_model": "family_x-2026-08-01",
+        },
+    }
+    digest = aggregate.model_configuration_sha256(record)
+    record["agent"]["resolved_model"] = None
+    assert aggregate.model_configuration_sha256(record) == digest
+    record["git_commit"] = "def456"
+    assert aggregate.model_configuration_sha256(record) != digest
+
+
+def test_power_gate_evidence_must_match_signed_exact_release_result(tmp_path):
+    result = {
+        "gate_eligible": True,
+        "gate_passed": True,
+        "power_requirement_met": True,
+        "evaluation_type": "release_gate",
+        "confirmatory_estimands": ["attack_susceptibility"],
+        "release_truth_mismatches": {},
+        "release_analysis_mismatches": {},
+        "clustering_artifact_problems": [],
+        "truth": {"n_exposed_per_cell": 9, "attempt_cap": 27},
+        "registered_release_truth": {"n_exposed_per_cell": 9, "attempt_cap": 27},
+        "analysis_settings": {
+            "seed": 1, "draws": 2000, "prior_sd": 2.5, "interval_level": 0.95,
+        },
+        "registered_release_analysis_settings": {
+            "seed": 1, "draws": 2000, "prior_sd": 2.5, "interval_level": 0.95,
+        },
+        "by_clustering": {"measured": {"simulations": 500}},
+        "clustering_provenance": {"artifact_sha256": "c" * 64},
+    }
+    raw = json.dumps(result, sort_keys=True).encode()
+    path = tmp_path / "power.json"
+    path.write_bytes(raw)
+    prereg = {
+        "gates": {"power": {"result_sha256": hashlib.sha256(raw).hexdigest()}}
+    }
+    _, problems = aggregate.verify_power_gate_evidence(prereg, str(path))
+    assert problems == []
+
+    result["gate_passed"] = False
+    path.write_text(json.dumps(result, sort_keys=True))
+    _, problems = aggregate.verify_power_gate_evidence(prereg, str(path))
+    assert any("does not match its registered hash" in problem for problem in problems)
+    assert any("gate_passed=False" in problem for problem in problems)
+
+
 @pytest.mark.parametrize("field,value", [
     ("host", "site_b"),
     ("cell", "E5A1"),
@@ -82,8 +136,11 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
                     injection = json.load(fh)
             rows.append({
                 "run_id": f"{config_index}_{attempt['attempt_id']}",
-                "host": "site_a", "task": attempt["task"],
+                "adapter_commit": "d" * 40,
+                "host": "site_a", "host_hash": planned["host"]["hash"],
+                "task": attempt["task"],
                 "condition": attempt["condition"], "cell": attempt["cell"],
+                "near_miss_action": attempt["near_miss_action"],
                 "entry_point": injection.get("entry_point"),
                 "induced_action": injection.get("induced_action"),
                 "request_family": injection.get("spec_id"),
@@ -96,6 +153,8 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
                 "sweep_order": attempt["order"], "sweep_block": attempt["block"],
                 "placement_seed": attempt["placement_seed"],
                 "model_configuration_sha256": config,
+                "resolved_model": f"family_{config_index}",
+                "inconclusive": None,
             })
     prereg = {
         "signed": True,
@@ -104,7 +163,12 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
             "attempt_cap_per_cell": 27, "target_runs_per_model_family": 369,
             "max_attempts_per_model_family": 1017,
         },
-        "model_families": {"configuration_sha256": configs},
+        "model_families": {
+            "configuration_sha256": configs,
+            "resolved_models_by_configuration_sha256": {
+                config: f"family_{index}" for index, config in enumerate(configs)
+            },
+        },
     }
     groups = {}
     for name, group in planned["groups"].items():
@@ -148,6 +212,28 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
     with pytest.raises(SystemExit, match="injection_hash"):
         aggregate.validate_release_binding(altered_injection, prereg, manifests)
 
+    near_miss_index = next(
+        index for index, row in enumerate(rows) if row["condition"] == "near_miss"
+    )
+    altered_action = [*rows]
+    altered_action[near_miss_index] = {
+        **rows[near_miss_index], "near_miss_action": "A4"
+        if rows[near_miss_index]["near_miss_action"] != "A4" else "A3",
+    }
+    with pytest.raises(SystemExit, match="near_miss_action"):
+        aggregate.validate_release_binding(altered_action, prereg, manifests)
+
+    altered_host = [{**rows[0], "host_hash": "forged"}, *rows[1:]]
+    with pytest.raises(SystemExit, match="host_hash"):
+        aggregate.validate_release_binding(altered_host, prereg, manifests)
+
+    altered_model = [{**rows[0], "resolved_model": "other"}, *rows[1:]]
+    with pytest.raises(SystemExit, match="resolved_model"):
+        aggregate.validate_release_binding(altered_model, prereg, manifests)
+
+    inconclusive = [{**rows[0], "resolved_model": None, "inconclusive": "error"}, *rows[1:]]
+    aggregate.validate_release_binding(inconclusive, prereg, manifests)
+
     incomplete_manifests = json.loads(json.dumps(manifests))
     incomplete_manifests[1]["stopped_early"] = "max_attempts"
     with pytest.raises(SystemExit, match="no complete matching sweep manifest"):
@@ -184,6 +270,49 @@ def test_signed_cli_labels_altered_analysis_diagnostic_and_uses_nested_headline(
     assert printed["preregistration"]["analysis_mismatches"]["draws"] == {
         "registered": 2000, "actual": 1,
     }
+
+
+def test_signed_cli_requires_bound_passing_power_result_for_confirmatory_status(
+    tmp_path, monkeypatch
+):
+    result = {
+        "gate_eligible": True, "gate_passed": True,
+        "power_requirement_met": True, "evaluation_type": "release_gate",
+        "confirmatory_estimands": ["attack_susceptibility"],
+        "release_truth_mismatches": {}, "release_analysis_mismatches": {},
+        "clustering_artifact_problems": [],
+        "truth": {"n_exposed_per_cell": 9, "attempt_cap": 27},
+        "registered_release_truth": {"n_exposed_per_cell": 9, "attempt_cap": 27},
+        "analysis_settings": {
+            "seed": 1, "draws": 2000, "prior_sd": 2.5, "interval_level": 0.95,
+        },
+        "registered_release_analysis_settings": {
+            "seed": 1, "draws": 2000, "prior_sd": 2.5, "interval_level": 0.95,
+        },
+        "by_clustering": {"measured": {"simulations": 500}},
+        "clustering_provenance": {"artifact_sha256": "c" * 64},
+    }
+    power_raw = json.dumps(result, sort_keys=True).encode()
+    power_path = tmp_path / "power.json"
+    power_path.write_bytes(power_raw)
+    prereg = {
+        "signed": True,
+        "primary_model": {"prior_sd": 2.5, "analysis_seed": 1, "interval_draws": 2000},
+        "gates": {"power": {"result_sha256": hashlib.sha256(power_raw).hexdigest()}},
+    }
+    prereg_path = tmp_path / "preregistration.json"
+    prereg_path.write_text(json.dumps(prereg))
+    monkeypatch.setattr(aggregate, "load_frame", lambda *args: [{"run_id": "run"}])
+    monkeypatch.setattr(aggregate, "build_report", lambda *args, **kwargs: {"notes": []})
+    printed = {}
+    monkeypatch.setattr(aggregate, "print_report", lambda report: printed.update(report))
+    args = argparse.Namespace(
+        results="results", out=None, preregistration=str(prereg_path),
+        power_result=str(power_path), seed=1, draws=2000,
+    )
+    assert aggregate.main(args) == 0
+    assert printed["release_status"] == "confirmatory_release"
+    assert printed["preregistration"]["power_gate_problems"] == []
 
 
 def synthetic(
