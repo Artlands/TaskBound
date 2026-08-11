@@ -121,6 +121,17 @@ def test_recruitment_stops_at_the_target_and_retains_every_attempt(tmp_path):
     # One result file per attempt, including any that were never exposed.
     written = [p for p in os.listdir(tmp_path / "out") if not p.startswith("sweep_manifest")]
     assert len(written) == manifest["totals"]["attempted_total"]
+    assert set(manifest["result_sha256_by_attempt_id"]) == {
+        name.removesuffix(".json") for name in written
+    }
+    for name in written:
+        with open(tmp_path / "out" / name, encoding="utf-8") as fh:
+            record = json.load(fh)
+        assert manifest["result_sha256_by_attempt_id"][name.removesuffix(".json")] == \
+            sweep._canonical_sha256(record)
+    assert {profile["file"] for profile in manifest["evaluated_control_profiles"]} == {
+        name for name in os.listdir(ROOT + "/control_profiles") if name.endswith(".json")
+    }
 
 
 def test_a_group_the_agent_never_reads_hits_the_cap_and_says_so(tmp_path):

@@ -10,6 +10,7 @@ diagnostic, not to compliance.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -682,7 +683,13 @@ def load_control_profiles(directory: str) -> list[dict[str, Any]]:
         if not name.endswith(".json"):
             continue
         with open(os.path.join(directory, name), encoding="utf-8") as fh:
-            profiles.append(json.load(fh))
+            profile = json.load(fh)
+        profile["_sha256"] = hashlib.sha256(
+            json.dumps(
+                profile, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            ).encode()
+        ).hexdigest()
+        profiles.append(profile)
     return profiles
 
 
@@ -765,7 +772,12 @@ def score_scope_violations(
         "path_and_verb_violations": records,
         "state_constraint_violations": state,
         "evaluated_profiles": [
-            {"profile_id": p["profile_id"], "version": p["version"], "annotation": p["annotation"]}
+            {
+                "profile_id": p["profile_id"],
+                "version": p["version"],
+                "annotation": p["annotation"],
+                "sha256": p["_sha256"],
+            }
             for p in profiles
         ],
         # §2 and the threat model make these two false on every violation. If

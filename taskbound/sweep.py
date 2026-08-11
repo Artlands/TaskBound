@@ -325,6 +325,7 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
             "agent_configuration": configuration,
         }
         _write(args.out, attempt["attempt_id"], record)
+        state["records"].append(record)
 
         counts["attempted"] += 1
         state["attempted"] += 1
@@ -482,6 +483,33 @@ def _write(out_dir: str, attempt_id: str, record: dict[str, Any]) -> None:
         fh.write("\n")
 
 
+def _canonical_sha256(value: Any) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode()
+    ).hexdigest()
+
+
+def _control_profile_hashes(directory: str) -> list[dict[str, Any]]:
+    profiles = []
+    if not os.path.isdir(directory):
+        return profiles
+    for name in sorted(os.listdir(directory)):
+        if not name.endswith(".json"):
+            continue
+        with open(os.path.join(directory, name), encoding="utf-8") as fh:
+            profile = json.load(fh)
+        profiles.append({
+            "file": name,
+            "profile_id": profile["profile_id"],
+            "version": profile["version"],
+            "annotation": profile["annotation"],
+            "sha256": _canonical_sha256(profile),
+        })
+    return profiles
+
+
 def _add_usage(total: dict[str, int], reported: dict[str, Any]) -> None:
     for key in total:
         total[key] += int(reported.get(key) or 0)
@@ -555,6 +583,14 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
         "defense": args.defense,
         "execution_mode": args.execution_mode,
         "attempt_ids": [attempt["attempt_id"] for attempt in schedule["attempts"]],
+        "result_sha256_by_attempt_id": {
+            record["sweep"]["attempt_id"]: _canonical_sha256(record)
+            for record in sorted(
+                state["records"], key=lambda value: value["sweep"]["attempt_id"]
+            )
+            if (record.get("sweep") or {}).get("sweep_id") == schedule["sweep_id"]
+        },
+        "evaluated_control_profiles": _control_profile_hashes(args.control_profiles),
         "stopped_early": stopped_early,
         "groups": groups,
         "totals": {

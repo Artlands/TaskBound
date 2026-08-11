@@ -104,7 +104,9 @@ def load_frame(
             if {"sweep_id", "groups", "totals"} <= set(record):
                 manifests.append(record)
             continue  # a sweep manifest, not a run
-        rows.append(_row(record))
+        row = _row(record)
+        row["raw_result_sha256"] = _canonical_sha256(record)
+        rows.append(row)
     validate_compact_scope(rows)
     if preregistration and preregistration.get("signed"):
         validate_release_binding(rows, preregistration, manifests)
@@ -407,15 +409,25 @@ def _execution_binding_problems(
                     "its exposure target nor attempt cap"
                 )
         expected_state = _replayed_execution_state(groups, state, target)
+        candidates = [
+            index for index, actual in enumerate(manifest_states)
+            if index not in consumed_manifests and actual == expected_state
+        ]
         match = next(
-            (index for index, actual in enumerate(manifest_states)
-             if index not in consumed_manifests and actual == expected_state),
+            (index for index in candidates
+             if not _manifest_integrity_problems(
+                 rows_by_id, expected_ids, manifests[index]
+             )),
             None,
         )
-        if match is None:
+        if not candidates:
             problems.append(
                 f"configuration {configuration!r} has no complete matching sweep manifest"
             )
+        elif match is None:
+            problems.extend(_manifest_integrity_problems(
+                rows_by_id, expected_ids, manifests[candidates[0]]
+            ))
         else:
             consumed_manifests.add(match)
 
@@ -433,6 +445,55 @@ def _execution_binding_problems(
             f"schedule maximum attempts {len(attempts)} != registered "
             f"{maximum_per_family}"
         )
+    return problems
+
+
+def _manifest_integrity_problems(
+    rows_by_id: dict[str, dict[str, Any]],
+    expected_ids: Sequence[str],
+    manifest: dict[str, Any],
+) -> list[str]:
+    problems = []
+    result_hashes = manifest.get("result_sha256_by_attempt_id")
+    if not isinstance(result_hashes, dict) or set(result_hashes) != set(expected_ids):
+        problems.append("sweep manifest result hashes do not match executed attempts")
+    else:
+        for attempt_id in expected_ids:
+            digest = result_hashes.get(attempt_id)
+            actual = rows_by_id[attempt_id].get("raw_result_sha256")
+            if not isinstance(digest, str) or len(digest) != 64 \
+                    or set(digest) - set("0123456789abcdef") or digest != actual:
+                problems.append(
+                    f"{rows_by_id[attempt_id]['run_id']}: raw result hash does not "
+                    "match sweep manifest"
+                )
+
+    profiles = manifest.get("evaluated_control_profiles")
+    if not isinstance(profiles, list) or not profiles:
+        problems.append("sweep manifest has no evaluated control-profile hashes")
+        return problems
+    required = {"file", "profile_id", "version", "annotation", "sha256"}
+    if any(not isinstance(profile, dict) or not required <= set(profile)
+           for profile in profiles):
+        problems.append("sweep manifest has malformed control-profile hashes")
+        return problems
+    digests = [profile["sha256"] for profile in profiles]
+    if any(
+        not isinstance(digest, str) or len(digest) != 64
+        or set(digest) - set("0123456789abcdef") for digest in digests
+    ):
+        problems.append("sweep manifest has invalid control-profile hashes")
+        return problems
+    expected_profiles = [
+        {key: profile[key] for key in ("profile_id", "version", "annotation", "sha256")}
+        for profile in profiles
+    ]
+    for attempt_id in expected_ids:
+        if rows_by_id[attempt_id].get("evaluated_control_profiles") != expected_profiles:
+            problems.append(
+                f"{rows_by_id[attempt_id]['run_id']}: evaluated control profiles do "
+                "not match sweep manifest"
+            )
     return problems
 
 
@@ -678,6 +739,9 @@ def _row(record: dict[str, Any]) -> dict[str, Any]:
              or k.endswith("_would_flag") or k.endswith("_would_show")}
             for violation in record["scope_violation"]["path_and_verb_violations"]
         ],
+        "evaluated_control_profiles": record["scope_violation"].get(
+            "evaluated_profiles"
+        ),
     }
 
 

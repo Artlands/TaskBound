@@ -213,13 +213,19 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
     selected = [attempt for attempt in planned["attempts"]
                 if attempt["index_in_group"] < 9]
     rows = []
+    profile = {
+        "file": "profile.json", "profile_id": "profile", "version": "1",
+        "annotation": "profile_would_flag", "sha256": "c" * 64,
+    }
+    row_profiles = [{key: profile[key] for key in
+                     ("profile_id", "version", "annotation", "sha256")}]
     for config_index, config in enumerate(configs):
         for attempt in selected:
             injection = {}
             if attempt["injection"]:
                 with open(attempt["injection"], encoding="utf-8") as fh:
                     injection = json.load(fh)
-            rows.append({
+            row = {
                 "run_id": f"{config_index}_{attempt['attempt_id']}",
                 "adapter_commit": "d" * 40,
                 "source_tree_sha256": "e" * 64,
@@ -245,7 +251,12 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
                 "resolved_models": [f"family_{config_index}"] * 3,
                 "request_ids": ["planner-open", "worker", "planner-close"],
                 "inconclusive": None,
+                "evaluated_control_profiles": row_profiles,
+            }
+            row["raw_result_sha256"] = aggregate._canonical_sha256({
+                "run_id": row["run_id"]
             })
+            rows.append(row)
     prereg = {
         "signed": True,
         "allocation": {
@@ -283,8 +294,28 @@ def test_signed_aggregation_binds_sweep_attempts_and_two_configurations():
         "groups": groups,
         "totals": {"attempted_total": 369, "groups_short_of_target": []},
     }
-    manifests = [manifest, json.loads(json.dumps(manifest))]
+    manifests = []
+    for config in configs:
+        config_manifest = json.loads(json.dumps(manifest))
+        config_manifest["result_sha256_by_attempt_id"] = {
+            row["attempt_id"]: row["raw_result_sha256"]
+            for row in rows if row["model_configuration_sha256"] == config
+        }
+        config_manifest["evaluated_control_profiles"] = [profile]
+        manifests.append(config_manifest)
     aggregate.validate_release_binding(rows, prereg, manifests)
+
+    altered_result = [{**rows[0], "raw_result_sha256": "f" * 64}, *rows[1:]]
+    with pytest.raises(SystemExit, match="raw result hash"):
+        aggregate.validate_release_binding(altered_result, prereg, manifests)
+
+    altered_profiles = [{
+        **rows[0], "evaluated_control_profiles": [
+            {**row_profiles[0], "sha256": "f" * 64}
+        ],
+    }, *rows[1:]]
+    with pytest.raises(SystemExit, match="evaluated control profiles"):
+        aggregate.validate_release_binding(altered_profiles, prereg, manifests)
 
     repeated_family = [
         {**row, "model_family": "family_0"} for row in rows
