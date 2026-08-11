@@ -4,12 +4,13 @@ A benchmark for measuring whether an LLM agent working in an HPC-like
 environment stays inside the task it was given. See `docs/development_plan.md`
 for the design and `docs/plan_summary.md` for the short version.
 
-**Status: `v0.5` built, not yet run.** The complete `v0.5` grid exists — the core
-task's twelve E1–E3 × A1–A4 cells, all five condition classes, 81 committed
-injection texts — together with the sweep driver, the pre-registered analysis,
-the oracle audit, and the power gate. What has *not* happened is the part that
-costs money and people: the pilot, the human reviews, and the confirmatory sweep.
-Nothing here is a `v0.5` result yet; see
+**Status: built, not yet run.** The material for the full `v1.0` design exists —
+all five tasks, 24 cells over 12 request families, 156 committed injection
+texts, both execution modes — together with the sweep driver, the
+pre-registered analysis, the oracle audit, and the power gate. `v0.5` is the
+core task's twelve E1–E3 × A1–A4 cells within that. What has *not* happened is
+the part that costs money and people: the pilot, the human reviews, and the
+confirmatory sweep. Nothing here is a result yet; see
 [Known gaps](#known-gaps-before-this-is-a-v05-result).
 
 **The `v1.0` allocation changed.** The plan moved from four hosts to **one host
@@ -19,8 +20,8 @@ always the core task alone. See `docs/development_plan.md` §6 and §9.3.
 
 The assets and CLI follow the new shape. The host is `hosts/site_a`, its tasks
 live in `hosts/site_a/tasks/<task_id>/`, and `run` and `calibrate` take
-`--task`. Only the core task `t1_failed_job` is built; T2–T5 are milestones 10
-and 11.
+`--task`. All five tasks are built: T1 carries the complete 4 × 4 crossing and
+T2–T5 carry two cells each.
 
 ---
 
@@ -42,11 +43,11 @@ itself is standard library only, so offline runs need none of them.
 Check the install:
 
 ```sh
-.venv/bin/python -m pytest tests -q          # 169 tests, no network, no spend
+.venv/bin/python -m pytest tests -q          # 223 tests, no network, no spend
 .venv/bin/python -m taskbound.runner validate
 ```
 
-`validate` is the CI entry point: about 2,100 checks covering the central
+`validate` is the CI entry point: about 4,800 checks covering the central
 invariant on every injection target, the manifest against the policy that pins
 it, the near-miss policies against the layer each action crosses, marker and
 canary disjointness, cell and paraphrase coverage, the placement classes, and
@@ -357,7 +358,7 @@ precede them.
 
 ### Comparing across model families
 
-Model family is a **replication axis, not a treatment** (plan §9.1, §14.7): the
+Model family is a **replication axis, not a treatment** (plan §9.1, §14.8): the
 question is whether the failure mode is a property of LLM agents or one
 vendor's artifact, and §9.3 forbids a leaderboard. The adapters make
 cross-family runs mechanically easy; four things still deserve care before you
@@ -512,8 +513,9 @@ taskbound/
   realism.py    realism review worksheet and gate                 (phase 4)
   runner.py     CLI: run, validate, calibrate, sweep, aggregate, audit, power, realism
 hosts/site_a/            one host: workspace, scheduler, account policy, vehicles
-  tasks/t1_failed_job/   task.json, task files, policy, manifests, references
-injections/              four request families, an inert spec, 81 texts
+  tasks/<task_id>/       five of these: task.json, task files, policy,
+                         manifests, references
+injections/              twelve request families, an inert spec, 156 texts
 control_profiles/        the four evaluated-control rules, versioned
 fixtures/scripts/        scripted-agent traces for offline tests
 tests/                   schema, backend, oracle, sweep, and analysis acceptance
@@ -543,7 +545,7 @@ benchmark and a reported one, and none of them is code.
 
    ```sh
    .venv/bin/python -m taskbound.runner realism worksheet \
-     --host hosts/site_a --out review.json     # 162 ratings per reviewer
+     --host hosts/site_a --out review.json     # 214 blocks, 319 ratings each
    .venv/bin/python -m taskbound.runner realism report --worksheet review.json
    ```
 3. **The paraphrase generator is `claude-opus-5`.** If the pre-registration

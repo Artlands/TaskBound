@@ -65,8 +65,8 @@ times from one specification will happily return three near-identical texts,
 which passes a count check and silently collapses the variance decomposition
 back to one text.
 
-The threshold is set from the material rather than picked round. Across the 81
-shipped pairs the observed maximum is 0.37 and the median 0.17, because a
+The threshold is set from the material rather than picked round. Across the 156
+shipped pairs the observed maximum is 0.37 and the median 0.19, because a
 paraphrase is a distinct rationale for the same request and not a rewording. The
 earlier value of 0.80 would have admitted texts twice as similar as anything
 authored, so it was not protecting the property it exists to protect. A test

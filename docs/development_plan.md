@@ -1556,7 +1556,7 @@ reduction.
 | Positive calibration answers | 5 | 25 |
 | Negative calibration fixtures | 5 | 25 |
 | **Injection texts** | **81** | **156** |
-| **All reviewed authored artifacts above** | **99** | **230** |
+| **All reviewed authored artifacts above** | **101** | **236** |
 
 AI generation makes drafting cheap and does not make **acceptance review** cheap,
 and review cost scales with the number of texts regardless of who drafts them.
@@ -2105,7 +2105,7 @@ artifact has been reviewed, run, or reported.
 | # | Milestone | Status | Evidence |
 |---|-----------|--------|----------|
 | 0 | Harness and `local_sim` backend | **Done** | `taskbound/{runner,backend,agents,inject}.py`; deterministic replay, cache breakpoints, and token accounting exercised in `tests/test_end_to_end.py` |
-| 1 | Host and task schema and validator | **Done** | `taskbound/validate.py`, 2,435 checks over the two-level schema: `validate_host` for the workspace, account boundary, vehicles, and consumer; `validate_task` for each task's scope, targets, criteria, and cells. Every check ships an intentionally invalid fixture in `tests/test_validator*.py` |
+| 1 | Host and task schema and validator | **Done** | `taskbound/validate.py`, 4,814 checks over the two-level schema: `validate_host` for the workspace, account boundary, vehicles, and consumer; `validate_task` for each task's scope, targets, criteria, and cells. Every check ships an intentionally invalid fixture in `tests/test_validator*.py` |
 | 2 | Unified policy checking | **Done** | `taskbound/policy.py`: paths, scheduler verbs, and state constraints through one evaluator; `Policy.from_layers` merges the host's account layer with one task's layer per run; descriptor-relative access rejects `..` and symlink escapes |
 | 3 | Workspace, T1 task, policy, references | **Partial** | Workspace, four clean vehicles, T1's task and its four near-miss twins, both policy layers, and criterion calibration are done. **Realism review has not happened**; `realism_review.status` is `pending`. Only T1 exists; T2–T5 are milestones 10 and 11 |
 | 4 | Oracle | **Done** | Compliance predicates, four realization ladders, exposure, `control_profiles/*.json`, the declared A4 consumer, and the audit sampler in `taskbound/audit.py` |
@@ -2130,7 +2130,7 @@ fixed block's rank beside its fit:
 |---------|-------|------------|
 | Power gate (§9.5) | **Failing, and not settleable before the sizing pilot.** N went 24 → 48 at the gate, then to 33 as a cost decision (§10.1); scope selectivity is 0.80 / 0.93 / 1.00 at 24 / 32 / 48. The two main effects are variance-floored rather than sample-limited and sit near 0.40 and 0.10 at every N | The remaining choice is between larger declared minimum effects and demoting both main effects to exploratory — but the gate's dominant input, `CLUSTERING_RANGE`, is a placeholder that the sizing pilot replaces (`pilot_protocol.md` Stage 2). Deciding against the placeholder would fit the design to a number about to be measured. Run the pilot first. **The N = 33 selectivity figure is from 30 simulations, not the 500 the pre-registration requires; re-run the gate before signing** |
 | Generator provenance (§7.5, §12) | **Blocking if a Claude lineage is selected.** Every text records `generator: claude-opus-5` | Re-author with a generator outside the evaluated set. The provenance field is accurate; the fix is re-authoring, not relabelling |
-| Realism review (§11.3, milestone 3) | **Not started; instrument ready.** `runner realism worksheet` emits 110 blocks / 162 ratings per reviewer, and `realism report` applies the gate. `realism_review.status` is `pending` and `validate` warns while it stays that way | Two HPC practitioners who did not author the material rate it against `realism_rubric.md`, before any model result exists. It needs two people, not a tool |
+| Realism review (§11.3, milestone 3) | **Not started; instrument ready.** `runner realism worksheet` emits 214 blocks / 319 ratings per reviewer, and `realism report` applies the gate. `realism_review.status` is `pending` and `validate` warns while it stays that way | Two HPC practitioners who did not author the material rate it against `realism_rubric.md`, before any model result exists. It needs two people, not a tool |
 | Acceptance review (§11.3, milestone 6) | Not started | A named reviewer per text, per `paraphrase_protocol.md` §6 |
 | Primary model specification (§9.1, §9.5) | **Resolved.** `host:cell` and `request_family` were aliased with the fixed block and estimated nothing; both dropped, and §7.5's denominator moved to `injection_id` | Done. Neither returns at any version; `task:cell` is the only successor candidate and is gated on a synthetic-data fit (§9.5). Note that §7.5 now compares wording against wording and no longer tests wording against structure — §7.5 records what that costs |
 | Exposure model specification (§9.1) | **Resolved.** Implementing the registered `exposure_model` showed its fixed block was rank deficient on its own registered population — rank 7 of 8, on real records as well as synthetic: every inert run has a null `induced_action`, so that column duplicated `condition[inert]` | Done. `induced_action` dropped from the exposure block in `preregistration.draft.json` and `EXPOSURE_FIXED`, with the reason recorded in both. Standardization is now equal weights over each entry point's populated conditions. The primary model is untouched, inert runs stay in the population, and the block is full rank with and without them |
@@ -2194,7 +2194,7 @@ Listed because they are judgment calls, not derivations.
 8. **Three model families buy replication, not comparison.** Two thirds of the run
    budget answers "is this one vendor's artifact?"
 9. **The inert condition is new and unproven.** If it turns out that inert text
-   never moves behavior, it will look like a hundred and ninety-two wasted runs
+   never moves behavior, it will look like a hundred and thirty-two wasted runs
    per configuration. That is the correct thing to spend to find out.
 
 ---

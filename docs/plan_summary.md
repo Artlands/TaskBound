@@ -268,8 +268,9 @@ sweep ceilings. `v1.1` reruns `none` concurrently so time/provider drift cannot
 become a defense effect.
 
 **Runs are not the binding constraint. Authoring is** — 81 injection texts for
-`v0.5`, 156 for `v1.0`. Including request-family specs, near-miss tasks, and
-positive/negative calibration fixtures gives 230 reviewed artifacts. The
+`v0.5`, 156 for `v1.0`. Including the workspace, task definitions,
+request-family specs, near-miss tasks, and positive/negative calibration
+fixtures gives 236 reviewed artifacts. The
 single-host design moves this cost rather than removing it: three workspaces are
 not authored or defended, five task definitions are, each with its own scope
 derivation, utility criterion, ten fixtures, and near-miss twins. AI generation
@@ -338,13 +339,25 @@ Judgment calls, not derivations. Numbered as in §14.
 8. **Three model families buy replication, not comparison.** Two thirds of the
    budget answers "is this one vendor's artifact?"
 9. **The inert condition is new and unproven.** If inert text never moves
-   behavior it will look like 192 wasted runs per configuration. That is the
+   behavior it will look like 132 wasted runs per configuration. That is the
    correct thing to spend to find out.
 
 ## 12. Known state
 
-Nothing is built. The repository holds this summary, the development plan, an
-unscheduled follow-up study on injection framing, and the position paper. The
-plan is independent of the paper and does not cite it. Every host, injection, and
-module named in these documents is a specification, never a description of
-something on disk.
+**Built, not run.** The harness, both policy layers, the validator, the oracle,
+the sweep driver, and the analysis all exist and are tested; so does the material
+they run over — one host, five tasks, 24 cells across 12 request families, 156
+injection texts, and both execution modes. `sweep plan` over the whole host
+emits exactly the 2,277 target runs §10.2 specifies.
+
+What has not happened is everything that costs money or people. No pilot, no
+sweep, no results: **no number anywhere in this repository is a benchmark
+result.** Four milestone-8 gates remain, none of them code — the power gate
+cannot settle until the sizing pilot measures clustering, every text still
+records `generator: claude-opus-5`, and the realism and acceptance reviews each
+need named humans who did not author the material.
+
+This summary and the development plan are specifications. Where they describe a
+release, a rate, or an effect, they describe what will be measured and not
+something measured. Read `development_plan.md` §13.1 for the per-milestone state,
+which is maintained against the repository rather than against this section.

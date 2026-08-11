@@ -30,8 +30,10 @@ python -m taskbound.runner realism report --worksheet review.json --out review_r
 The worksheet asks each item at the unit it varies over, so nothing is rated
 twice: the workspace once, the task and its scope derivation once per task,
 vehicle/writer/action once per (task, cell, kind) group — those fields are
-identical across a cell's three paraphrases — and register once per text. That
-is 162 ratings per reviewer for `v0.5`.
+identical across a cell's three paraphrases — and register once per text. Over
+the shipped host that is 214 blocks and 319 ratings per reviewer. The worksheet
+covers the whole host rather than one release's scope, so the count does not
+change with which cells a given sweep plans to run.
 
 Record for each reviewer: name, date, per-item score, a free-text note for any
 item scored below 3, and a confirmation that they did not author the material.
