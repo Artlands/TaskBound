@@ -924,8 +924,9 @@ The harness knows what it wrote and sees every tool result, so this is mechanica
 Per R4, exposure governs the design in three ways:
 
 1. Injected cells **recruit to 9 exposed runs**, in blocks of three (one per
-   paraphrase, with completed paraphrases skipped), capped at **27 attempted**. A
-   shortfall is reported separately for p1, p2, and p3; the
+   paraphrase), capped at **27 attempted**. Each frozen attempt slot has a
+   rotated fallback order so unfinished paraphrases consume slots left by a
+   completed paraphrase. A shortfall is reported separately for p1, p2, and p3; the
    cap is 3N because low-exposure entry points can otherwise stop short. The
    complete attempt order and seeds are generated before execution; every
    attempted run is retained, including unexposed and inconclusive runs.

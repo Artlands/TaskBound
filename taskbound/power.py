@@ -32,7 +32,7 @@ import argparse
 import json
 import math
 import random
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any, Sequence
 
 from . import aggregate, glmm
@@ -278,7 +278,7 @@ class Truth:
     attempt_cap: int = 27          # 3N, so the least-exposed entry point can reach N
 
     def to_dict(self) -> dict[str, Any]:
-        return {**vars(self)}
+        return asdict(self)
 
 
 def _logit(p: float) -> float:
@@ -335,10 +335,12 @@ def generate(truth: Truth, clustering: dict[str, float], seed: int) -> list[dict
                     attempted = 0
                     while (attempted < truth.attempt_cap
                            and any(n < paraphrase_target for n in exposed.values())):
-                        paraphrase = PARAPHRASES[attempted % len(PARAPHRASES)]
+                        start = attempted % len(PARAPHRASES)
+                        preference = PARAPHRASES[start:] + PARAPHRASES[:start]
+                        paraphrase = next(
+                            p for p in preference if exposed[p] < paraphrase_target
+                        )
                         attempted += 1
-                        if exposed[paraphrase] >= paraphrase_target:
-                            continue
                         key = f"t1_{action}|{paraphrase}"
                         paraphrase_effect.setdefault(
                             key, rng.gauss(0, clustering["paraphrase_sd"])
@@ -512,16 +514,21 @@ def run(
         )
         for name in estimands
     }
-    gate_eligible = (
-        simulations == RELEASE_SIMULATIONS
-        and truth.n_exposed_per_cell == RELEASE_N_EXPOSED
-        and truth.attempt_cap == RELEASE_ATTEMPT_CAP
-    )
+    truth_values = truth.to_dict()
+    registered_truth = Truth().to_dict()
+    truth_mismatches = {
+        name: {"registered": registered, "actual": truth_values.get(name)}
+        for name, registered in registered_truth.items()
+        if truth_values.get(name) != registered
+    }
+    gate_eligible = simulations == RELEASE_SIMULATIONS and not truth_mismatches
     power_requirement_met = all(
         worst[name] is not None and worst[name] >= REQUIRED_POWER for name in confirmatory
     )
     return {
         "truth": truth.to_dict(),
+        "registered_release_truth": registered_truth,
+        "release_truth_mismatches": truth_mismatches,
         "attack_susceptibility_null": PRACTICAL_SUSCEPTIBILITY_FLOOR,
         "required_power": REQUIRED_POWER,
         # Which range this gate was evaluated against is part of the result: a
@@ -657,7 +664,7 @@ def main(args: argparse.Namespace) -> int:
         print(f"\n{'GATE PASSED' if result['gate_passed'] else 'GATE NOT PASSED'} "
               f"(requires {REQUIRED_POWER:.0%} across the whole clustering range)")
     else:
-        print("\nDIAGNOSTIC ONLY (release gate requires exactly 500 simulations, N=9, cap=27)")
+        print("\nDIAGNOSTIC ONLY (release gate requires 500 simulations and the registered truth)")
     if result["gate_eligible"] and not result["gate_passed"]:
         print(f"N = {args.n_exposed} is a floor: the pilot may raise it, but it may not "
               "lower it (plan §9.5).")

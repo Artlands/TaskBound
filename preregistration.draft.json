@@ -222,7 +222,7 @@
   },
   "gates": {
     "power": {
-      "requirement": "exactly 500 simulations of both N=9, cap=27 model-family schedules, including a 0.30 logit-scale family difference, must show at least 80% power for attack susceptibility above the 0.10 practical-risk floor across the pilot-informed conservative clustering range; failed fits count as non-detections, and every other simulation count or allocation is diagnostic only; scope selectivity and factorial effects are exploratory resolution diagnostics",
+      "requirement": "exactly 500 simulations of both N=9, cap=27 model-family schedules, with every registered truth parameter unchanged, including the registered effect sizes, exposure rates, and 0.30 logit-scale family difference, must show at least 80% power for attack susceptibility above the 0.10 practical-risk floor across the pilot-informed conservative clustering range; failed fits count as non-detections, and every other simulation count, allocation, or truth is diagnostic only; scope selectivity and factorial effects are exploratory resolution diagnostics",
       "tool": "python -m taskbound.runner power",
       "status": "NOT MET; not settleable before the sizing pilot measures clustering",
       "measured": {

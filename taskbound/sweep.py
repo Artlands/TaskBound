@@ -10,10 +10,10 @@ Two commands, deliberately separate:
 The separation is the point. The complete attempt order and seeds are generated
 *before* execution, so recruitment cannot become a decision made while results
 are visible. A cell recruits each paraphrase to one third of `EXPOSED_TARGET`
-and is capped at `ATTEMPT_CAP` attempted. Once a paraphrase reaches its quota,
-its remaining scheduled attempts are skipped. A cell that finishes short of
-target reports the shortfall separately for every paraphrase and is never
-quietly pooled.
+and is capped at `ATTEMPT_CAP` attempted. Each frozen slot has a rotated fallback
+order, so a completed paraphrase's later slots go deterministically to an
+unfinished paraphrase. A cell that finishes short of target reports the
+shortfall separately for every paraphrase and is never quietly pooled.
 
 Conditions, cells, and paraphrases are interleaved in seeded blocks so that
 time-of-day or provider drift cannot align with one condition.
@@ -187,6 +187,15 @@ def _interleave(groups: dict[str, dict[str, Any]], rng: random.Random) -> list[d
         texts = group["texts"]
         paraphrases = group["paraphrases"]
         for index in range(group["attempt_cap"]):
+            preference = (
+                paraphrases[index % len(paraphrases):]
+                + paraphrases[:index % len(paraphrases)]
+                if paraphrases else []
+            )
+            injections = {
+                paraphrase: texts[paraphrases.index(paraphrase)]
+                for paraphrase in preference
+            }
             attempts.append({
                 "group": name,
                 "condition": group["condition"],
@@ -195,6 +204,8 @@ def _interleave(groups: dict[str, dict[str, Any]], rng: random.Random) -> list[d
                 "near_miss_action": group["near_miss_action"],
                 "injection": texts[index % len(texts)] if texts else None,
                 "paraphrase": paraphrases[index % len(paraphrases)] if paraphrases else None,
+                "paraphrase_options": preference,
+                "injections_by_paraphrase": injections,
                 "index_in_group": index,
                 "block": index // BLOCK,
                 "placement_seed": rng.randrange(1, 2**31),
@@ -269,8 +280,6 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
             continue
         if _group_complete(group, counts):
             continue
-        if _paraphrase_complete(group, counts, attempt.get("paraphrase")):
-            continue
         if args.max_attempts and state["attempted"] >= args.max_attempts:
             stopped_early = "max_attempts"
             break
@@ -278,7 +287,8 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
             stopped_early = "spend_ceiling"
             break
 
-        record = _run_one(schedule, attempt, args)
+        resolved_attempt = _resolve_attempt(group, counts, attempt)
+        record = _run_one(schedule, resolved_attempt, args)
         record["sweep"] = {
             "sweep_id": schedule["sweep_id"],
             "attempt_id": attempt["attempt_id"],
@@ -292,7 +302,7 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
         state["attempted"] += 1
         if record["exposure"]["exposed"]:
             counts["exposed"] += 1
-            paraphrase = attempt.get("paraphrase")
+            paraphrase = resolved_attempt.get("paraphrase")
             if paraphrase:
                 by_paraphrase = counts["exposed_by_paraphrase"]
                 by_paraphrase[paraphrase] = by_paraphrase.get(paraphrase, 0) + 1
@@ -322,14 +332,27 @@ def _group_complete(group: dict[str, Any], counts: dict[str, Any]) -> bool:
     return counts["attempted"] >= group["target"]
 
 
-def _paraphrase_complete(
-    group: dict[str, Any], counts: dict[str, Any], paraphrase: str | None
-) -> bool:
-    if not group["recruits_to_exposure"] or paraphrase is None:
-        return False
-    return counts["exposed_by_paraphrase"].get(paraphrase, 0) >= (
-        group["target"] // len(group["paraphrases"])
+def _resolve_attempt(
+    group: dict[str, Any], counts: dict[str, Any], attempt: dict[str, Any]
+) -> dict[str, Any]:
+    if not group["recruits_to_exposure"]:
+        return attempt
+    target = group["target"] // len(group["paraphrases"])
+    start = group["paraphrases"].index(attempt["paraphrase"])
+    options = attempt.get("paraphrase_options") or (
+        group["paraphrases"][start:] + group["paraphrases"][:start]
     )
+    paraphrase = next(
+        p for p in options if counts["exposed_by_paraphrase"].get(p, 0) < target
+    )
+    if paraphrase == attempt["paraphrase"]:
+        return attempt
+    resolved = {**attempt, "paraphrase": paraphrase}
+    injections = attempt.get("injections_by_paraphrase") or dict(
+        zip(group["paraphrases"], group["texts"])
+    )
+    resolved["injection"] = injections[paraphrase]
+    return resolved
 
 
 def _empty_counts() -> dict[str, Any]:

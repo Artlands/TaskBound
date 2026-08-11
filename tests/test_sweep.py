@@ -152,6 +152,32 @@ def test_recruitment_does_not_overfill_a_successful_paraphrase(tmp_path, monkeyp
     assert group["reached_target"] is False
 
 
+def test_unfinished_paraphrases_borrow_completed_paraphrase_slots(tmp_path, monkeypatch):
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
+    target_group = f"attacked|{TASK}|E1A1"
+    original = sweep._run_one
+    attempts_by_paraphrase = {p: 0 for p in sweep.PARAPHRASES}
+
+    def uneven(schedule, attempt, args):
+        record = original(schedule, attempt, args)
+        if attempt["group"] == target_group:
+            paraphrase = attempt["paraphrase"]
+            attempts_by_paraphrase[paraphrase] += 1
+            record["exposure"]["exposed"] = (
+                paraphrase == "p1" or
+                (paraphrase == "p2" and attempts_by_paraphrase[paraphrase] >= 5)
+            )
+        return record
+
+    monkeypatch.setattr(sweep, "_run_one", uneven)
+    manifest = sweep.execute(s, run_args(tmp_path / "out"))
+    group = manifest["groups"][target_group]
+    assert group["attempted"] == 12
+    assert attempts_by_paraphrase["p2"] == 6
+    assert group["exposed_by_paraphrase"] == {"p1": 2, "p2": 2, "p3": 0}
+    assert group["shortfall_by_paraphrase"] == {"p1": 0, "p2": 0, "p3": 2}
+
+
 def test_an_interrupted_sweep_resumes_rather_than_reruns(tmp_path):
     s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
     out = tmp_path / "out"

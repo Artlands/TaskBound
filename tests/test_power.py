@@ -26,6 +26,7 @@ def test_the_simulated_allocation_is_the_compact_allocation():
     cells = {r["cell"] for r in rows}
     assert len(cells) == 16
     assert {r["model_family"] for r in rows} == set(power.MODEL_FAMILIES)
+    borrowed_slot = False
     for family in power.MODEL_FAMILIES:
         for cell in cells:
             for condition in ("attacked", "benign"):
@@ -40,10 +41,11 @@ def test_the_simulated_allocation_is_the_compact_allocation():
                     for p in power.PARAPHRASES
                 }
                 assert all(n <= 2 for n in exposed_by_paraphrase.values())
-                for paraphrase in power.PARAPHRASES:
-                    assert (exposed_by_paraphrase[paraphrase] == 2
-                            or attempts_by_paraphrase[paraphrase] == 6)
+                if any(n < 2 for n in exposed_by_paraphrase.values()):
+                    assert len(subset) == 18
+                borrowed_slot |= any(n > 6 for n in attempts_by_paraphrase.values())
                 assert len(subset) <= 18
+    assert borrowed_slot
 
 
 def test_low_exposure_entry_points_cost_attempts_rather_than_sample():
@@ -116,8 +118,31 @@ def test_only_the_exact_release_configuration_can_pass_the_gate(monkeypatch):
     assert diagnostic["gate_passed"] is False
 
 
+@pytest.mark.parametrize("field,value", [
+    ("attacked_rate", 0.31),
+    ("scope_selectivity", -0.14),
+    ("entry_point_effect", -0.11),
+    ("induced_action_effect", -0.09),
+    ("model_family_logit_effect", 0.0),
+    ("exposure", {"E1": 1.0, "E2": 0.55, "E3": 0.40, "E4": 0.98}),
+    ("n_exposed_per_cell", 12),
+    ("attempt_cap", 36),
+])
+def test_altered_release_truth_is_diagnostic(monkeypatch, field, value):
+    detected = {"converged": True, "attack_susceptibility": True,
+                "scope_selectivity": True, "entry_point_effect": True,
+                "induced_action_effect": True}
+    monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
+    truth = power.Truth(**{field: value})
+    result = power.run(truth, simulations=power.RELEASE_SIMULATIONS, seed=1,
+                       clustering_range=power.CLUSTERING_RANGE[:1])
+    assert result["evaluation_type"] == "diagnostic"
+    assert result["gate_passed"] is False
+    assert field in result["release_truth_mismatches"]
+
+
 # --- the pilot -> clustering handoff (pilot_protocol.md Stage 2) ----------
-def _pilot_rows(n=6, cap=18, clustering=1, seed=1):
+def _pilot_rows(n=6, cap=18, clustering=1, seed=2):
     truth = power.Truth(n_exposed_per_cell=n, attempt_cap=cap)
     return power.generate(truth, power.CLUSTERING_RANGE[clustering], seed)
 
@@ -165,8 +190,11 @@ def test_a_narrowed_range_carries_the_apriori_values_for_unmeasurable_knobs():
     rather than being replaced by a number no fit produced."""
     # A deliberately larger diagnostic frame resolves the three measurable
     # components; this tests the narrowed branch, not the release allocation.
-    rows = power.generate(power.Truth(n_exposed_per_cell=36, attempt_cap=108),
-                          power.CLUSTERING_RANGE[1], seed=5)
+    rows = power.generate(
+        power.Truth(n_exposed_per_cell=36, attempt_cap=108,
+                    exposure={entry: 1.0 for entry in power.ENTRY_POINTS}),
+        power.CLUSTERING_RANGE[1], seed=5,
+    )
     result = power.measure_clustering(rows, glmm.DEFAULT_PRIOR_SD, seed=1)
     assert result["narrowed"] is True
     assert result["components"]["cell_sd"]["measurable"] is False
@@ -192,9 +220,11 @@ def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path):
     values with a carried-through `cell_sd`, and `run` has to accept either."""
     refused = power.measure_clustering(_pilot_rows(), glmm.DEFAULT_PRIOR_SD, seed=1)
     narrowed = power.measure_clustering(
-        power.generate(power.Truth(n_exposed_per_cell=36, attempt_cap=108),
-                       power.CLUSTERING_RANGE[1], seed=5),
-        glmm.DEFAULT_PRIOR_SD, seed=1,
+        power.generate(
+            power.Truth(n_exposed_per_cell=36, attempt_cap=108,
+                        exposure={entry: 1.0 for entry in power.ENTRY_POINTS}),
+            power.CLUSTERING_RANGE[1], seed=5,
+        ), glmm.DEFAULT_PRIOR_SD, seed=1,
     )
     assert refused["narrowed"] is False and narrowed["narrowed"] is True
 

@@ -102,8 +102,9 @@ python -m taskbound.runner power --simulations 500 \
   --clustering pilot/clustering.json --out pilot/power.json
 ```
 
-Only exactly 500 simulations at N=9 and cap=27 can emit a release-gate pass;
-all other configurations are recorded as diagnostic.
+Only exactly 500 simulations with every registered truth parameter unchanged,
+including N=9, cap=27, the effect sizes, family difference, and exposure rates,
+can emit a release-gate pass; all other configurations are recorded as diagnostic.
 
 Omitting `--clustering` runs the gate against the a-priori bracket, which is a
 weaker claim; whichever was used is recorded in the result under
