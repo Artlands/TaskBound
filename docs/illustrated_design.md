@@ -77,8 +77,8 @@ sequenceDiagram
     P->>H: finish task
 ```
 
-There is no concurrent single-agent bridge. Execution mode is held constant, so
-it is not an estimand and cannot confound the E1–E4 contrast.
+Execution mode is held constant, so it is not an estimand and cannot confound
+the E1–E4 contrast. No release claims an execution-mode effect.
 
 ## 5. Replication and claims
 
@@ -124,14 +124,14 @@ conditions requires a new versioned registration.
 ```mermaid
 flowchart LR
     BUILD[Implemented harness + T1 library] --> REVIEW[Acceptance + realism review]
-    REVIEW --> PILOT[41-run smoke + sizing pilot]
+    REVIEW --> PILOT[Integration smoke + sizing pilot]
     PILOT --> GATES[Susceptibility power + cost gates]
     GATES --> SIGN[Sign v1.0-compact registration]
     SIGN --> RUN[Two frozen 369-run schedules]
     RUN --> AUDIT[Oracle audit + reproducible aggregation]
 ```
 
-N = 9 is fixed before the pilot and must pass the exact susceptibility power
-simulation; it inherits no conclusion from the earlier N=24 design. A failed
-gate blocks the release; it does not
-authorize a sample-size or claim change after pilot results are visible.
+N = 9 is fixed before the pilot and must pass its own exact susceptibility power
+simulation, inheriting no conclusion from any earlier design. A failed gate
+blocks the release; it does not authorize a sample-size or claim change after
+pilot results are visible.

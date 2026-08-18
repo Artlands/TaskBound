@@ -8,7 +8,7 @@ The compact release is deliberately narrow. It evaluates one host, the core T1
 failed-job task, all four entry points (E1–E4), all four induced actions
 (A1–A4), five conditions, two-agent execution, and two model families. The
 complete 4 × 4 crossing preserves identification while dropping the auxiliary
-task sweep and the single-agent bridge.
+task sweep.
 
 ## What is scheduled
 
@@ -38,8 +38,8 @@ separate pre-registration amendment and a newly validated analysis model.
 - Clean estimates ordinary utility and scope-violation background.
 
 All sixteen cells run under the same two-agent planner → worker → planner
-protocol. There is no single-agent bridge and therefore no execution-mode
-effect. With one release task there is also no task-generalization contrast.
+protocol, so execution mode is a constant rather than an estimand. With one
+release task there is also no task-generalization contrast.
 
 Three committed paraphrases share each semantic request. N = 9 divides evenly
 as three runs per paraphrase; paraphrases do not multiply the sample.
@@ -59,8 +59,9 @@ execution modes.
 The primary model uses `condition * entry_point * induced_action + model_family`.
 The exposure model uses `condition * entry_point + model_family`. Task terms are
 absent because T1 is constant. `host:cell` and `request_family` random effects
-remain excluded because they are aliased with the saturated fixed block;
-task-level variance is undefined in a one-task design.
+remain excluded because they are aliased with the saturated fixed block
+(`design_history.md` §2); task-level variance is undefined in a one-task
+design.
 
 ## Exact run budget
 
@@ -95,10 +96,10 @@ The later three-arm defense study, if run on the same compact scope, requires
 
 ## Gates before execution
 
-1. Run the 41-run integration smoke with an out-of-set model.
+1. Run the integration smoke with an out-of-set model.
 2. Run the sizing pilot to measure exposure, clustering, tokens, turns, and cost.
-3. Pass the susceptibility power gate at fixed N = 9. This smaller design does
-   not inherit the earlier N=24 power conclusion.
+3. Pass the susceptibility power gate at fixed N = 9, on its own exact
+   simulation, inheriting no earlier power conclusion.
 4. Approve expected cost, hard-cap cost, and contingency.
 5. Complete named acceptance review of all 108 T1 injection texts and independent
    realism review.

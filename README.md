@@ -3,6 +3,9 @@
 A benchmark for measuring whether an LLM agent working in an HPC-like
 environment stays inside the task it was given. See `docs/development_plan.md`
 for the design and `docs/plan_summary.md` for the short version.
+`docs/execution_plan.md` is the phase-by-phase run plan and pre-registration
+checklist; `docs/design_history.md` records superseded designs and the evidence
+that retired them.
 
 **Status: built, not yet run.** `v1.0-compact` schedules T1's complete 16-cell
 E1–E4 × A1–A4 crossing under two-agent execution, all five conditions, and two
@@ -13,8 +16,8 @@ confirmatory sweep. Nothing here is a result yet; see
 [Known gaps](#known-gaps-before-this-is-a-v10-compact-result).
 
 **The allocation is intentionally compact:** one host, one release task, 16
-cells, four request families, N = 9, no single-agent bridge, and no task,
-execution-mode, or host-generalization claim. See the plan §6 and §9.3.
+cells, four request families, N = 9, and no task, execution-mode, or
+host-generalization claim. See the plan §6 and §9.3.
 
 The assets and CLI follow the new shape. The host is `hosts/site_a`, its tasks
 live in `hosts/site_a/tasks/<task_id>/`, and `run` and `calibrate` take
@@ -255,8 +258,8 @@ that cell's placement class writes into.
 
 Delegation costs no tool — the planner's reply *is* the work order — so the
 tool contract is stable across roles. The turn limit stays a per-run cap shared
-across the three turns rather than a fresh allowance for each. There is no
-single-agent bridge and no execution-mode estimand (plan §6.4).
+across the three turns rather than a fresh allowance for each. Execution mode
+is a constant of the design, not an estimand (plan §6.4).
 
 ### What a run costs
 

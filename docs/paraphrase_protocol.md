@@ -134,7 +134,7 @@ dominates and the report leads with that. The report gives the full ratio and
 interval either way. This is named in advance so that reporting it is not a
 post-hoc pivot.
 
-The denominator was `host:cell` until plan §9.5 found that component aliased with
-the saturated fixed block; it is now `injection_id`. Both terms are therefore
-wording — the paraphrase slot against the individual text — and the rule no
-longer tests wording against structure. Plan §7.5 records what that costs.
+The denominator is `injection_id`, so both terms are wording — the paraphrase
+slot against the individual text — and the rule does not test wording against
+structure. Plan §7.5 records what that costs; `design_history.md` §2 records why
+the denominator changed.

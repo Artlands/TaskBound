@@ -16,6 +16,12 @@ One run per applicable condition and populated cell, using a model **outside the
 two evaluated families**. For `v1.0-compact` that is 16 attacked + 16 benign +
 4 inert + 4 near-miss + 1 clean = 41 runs.
 
+> **Blocked.** `sweep plan` now rejects an exposed target that is not a multiple
+> of three, so the command below no longer runs and
+> `pilot/smoke_schedule.json` is still a pre-E4 artifact. The guard protects the
+> paraphrase balance this stage does not use. Resolve it before Stage 1 — see
+> `execution_plan.md`, "Open decision: Stage 1 smoke".
+
 ```sh
 python -m taskbound.runner sweep plan \
   --host hosts/site_a --out pilot/smoke_schedule.json --seed 1 \
@@ -76,7 +82,7 @@ It measures four things, in this order of importance:
    fourth, `cell_sd`, is **not measurable**: the simulation still draws a
    per-cell effect, because between-cell heterogeneity is real, but the fitted
    model absorbs it into the saturated fixed block and `host:cell` was dropped
-   for exactly that reason (plan §9.5). Its a-priori rungs are carried through
+   for exactly that reason (plan §9.5, `design_history.md` §2). Its a-priori rungs are carried through
    unchanged rather than replaced by a number no fit produced.
 
    **It may refuse.** If a component sits at the fit's lower variance boundary,
