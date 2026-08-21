@@ -76,24 +76,31 @@ def _valid_narrowed_artifact():
     })
 
 
-def test_compact_power_defaults_match_the_release_allocation():
+def test_power_defaults_match_the_release_allocation():
     truth = power.Truth()
     assert truth.n_exposed_per_cell == 9
     assert truth.attempt_cap == 27
+    assert len(power.MODEL_FAMILIES) == 8
 
 
-def test_the_simulated_allocation_is_the_compact_allocation():
+def test_the_simulated_allocation_is_the_release_allocation():
     truth = power.Truth(n_exposed_per_cell=6, attempt_cap=18)
     rows = power.generate(truth, power.CLUSTERING_RANGE[1], seed=1)
     cells = {r["cell"] for r in rows}
+    groups = {(r["task"], r["cell"]) for r in rows}
+    # Sixteen distinct cell labels, twenty-four (task, cell) groups: the eight
+    # auxiliary cells are a subset of the core task's (plan §6.2).
     assert len(cells) == 16
+    assert len(groups) == 24
+    assert {r["task"] for r in rows} == {power.CORE_TASK, *power.AUXILIARY_CELLS}
     assert {r["model_family"] for r in rows} == set(power.MODEL_FAMILIES)
     borrowed_slot = False
     for family in power.MODEL_FAMILIES:
-        for cell in cells:
+        for task, cell in groups:
             for condition in ("attacked", "benign"):
                 subset = [r for r in rows if r["model_family"] == family
-                          and r["cell"] == cell and r["condition"] == condition]
+                          and r["task"] == task and r["cell"] == cell
+                          and r["condition"] == condition]
                 exposed_by_paraphrase = {
                     p: sum(1 for r in subset if r["paraphrase"] == p and r["exposed"])
                     for p in power.PARAPHRASES
@@ -319,6 +326,10 @@ def test_sizing_pilot_requires_complete_frozen_schedule(monkeypatch):
     schedule = {
         "host": {"id": "site_a", "hash": "host"}, "seed": 2,
         "exposed_target": 6, "attempt_cap": 18, "attempts": [],
+        # The sizing pilot runs every group at six, near-miss and clean
+        # included: it is measuring exposure, clustering, cost, and the
+        # overblocking null-denominator drop rate.
+        "near_miss_target": 6, "clean_target": 6,
     }
     sweep_id = "sweep_" + power.hashlib.sha256(
         json.dumps(schedule, sort_keys=True).encode()
@@ -409,10 +420,17 @@ def test_a_narrowed_range_carries_the_apriori_values_for_unmeasurable_knobs():
     rather than being replaced by a number no fit produced."""
     # A deliberately larger diagnostic frame resolves the three measurable
     # components; this tests the narrowed branch, not the release allocation.
+    #
+    # The *high* rung, not the moderate one. `injection_id` separates from
+    # `request_family:paraphrase` only across the cells that share a paraphrase
+    # slot, so a small true injection sd sits close enough to zero that the
+    # profile is flat and `measure_clustering` correctly refuses (the branch the
+    # refusal half of this file's other test covers). Asserting narrowing on a
+    # component the frame cannot resolve would be asserting a lucky draw.
     rows = power.generate(
         power.Truth(n_exposed_per_cell=36, attempt_cap=108,
                     exposure={entry: 1.0 for entry in power.ENTRY_POINTS}),
-        power.CLUSTERING_RANGE[1], seed=5,
+        power.CLUSTERING_RANGE[2], seed=5,
     )
     result = power.measure_clustering(rows, glmm.DEFAULT_PRIOR_SD, seed=1)
     assert result["narrowed"] is True
@@ -529,7 +547,7 @@ def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path, monkey
     narrowed_rows = power.generate(
         power.Truth(n_exposed_per_cell=36, attempt_cap=108,
                     exposure={entry: 1.0 for entry in power.ENTRY_POINTS}),
-        power.CLUSTERING_RANGE[1], seed=5,
+        power.CLUSTERING_RANGE[2], seed=5,
     )
     narrowed_inputs = {"results_path": "narrowed", "files": [],
                        "combined_sha256": power._canonical_sha256([])}

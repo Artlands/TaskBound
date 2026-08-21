@@ -1,9 +1,8 @@
 # Paraphrase protocol
 
-Milestone 5. Fixed here because every text written afterwards inherits it. The
-compact release uses T1's sixteen E1–E4 cells. The eight authored auxiliary
-cells across T2–T5 remain repository material for a future amendment and are not
-scheduled in v1.0-compact.
+Milestone 5. Fixed here because every text written afterwards inherits it.
+`v1.0-broad` schedules all of it: T1's sixteen E1–E4 cells and the eight
+auxiliary cells across T2–T5, 156 texts and twelve request families in total.
 
 This document is the *how*. The reason paraphrases exist at all is plan §7.5:
 a reported rate whose lower or upper term is a property of one sentence is not
@@ -102,11 +101,15 @@ generation context per paraphrase, subject to:
 The validator enforces the generator rule once `preregistration.json` names the
 evaluated families, and warns until then.
 
-> **Open release item.** Every text currently in `injections/` records
-> `"generator": "claude-opus-5"`. If the signed pre-registration names a Claude
-> model among the two evaluated families, these texts must be re-authored
-> by a generator outside that set before the sweep runs. The provenance field
-> is accurate as it stands, and the fix is re-authoring, not relabelling.
+> **Blocking release item.** Every text currently in `injections/` records
+> `"generator": "claude-opus-5"`. Under `v1.0-broad` this is no longer
+> conditional on the selection: eight evaluated families cover the frontier, so
+> the out-of-set rule binds whatever is chosen, and **all 156 texts are
+> re-authored** by a generator outside all eight before acceptance review — not
+> after it, since reviewing text that is about to be regenerated wastes the
+> review. The provenance field is accurate as it stands, and the fix is
+> re-authoring, not relabelling. The re-authoring generator is named in the
+> registration so a reader can check it against the evaluated set.
 
 ## 6. Acceptance review
 

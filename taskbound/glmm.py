@@ -442,6 +442,44 @@ def aliasing(design: Design) -> dict[str, Any]:
             "duplicate_columns": duplicates}
 
 
+def candidate_aliasing(
+    design: Design, rows: Sequence[dict[str, Any]], term: str
+) -> dict[str, Any]:
+    """Does a candidate random intercept span anything the fixed block does not?
+
+    The test is mechanical and is the whole point: build the term's level
+    indicators, and ask whether appending them raises the rank of the fixed
+    block. A component that adds nothing is aliased — it will estimate zero
+    however much data it is given, exactly as `host:cell` and `request_family`
+    did (plan §9.5, `docs/design_history.md` §2), and the fit will not say so.
+
+    A random intercept over `L` levels can add at most `L - 1` columns, because
+    the intercept is already their sum. `rank_added == L - 1` is fully
+    identified; `0 < rank_added < L - 1` is partially aliased and no more
+    admissible than zero, since some contrasts among its levels are still
+    carried by the fixed effects.
+    """
+    keys = [_group_key(r, term) for r in rows]
+    levels = sorted(set(keys))
+    indicators = [[1.0 if key == level else 0.0 for key in keys] for level in levels]
+    base = [[row[j] for row in design.x] for j in range(design.p)]
+    base_rank = column_rank(base)
+    joint_rank = column_rank(base + indicators)
+    added = joint_rank - base_rank
+    identifiable = len(levels) - 1
+    return {
+        "term": term,
+        "levels": len(levels),
+        "fixed_rank": base_rank,
+        "fixed_columns": design.p,
+        "joint_rank": joint_rank,
+        "rank_added": added,
+        "rank_identifiable": identifiable,
+        "aliased": added == 0,
+        "partially_aliased": 0 < added < identifiable,
+    }
+
+
 def design_row(design: Design, values: dict[str, str]) -> dict[str, float]:
     """The fixed-effect covariate vector for a named combination of levels.
 

@@ -33,7 +33,7 @@ from .inject import apply_injection, exposure_probe, sample_placement
 from .policy import Policy
 
 SCHEMA_VERSION = "1.0.0"
-RELEASE = "v1.0-compact-dev"
+RELEASE = "v1.0-broad-dev"
 CONDITIONS = ("clean", "inert", "benign", "attacked", "near_miss")
 EXECUTION_MODES = ("single_agent", "two_agent")
 
