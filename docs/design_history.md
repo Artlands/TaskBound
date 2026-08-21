@@ -1,8 +1,8 @@
 # TaskBound design history
 
 Superseded design decisions and the evidence that retired them. Nothing here is
-scheduled, claimed, or pooled by `v1.0-compact`; `development_plan.md` is the
-specification and this file is the audit trail behind two of its amendments.
+scheduled, claimed, or pooled by `v1.0-broad`; `development_plan.md` is the
+specification and this file is the audit trail behind its amendments.
 
 It exists because the registered analysis model **changed** after implementation.
 A reader asking "why these three random effects and not five?" or "why is §7.5's
@@ -16,6 +16,8 @@ read forward.
 | `(1 \| host:cell)` and `(1 \| request_family)` in the primary model | `PRIMARY_RANDOM` = `request_family:paraphrase`, `injection_id`, `placement_id` | §2 |
 | `induced_action` in the exposure model | `EXPOSURE_FIXED` = `condition * entry_point`, `model_family` | §3 |
 | A private held-out fourth host | Per-release canary generation and recorded provenance | §4 |
+| `v1.0-compact`: T1 only, two families, near-miss N = 9 | `v1.0-broad`: five tasks, eight families, near-miss N = 36 | §5 |
+| Three checks that passed for the wrong reason | Fixes found by implementing the broad scope | §6 |
 
 ---
 
@@ -73,11 +75,23 @@ are the four induced actions, which `induced_action` already carries as a fixed
 effect. `request_family:paraphrase`, `injection_id`, and `placement_id` are not
 aliased and do estimate.
 
-**The compact release widens the same structure rather than escaping it.** E1–E4
+**The compact release widened the same structure rather than escaping it.** E1–E4
 gives 16 cells, so the block is 32 columns (33 with `model_family`) against a
 would-be 16-level `host:cell`: the aliasing argument holds with more room, not
 less. The aliasing follows from the saturated fixed block, not from the release
 scope.
+
+**`v1.0-broad` reopens one of the two, and only by fitting it.** `host:cell` is
+still undefined on one host and does not return at any version. `request_family`
+was aliased because its four levels *were* the four induced actions; with five
+tasks it has twelve levels that are (task, action) pairs, and an additive `task`
+term does not obviously span them. That "not obviously" is worth exactly nothing
+on its own — it is the same kind of reasoning that put both components into a
+draft registration in the first place. Plan §9.1 therefore registers
+`request_family` and `task:cell` as candidates decided by a rank check and
+synthetic recovery on the exact broad design matrix before signing, defaulting to
+exclusion. Whatever that check returns belongs in this file, beside the evidence
+that retired them.
 
 ### Two consequences, both repaired
 
@@ -178,3 +192,150 @@ recorded benchmark version and canary generation per result, and generator
 provenance on every text. A causal contamination estimate needs paired public and
 private variants of the *same* scenarios, frozen model snapshots or a
 longitudinal design, and its own pre-registration. That is a different study.
+
+## 5. The `v1.0-compact` schedule
+
+Retired 2026-08-21, before it was signed and before any run existed. It scheduled
+T1 alone at all sixteen cells, two model families, and N = 9 for every group
+including near-miss, for 369 target runs per family and 738 in total.
+
+It was not retired because anything in it was wrong. Every quantity it defined
+survives into `v1.0-broad` with the same definition, including the confirmatory
+estimand and its standardization frame. It was retired because three of its
+choices were affordability decisions that the design's own text had already
+identified as costs, and an outside publication-readiness review
+(`publication_readiness_review.md`, written against `80ea0c9`) ranked exactly
+those three as the highest-return changes available.
+
+### What each change bought, and what the compact plan already said about it
+
+| Change | The compact plan's own words | What it cost |
+|--------|------------------------------|--------------|
+| Two families → eight | §14 no. 8: "Two model families buy replication, not comparison" — but two families give the heterogeneity omnibus one degree of freedom, so a disagreement between them could not be placed | Runtime only. The frozen-schedule machinery already supported it |
+| T1 only → five tasks | §9.5: "The design runs out of independent cells and request families long before it runs out of within-text repeats… The authored auxiliary tasks could supply those families in a future expanded release, but they are excluded from this schedule to control runtime" | Runtime, plus acceptance review of 108 more artifacts. §10.3 named authoring as the binding constraint while excluding material that was already authored |
+| Near-miss N = 9 → 36 | §7.4: "Without near-miss runs, an agent that refuses everything scores perfectly" — at N = 9 the rate that establishes this is ±27pp, wide enough to hold both stories at once | 396 more runs per family; near-miss becomes 46% of the budget |
+
+The third is the one that changes what the benchmark can say. Near-miss and inert
+are the two controls the field mostly lacks, and near-miss is the one that
+separates an agent respecting task scope from an agent refusing broadly. Measuring
+it at ±27pp is measuring it in a way that cannot distinguish those two, which is
+the failure mode the condition exists to prevent.
+
+### Why a new version rather than an edit
+
+Each of the three changes N, the family count, or the task set. Plan §9.5 and
+§10.4 both say that changing any of them requires a new versioned registration
+rather than a schedule edit, and `plan_summary.md` repeated it. Amending the
+compact registration in place would have been the first time the project made an
+exception to its own rule, on the first occasion where following the rule cost
+something. The retired schedule is recorded here in full so the diff is
+reviewable.
+
+### What did not change
+
+- The confirmatory estimand and its 10pp practical-risk floor.
+- Standardization for that estimand: equal weights over T1's sixteen cells. The
+  all-task estimate is reported beside it and is exploratory. Holding the frame
+  fixed is what keeps the widening from reading as a redefinition of the headline.
+- Injected N = 9 with a 3N attempt cap, three paraphrases per cell, and every
+  condition.
+- The no-host-generalization rule, the no-per-cell-claims rule, and the
+  no-leaderboard rule — the last one strengthened into a reporting mechanism,
+  because eight rows invite sorting in a way two do not (plan §9.3).
+
+### What the compact registration was right to refuse, and still refuses
+
+The review also proposed leading with a methodological reframe and adding a
+defense arm early. Neither is in `v1.0-broad`. The reframe is a claim change, not
+an allocation change, and the defense arm is `v1.1`'s registered scope. Adopting
+the three allocation changes did not license adopting the rest by association.
+
+### Not a fallback
+
+If cost binds, plan §10.4's ladder applies — families dropped from the end of the
+registered order, then the auxiliary tasks, then near-miss N. Its rungs happen to
+pass near the compact schedule's shape, but the compact registration itself is
+retired and is not a target to fall back to.
+
+## 6. Three checks that passed for the wrong reason
+
+Found while implementing `v1.0-broad` (milestone 7c), all three pre-existing, all
+three invisible under the compact scope. They are recorded here for the same
+reason §§2–3 are: each passed cleanly right up until the design moved, which is
+the failure mode this file exists to make visible.
+
+### 6.1 The generator-provenance check could not fail
+
+`validate.py` enforced the generator-outside-the-evaluated-set rule as:
+
+```python
+inj["generator"] not in prereg.get("evaluated_model_families", [])
+```
+
+`evaluated_model_families` is nested under `model_families`. The top-level key
+has never existed, so the call returned `[]` and every generator satisfied the
+rule. The check ran 156 times per validation and could not fail.
+
+Under `v1.0-compact` this guarded a *conditional* rule — re-author only if a
+Claude lineage were among the two evaluated families. Under `v1.0-broad` eight
+families cover the frontier, the rule binds unconditionally (plan §12), and it is
+the release's most-repeated blocker. A silently vacuous check is the difference
+between catching that and shipping past it.
+
+The fix reads the nested key, keeps the old spelling as a fallback for older
+drafts, and — the part that matters — **distinguishes "no family matches this
+generator" from "there is nothing here to match against"**. A registration that
+names no families now fails the check instead of satisfying it.
+
+### 6.2 The near-miss audit stratum absorbed the class it was meant to expose
+
+`audit.py` assigned near-miss verdicts as:
+
+```python
+"overblocked" if record["overblocking"]["overblocked"] else "completed"
+```
+
+`overblocked` is `None` when a run neither completed the task nor declined the
+action — it declined nothing, so it leaves the overblocking denominator (plan
+§8.3). `None` is falsy, so every one of those runs was stratified as
+`completed`: audited against a label the oracle never assigned, and pooled with
+the runs that did the job.
+
+`aggregate.py` had this right all along — it counts them as
+`overblocking_excluded_incompetent` and reports the count beside every rate. Only
+the audit disagreed, and with near-miss at N = 9 across four blocks the class was
+small enough not to show. At N = 36 across twelve blocks it is 432 runs per
+family, and its size is a quantity the sizing pilot now has to measure to know
+whether the declared overblocking precision will be delivered (plan §7.4, §9.5).
+
+`not_competent` is now its own verdict in the vocabulary and its own stratum.
+
+### 6.3 The schedule-total check multiplied instead of summing
+
+`aggregate._execution_binding_problems` verified the registered run total as:
+
+```python
+derived = sum(target for _ in groups)
+```
+
+which is one target times the group count, not the sum of each group's target —
+and `target` was a leftover loop variable besides. Under the compact schedule
+every group ran at N = 9, so 9 × 41 = 369 was the right answer arrived at the
+wrong way, and the check passed. The moment near-miss went to 36 it computed
+36 × 69 = 2,484 against a registered 945 and rejected a correct schedule.
+
+It now sums each group's own target. The same per-group treatment was needed
+throughout the replay: recruitment was verified against a single
+`schedule["exposed_target"]`, which would have held near-miss blocks to the
+injected N and reported all twelve as short. The manifest now carries
+`group_targets`, and the sweep identity hash covers every registered N rather
+than leaving them to be inferred from a slot count.
+
+### What the three have in common
+
+None was found by reading the code, and none would have been found by a reviewer
+asking whether the checks existed — all three existed, and two of them ran on
+every validation. They were found by moving the design and watching what did not
+move with it. That is the same way `host:cell` and `induced_action` were found
+(§§2–3), and it is the argument for the milestone 7c rank check being a fit
+rather than an argument.

@@ -38,10 +38,12 @@ Run `naive`, `authority`, and `indirect` on the core task's sixteen cells;
 |-----------|-------|-------------------|
 | Framing extension | 16 cells × 3 framings × 9 | 432 |
 
-That is 864 runs across the two-family compact baseline, 117% of the complete
-`v1.0-compact` target, and 144 new texts on top of the core's 108 scheduled
-injection texts. It is droppable, but
-it is not cheap, and the plan should not describe it as a rider.
+That is 432 runs per model family — 46% of `v1.0-broad`'s 945-run per-family
+target, or 3,456 runs across its eight families — and 144 new texts on top of the
+156 the release already schedules. It is droppable, but it is not cheap, and the
+plan should not describe it as a rider. Against the broad baseline it is
+proportionally cheaper than it was against the compact one and absolutely far
+more expensive, which is the trade the eight-family axis makes everywhere.
 
 `authority` is the value most worth carrying for domain reasons: site-authority
 framing is exactly what HPC users are trained to comply with, so it is the

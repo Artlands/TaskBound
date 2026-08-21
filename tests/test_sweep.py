@@ -19,18 +19,29 @@ INJ = os.path.join(ROOT, "injections")
 SCRIPTS = os.path.join(ROOT, "fixtures", "scripts")
 
 
-# `v1.0-compact` is the core task's complete E1-E4 crossing (plan §13).
-COMPACT = dict(tasks_filter=["t1_failed_job"], entry_points=["E1", "E2", "E3", "E4"])
+# `v1.0-broad` is all five tasks at E1-E4: the core task's complete crossing
+# plus two cells from each auxiliary task (plan §6.2, §13).
+RELEASE = dict(tasks_filter=list(sweep.DEFAULT_RELEASE_TASKS),
+               entry_points=["E1", "E2", "E3", "E4"])
+CORE_ONLY = dict(tasks_filter=["t1_failed_job"], entry_points=["E1", "E2", "E3", "E4"])
 
 
 def schedule(seed: int = 7, **kw):
-    return sweep.plan(HOST, INJ, seed, **{**COMPACT, **kw})
+    return sweep.plan(HOST, INJ, seed, **{**RELEASE, **kw})
 
 
 def diagnostic_schedule(seed: int = 7, **kw):
-    """Small single-agent-compatible subset for runner mechanics tests."""
+    """Small single-agent-compatible subset for runner mechanics tests.
+
+    One task, three entry points, and every condition at the same small N: this
+    exercises runner mechanics, not the release allocation.
+    """
     scope = dict(tasks_filter=[TASK], entry_points=["E1", "E2", "E3"])
-    return sweep.plan(HOST, INJ, seed, **{**scope, **kw})
+    merged = {**scope, **kw}
+    target = merged.get("exposed_target", sweep.EXPOSED_TARGET)
+    merged.setdefault("near_miss_target", target)
+    merged.setdefault("clean_target", target)
+    return sweep.plan(HOST, INJ, seed, **merged)
 
 
 def run_args(out, script="complied_read", **kw):
@@ -49,21 +60,95 @@ def run_args(out, script="complied_read", **kw):
 
 
 # --- planning ------------------------------------------------------------
-def test_the_plan_matches_the_compact_allocation():
-    """Plan §10.2: 369 target runs and a 1,017-attempt cap per family."""
+def test_the_plan_matches_the_release_allocation():
+    """Plan §10.1: 945 target runs and an 1,881-attempt cap per family."""
     s = schedule()
-    assert s["target_runs"] == 369
-    assert s["max_attempts"] == 1017
+    assert len(s["groups"]) == 69
+    assert s["target_runs"] == 945
+    assert s["max_attempts"] == 1881
     assert s["exposed_target"] == 9
     assert s["attempt_cap"] == 27
+    assert s["near_miss_target"] == 36
+    assert s["clean_target"] == 9
     # N is a multiple of three so the paraphrase blocks stay balanced (§7.5).
     assert s["exposed_target"] % 3 == 0
     conditions = [g["condition"] for g in s["groups"].values()]
-    assert conditions.count("attacked") == 16
-    assert conditions.count("benign") == 16
-    assert conditions.count("inert") == 4      # per entry point, not per cell
-    assert conditions.count("near_miss") == 4  # per induced action
-    assert conditions.count("clean") == 1
+    assert conditions.count("attacked") == 24   # 16 core cells + 8 auxiliary
+    assert conditions.count("benign") == 24
+    assert conditions.count("inert") == 4       # per entry point, core task only
+    assert conditions.count("near_miss") == 12  # per (task, induced action)
+    assert conditions.count("clean") == 5       # per task
+    # The run budget by condition, per model family (plan §10.1).
+    runs = {}
+    for group in s["groups"].values():
+        runs[group["condition"]] = runs.get(group["condition"], 0) + group["target"]
+    assert runs == {"attacked": 216, "benign": 216, "inert": 36,
+                    "near_miss": 432, "clean": 45}
+
+
+def test_every_auxiliary_cell_is_also_a_core_cell():
+    """What identifies the task effect within cell rather than across corners."""
+    s = schedule()
+    by_task = {}
+    for group in s["groups"].values():
+        if group["condition"] == "attacked":
+            by_task.setdefault(group["task"], set()).add(group["cell"])
+    core = by_task["t1_failed_job"]
+    assert len(core) == 16
+    for task, cells in by_task.items():
+        if task == "t1_failed_job":
+            continue
+        assert len(cells) == 2, task
+        assert cells <= core, task
+    # Every entry point and every action appears in exactly three of five tasks.
+    for level in ("E1", "E2", "E3", "E4"):
+        assert sum(1 for cells in by_task.values()
+                   if any(c.startswith(level) for c in cells)) == 3
+    for level in ("A1", "A2", "A3", "A4"):
+        assert sum(1 for cells in by_task.values()
+                   if any(c.endswith(level) for c in cells)) == 3
+
+
+def test_near_miss_carries_its_own_n_without_the_paraphrase_guard():
+    """N is per condition: 36 for near-miss beside 9 for injected groups (§7.4).
+
+    The multiple-of-three rule protects the paraphrase allocation, which
+    near-miss and clean blocks do not have — applying it to them is what kept
+    near-miss pinned to the injected N.
+    """
+    s = schedule()
+    for group in s["groups"].values():
+        if group["condition"] == "near_miss":
+            assert group["target"] == 36
+            assert group["attempt_cap"] == 36     # nothing to recruit, no headroom
+            assert group["paraphrases"] == []
+        elif group["condition"] in ("attacked", "benign", "inert"):
+            assert group["target"] == 9
+    # A near-miss target that is not a multiple of three is legal; an injected
+    # one is not.
+    odd = sweep.plan(HOST, INJ, 7, near_miss_target=10, **RELEASE)
+    assert odd["groups"][f"near_miss|{TASK}|A1"]["target"] == 10
+    with pytest.raises(SystemExit, match="divide evenly"):
+        sweep.plan(HOST, INJ, 7, exposed_target=10, **RELEASE)
+
+
+def test_one_derivation_of_the_sweep_identity():
+    """The identity covers every registered N, and there is only one of it.
+
+    `aggregate` and `power` both re-check that a manifest reproduces the sweep
+    it claims. A second copy of the derivation is a place for the two to drift,
+    and the copy in `aggregate` did drift the moment N became per condition.
+    """
+    s = schedule()
+    assert sweep.sweep_id(s) == s["sweep_id"]
+    for knob in ("exposed_target", "attempt_cap", "near_miss_target", "clean_target"):
+        assert knob in sweep.SWEEP_ID_KEYS
+        moved = {**s, knob: s[knob] + 3}
+        assert sweep.sweep_id(moved) != s["sweep_id"], knob
+    # A schedule missing a registered N does not reproduce: it came from a
+    # different allocation.
+    legacy = {k: v for k, v in s.items() if k != "near_miss_target"}
+    assert sweep.sweep_id(legacy) != s["sweep_id"]
 
 
 def test_only_injected_conditions_recruit_to_exposure():

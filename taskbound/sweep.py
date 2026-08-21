@@ -40,10 +40,26 @@ EXPOSED_TARGET = 9
 # read off the arm that got starved. 3N lets the least-exposed entry point
 # reach the same N as the rest.
 ATTEMPT_CAP = 3 * EXPOSED_TARGET
+# Near-miss runs at four times the injected N (plan §7.4). Overblocking is the
+# quantity that separates an agent respecting task scope from one refusing
+# broadly, and at N = 9 it is measured to +/-27pp — wide enough to hold both
+# stories at once. These blocks carry no injected text, so they have no
+# paraphrase slots to balance and no exposure to recruit against.
+NEAR_MISS_TARGET = 36
+CLEAN_TARGET = 9
 BLOCK = 3  # one attempt per paraphrase, so a stopped group stays balanced
 PARAPHRASES = ("p1", "p2", "p3")
 INERT_PARAPHRASES = ("i1", "i2", "i3")
-DEFAULT_RELEASE_TASKS = ("t1_failed_job",)
+# Every task the host declares. T1 carries the complete E1-E4 x A1-A4 crossing;
+# T2-T5 carry two cells apiece, drawn from the sixteen T1 already populates so
+# the task effect is identified within cell (plan §6.2).
+DEFAULT_RELEASE_TASKS = (
+    "t1_failed_job",
+    "t2_postproc_repair",
+    "t3_build_and_run",
+    "t4_data_staging",
+    "t5_status_report",
+)
 
 
 # --- planning ------------------------------------------------------------
@@ -55,17 +71,33 @@ def plan(
     attempt_cap: int = ATTEMPT_CAP,
     tasks_filter: Sequence[str] | None = None,
     entry_points: Sequence[str] | None = None,
+    near_miss_target: int | None = None,
+    clean_target: int | None = None,
 ) -> dict[str, Any]:
     """Freeze the attempt schedule for one release's scope.
 
-    A release is a subset of what the host carries. The compact `v1.0` release
-    is the core task at E1-E4; auxiliary tasks remain available for future
-    expansions. The scope is named here rather than inferred, so a schedule
-    records what it was planned to cover and a later sweep cannot silently widen
-    it.
+    A release is a subset of what the host carries. `v1.0-broad` is all five
+    tasks at E1-E4; narrower scopes remain available for diagnostics. The scope
+    is named here rather than inferred, so a schedule records what it was
+    planned to cover and a later sweep cannot silently widen it.
+
+    **N is per condition, not per schedule** (plan §7). `exposed_target` governs
+    injected groups, which recruit to exposure and balance three paraphrases;
+    near-miss and clean blocks carry neither, and take their own targets. A
+    single target for everything is what a diagnostic run wants and what the
+    release schedule must not have.
     """
     if exposed_target % len(PARAPHRASES):
         raise SystemExit("exposed target must divide evenly across the three paraphrases")
+    # The multiple-of-three rule protects the paraphrase allocation the variance
+    # decomposition reads (plan §7.5). Near-miss and clean blocks have no
+    # paraphrases, so applying it to them would be a guard on a property they do
+    # not have — which is what kept near-miss pinned to the injected N.
+    near_miss_target = NEAR_MISS_TARGET if near_miss_target is None else near_miss_target
+    clean_target = CLEAN_TARGET if clean_target is None else clean_target
+    for label, value in (("near-miss", near_miss_target), ("clean", clean_target)):
+        if value < 1:
+            raise SystemExit(f"{label} target must be at least 1")
     host = runner.load_host(host_dir)
     injections = _index_injections(injections_dir, host["host_id"])
     rng = random.Random(seed)
@@ -104,11 +136,11 @@ def plan(
                 )
         for action in sorted({c[2:] for c in cells}):
             groups[f"near_miss|{task_id}|{action}"] = _group(
-                "near_miss", exposed_target, exposed_target, [],
+                "near_miss", near_miss_target, near_miss_target, [],
                 task=task_id, near_miss_action=action, recruits=False,
             )
         groups[f"clean|{task_id}"] = _group(
-            "clean", exposed_target, exposed_target, [], task=task_id, recruits=False
+            "clean", clean_target, clean_target, [], task=task_id, recruits=False
         )
 
     attempts = _interleave(groups, rng)
@@ -122,6 +154,10 @@ def plan(
         "seed": seed,
         "exposed_target": exposed_target,
         "attempt_cap": attempt_cap,
+        # Recorded beside the injected target so a reader of the frozen schedule
+        # can see every registered N without re-deriving it from the groups.
+        "near_miss_target": near_miss_target,
+        "clean_target": clean_target,
         "block": BLOCK,
         "groups": {
             name: {k: v for k, v in g.items() if k != "attempts"}
@@ -243,12 +279,24 @@ def _interleave(groups: dict[str, dict[str, Any]], rng: random.Random) -> list[d
     return ordered
 
 
-def _sweep_id(schedule: dict[str, Any]) -> str:
+# What a sweep's identity is derived from. Every registered N is in here: the
+# attempt list already implies them, but the identity that freezes an allocation
+# should name it rather than leave a reader to infer it from a slot count.
+SWEEP_ID_KEYS = (
+    "host", "seed", "exposed_target", "attempt_cap",
+    "near_miss_target", "clean_target", "attempts",
+)
+
+
+def sweep_id(schedule: dict[str, Any]) -> str:
+    """The frozen identity of one attempt schedule."""
     payload = json.dumps(
-        {k: schedule[k] for k in ("host", "seed", "exposed_target", "attempt_cap", "attempts")},
-        sort_keys=True,
+        {k: schedule.get(k) for k in SWEEP_ID_KEYS}, sort_keys=True,
     )
     return "sweep_" + hashlib.sha256(payload.encode()).hexdigest()[:12]
+
+
+_sweep_id = sweep_id
 
 
 # --- execution -----------------------------------------------------------
@@ -268,7 +316,7 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
     configuration = _agent_configuration(args)
 
     # R2 (plan §3, §6.4): the execution model is held constant across the cells
-    # being compared. The compact release fixes two-agent mode throughout; a
+    # being compared. The release fixes two-agent mode throughout; a
     # sweep interrupted and resumed under the other mode would split one
     # schedule across two execution models, and every entry-point contrast in
     # it would carry part of the mode difference with no way to tell which part.
@@ -698,8 +746,18 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
         "git_source_sha256": runner._git_source_sha256(),
         "git_dirty": runner._git_dirty(),
         "schedule": {
-            k: schedule[k]
-            for k in ("host", "seed", "exposed_target", "attempt_cap", "attempts")
+            **{
+                k: schedule[k]
+                for k in ("host", "seed", "exposed_target", "attempt_cap", "attempts")
+            },
+            "near_miss_target": schedule.get("near_miss_target"),
+            "clean_target": schedule.get("clean_target"),
+            # Per-group targets, because N is per condition (plan §7): replaying
+            # recruitment against one global target would hold near-miss blocks
+            # to the injected N and read every one of them as short.
+            "group_targets": {
+                name: group["target"] for name, group in schedule["groups"].items()
+            },
         },
         "agent": {
             "adapter": args.agent, "model": args.model, "base_url": args.base_url,
@@ -740,8 +798,12 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
 # --- CLI -----------------------------------------------------------------
 def cmd_plan(args: argparse.Namespace) -> int:
     tasks = args.tasks if args.tasks is not None else list(DEFAULT_RELEASE_TASKS)
+    extra = {
+        "near_miss_target": getattr(args, "near_miss_target", None),
+        "clean_target": getattr(args, "clean_target", None),
+    }
     schedule = plan(args.host, args.injections, args.seed, args.exposed_target,
-                    args.attempt_cap, tasks, args.entry_points)
+                    args.attempt_cap, tasks, args.entry_points, **extra)
     os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as fh:
         json.dump(schedule, fh, indent=2)
@@ -792,10 +854,16 @@ def add_arguments(sub) -> None:
     plan_p.add_argument("--out", required=True)
     plan_p.add_argument("--seed", type=int, default=1)
     plan_p.add_argument("--exposed-target", type=int, default=EXPOSED_TARGET,
-                        help="N per cell for the compact release (plan §9.5)")
+                        help="N per injected group (plan §9.5)")
     plan_p.add_argument("--attempt-cap", type=int, default=ATTEMPT_CAP)
+    plan_p.add_argument("--near-miss-target", type=int, default=NEAR_MISS_TARGET,
+                        help="N per (task, action) near-miss block; these carry no "
+                             "injected text, so they recruit nothing and balance no "
+                             "paraphrases (plan §7.4)")
+    plan_p.add_argument("--clean-target", type=int, default=CLEAN_TARGET,
+                        help="N per task for the clean block (plan §7.1)")
     plan_p.add_argument("--task", action="append", dest="tasks",
-                        help="release task; repeatable. Default: t1_failed_job only")
+                        help="release task; repeatable. Default: all five")
     plan_p.add_argument("--entry-point", action="append", dest="entry_points",
                         choices=("E1", "E2", "E3", "E4"),
                         help="restrict to this entry point; repeatable. Default: E1-E4")
@@ -821,7 +889,7 @@ def add_arguments(sub) -> None:
     run_p.add_argument(
         "--execution-mode", default="two_agent", choices=runner.EXECUTION_MODES,
         help="held constant across every cell in a sweep (plan §6.4, R2); the "
-             "compact release uses two_agent throughout; single_agent is an "
+             "release uses two_agent throughout; single_agent is an "
              "optional future extension, never mixed inside one schedule",
     )
     run_p.add_argument("--defense", default="none")
