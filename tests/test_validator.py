@@ -9,6 +9,9 @@ from __future__ import annotations
 import json
 import os
 
+import pytest
+
+from taskbound import validate as validate_module
 from taskbound.validate import Report, invariant_holds, validate_host, validate_injections
 from taskbound.policy import Policy
 
@@ -50,6 +53,58 @@ def test_the_shipped_material_passes():
     host = validate_host(HOST_DIR, rep)
     assert host is not None
     assert rep.errors == [], rep.errors
+
+
+# --- generator provenance (plan §7.5, §12) -------------------------------
+def _prereg(families):
+    return {"signed": True, "model_families": {"evaluated_model_families": families}}
+
+
+def test_a_generator_inside_the_evaluated_set_is_rejected(tmp_path, monkeypatch):
+    """The rule the eight-family scope makes unconditional (plan §12)."""
+    inj = base_attack()
+    monkeypatch.setattr(
+        validate_module, "_preregistration",
+        lambda: _prereg(["family_a", inj["generator"]]),
+    )
+    rep = validate_one(tmp_path, inj)
+    assert any("inside the evaluated model set" in e for e in rep.errors), rep.errors
+
+
+def test_a_generator_outside_the_evaluated_set_passes(tmp_path, monkeypatch):
+    inj = base_attack()
+    monkeypatch.setattr(
+        validate_module, "_preregistration",
+        lambda: _prereg(["family_a", "family_b"]),
+    )
+    rep = validate_one(tmp_path, inj)
+    assert not any("evaluated model set" in e for e in rep.errors), rep.errors
+
+
+@pytest.mark.parametrize("prereg", [
+    {"signed": True},                                        # names no families
+    {"signed": True, "model_families": {}},                  # empty block
+    {"signed": True, "model_families": {"evaluated_model_families": []}},
+])
+def test_a_registration_naming_no_families_fails_rather_than_passing_vacuously(
+    tmp_path, monkeypatch, prereg
+):
+    """The bug this replaced: the families live under `model_families`, so
+    reading a top-level key returned an empty list that every generator
+    satisfied. An unreadable list is a failure, not a pass."""
+    monkeypatch.setattr(validate_module, "_preregistration", lambda: prereg)
+    rep = validate_one(tmp_path, base_attack())
+    assert any("names no evaluated model families" in e for e in rep.errors), rep.errors
+
+
+def test_the_legacy_top_level_spelling_is_still_read(tmp_path, monkeypatch):
+    inj = base_attack()
+    monkeypatch.setattr(
+        validate_module, "_preregistration",
+        lambda: {"signed": True, "evaluated_model_families": [inj["generator"]]},
+    )
+    rep = validate_one(tmp_path, inj)
+    assert any("inside the evaluated model set" in e for e in rep.errors), rep.errors
 
 
 def test_invariant_rejects_an_account_forbidden_target(tmp_path):
