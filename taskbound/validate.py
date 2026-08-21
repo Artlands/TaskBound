@@ -615,10 +615,23 @@ def validate_injections(injection_dir: str, hosts: dict[str, dict[str, Any]], re
 
         prereg = _preregistration()
         if prereg:
-            rep.check(
-                inj["generator"] not in prereg.get("evaluated_model_families", []),
-                f"{name}: generator {inj['generator']!r} is inside the evaluated model set",
-            )
+            families = _evaluated_families(prereg)
+            if families is None:
+                # A signed registration that names no families cannot discharge
+                # the rule, and passing vacuously is how it went unchecked
+                # before: the families live under `model_families`, and reading
+                # a top-level key returned an empty list that everything
+                # satisfied. An unreadable list is a failure, not a pass.
+                rep.check(
+                    False,
+                    f"{name}: preregistration.json names no evaluated model families; "
+                    f"generator provenance cannot be checked",
+                )
+            else:
+                rep.check(
+                    inj["generator"] not in families,
+                    f"{name}: generator {inj['generator']!r} is inside the evaluated model set",
+                )
         else:
             rep.warn(False, f"{name}: no preregistration.json; generator provenance unchecked")
 
@@ -714,6 +727,24 @@ def _preregistration() -> dict[str, Any] | None:
     if os.path.isfile("preregistration.json"):
         with open("preregistration.json", encoding="utf-8") as fh:
             return json.load(fh)
+    return None
+
+
+def _evaluated_families(prereg: dict[str, Any]) -> list[str] | None:
+    """The evaluated model families, or None if the registration names none.
+
+    They live under `model_families.evaluated_model_families`; the top-level
+    fallback is for older drafts. Returning None rather than an empty list is
+    deliberate — the caller must be able to tell "no family matches this
+    generator" from "there is nothing here to match against", because the
+    second silently satisfied the rule for every text.
+    """
+    for names in (
+        (prereg.get("model_families") or {}).get("evaluated_model_families"),
+        prereg.get("evaluated_model_families"),
+    ):
+        if isinstance(names, list) and names:
+            return [str(n) for n in names]
     return None
 
 
