@@ -1,14 +1,17 @@
 # TaskBound v1.0-broad — execution plan
 
-Status: **the harness is ready; nothing runs until the pre-execution gates
-pass.** Phase −1 is complete — `sweep plan` emits the release schedule at 69
-groups, 945 target runs, 1,881 maximum attempts.
+Status: **the harness plans and analyses the `r1` claim set; nothing runs until
+the pre-execution gates pass.** Phase −1 is complete — `sweep plan` emits the
+release schedule at 69 groups, 945 target runs, 1,881 maximum attempts. Phase
+−0.5 (milestone 7d, the analysis support registration revision `r2` needs) is
+**not started** and blocks the power gate.
 
-How to get from the current repository to a signed, reproduced `v1.0-broad`
-release: the phase order, the gates, and the pre-registration completion
-checklist. It is the *operational* companion to `development_plan.md` (the
-specification), `plan_summary.md` (the short read), and `pilot_protocol.md` (the
-frozen pilot rules).
+This document explains how to get from the current repository to a signed,
+reproduced `v1.0-broad` release: the phase order, the gates, and the
+pre-registration completion checklist. It is the *operational* companion to the
+other three documents: `development_plan.md` (the specification),
+`plan_summary.md` (the short read), and `pilot_protocol.md` (the frozen pilot
+rules).
 
 **Run counts and budgets are not restated here.** They live in
 `development_plan.md` §10.1 and `plan_summary.md`; duplicating them is how they
@@ -17,7 +20,7 @@ wrong: the cost gate is approved against the **hard attempt cap**, not the
 nominal target — 1,881 per family, 15,048 across the eight.
 
 > **Schedule status.** Both committed pilot schedules are **stale against
-> `v1.0-broad`** and must be regenerated: `pilot/sizing_schedule.json` was built
+> `v1.0-broad`** and must be regenerated. `pilot/sizing_schedule.json` was built
 > for the compact scope (41 groups, 246 target runs) and
 > `pilot/smoke_schedule.json` is still the pre-E4 `0.5.0` artifact. The planner
 > can now produce both — sizing regenerates at 69 groups / 414 target runs /
@@ -49,40 +52,48 @@ nominal target — 1,881 per family, 15,048 across the eight.
 
 ## Phase −1 — Broad-scope harness support — **complete**
 
-Plan milestone 7c. What it delivered, each against a tested component:
-
-1. **Per-condition exposed targets.** `sweep plan` takes `--near-miss-target`
-   and `--clean-target` beside `--exposed-target`, records all three in the
-   schedule and in its identity hash, and the multiple-of-three guard now binds
-   only groups that carry paraphrases — it exists for the variance decomposition
-   (plan §7.5), which near-miss and clean runs do not enter.
-2. **Five-task release preset.** `DEFAULT_RELEASE_TASKS` is all five; `--task`
-   stays available for diagnostics.
-3. **`task` in both registered models**, with the rank check. `task` is
-   identified and recovers its direction on synthetic data with the fixed block
-   at full rank. `request_family` and `task:cell` are decided by
-   `glmm.candidate_aliasing` and default to exclusion; the aggregator reports the
-   evidence for each beside every fit, and admission is read from the signed
-   registration rather than inferred from the data being reported on.
-4. **The overblocking fit** of plan §9.1 and its realized-denominator reporting,
-   with the count of `overblocked: null` runs printed beside every rate.
-5. **Power simulation over the exact broad allocation** — 24 groups, five tasks,
-   eight families — and the aggregator's standardization pinned to T1's sixteen
-   cells, with the exploratory all-task frame beside it.
+Plan milestone 7c, itemised there: per-condition exposed targets, the five-task
+release preset, `task` in both registered models with its rank check, the
+overblocking fit on its realized denominator, and power simulation over the exact
+broad allocation.
 
 Exit criterion, met: `sweep plan` reports **69 groups, 945 target runs, 1,881
 maximum attempts** per model family.
 
-> **Two costs this exposed.** One fit over the full allocation takes ~23 s
-> against a 43-column fixed block, so the 500-simulation power gate is hours of
-> compute rather than minutes — budget it as a run, not a command. And
-> `injection_sd` separates from `request_family:paraphrase` only across the cells
-> that share a paraphrase slot, which the auxiliary tasks supply two of rather
-> than eight; a small true value now sits close enough to zero that
+> **Two costs this exposed.** First, one fit over the full allocation takes
+> ~23 s against a 43-column fixed block. That makes the 500-simulation power
+> gate hours of compute rather than minutes — budget it as a run, not a command.
+> Second, `injection_sd` separates from `request_family:paraphrase` only across
+> the cells that share a paraphrase slot, and the auxiliary tasks supply two of
+> those instead of eight. A small true value now sits close enough to zero that
 > `runner clustering` refuses to narrow it. That refusal is the documented,
 > correct branch (plan §9.5), but it makes the unchanged-range outcome more
 > likely than the compact design implied, and the power gate's
 > `clustering_provenance` is what a reader will check.
+
+---
+
+## Phase −0.5 — Confirmatory support for `r2` — **not started**
+
+Plan milestone 7d, itemised there. `r2` claims two confirmatory estimands and a
+tiered report from the allocation Phase −1 already plans; this is the analysis
+code that makes those claims computable. **It adds no runs**, and it blocks the
+power gate, because C2 cannot be simulated before the model it is estimated from
+exists.
+
+Each item ships the way 7c's did — exercised on synthetic data with known truth,
+not against a mock. Two are worth calling out because they are where a mistake
+would be silent:
+
+- the **in-scope action rate** must be scored on the full near-miss denominator
+  and stay mechanically distinct from overblocking's realized one, with fixtures
+  covering all three cases: action performed, action declined while doing the
+  job, and neither (`overblocked: null`, which still counts in the in-scope
+  denominator);
+- **C2's draw-wise difference** must recover a known simulated gap.
+
+Exit criterion: `runner power` simulates both gates over the exact broad
+allocation, and the aggregator emits all six tables with tier labels.
 
 ---
 
@@ -108,8 +119,8 @@ re-derived.
    ```sh
    .venv/bin/python -m taskbound.runner calibrate --host hosts/site_a
    ```
-   All 25 positive references must pass and all 25 negative fixtures must fail,
-   across the five tasks. This is what makes the overblocking metric
+   Across the five tasks, all 25 positive references must pass and all 25
+   negative fixtures must fail. This is what makes the overblocking metric
    interpretable (plan §8.3), and overblocking now carries 432 runs per family.
 
 3. **Deterministic replay + validation.** Two `scripted` runs from the same seed
@@ -128,19 +139,12 @@ re-derived.
    Any item rated ≤2 by either reviewer → re-author **before** results. A
    two-point split is adjudicated, never averaged. Rubric: `realism_rubric.md`.
 
-6. **Re-author all 156 injection texts** with a generator outside all eight
-   evaluated families, per `paraphrase_protocol.md` §5. At eight families this is
-   unconditional rather than contingent on the family selection: the evaluated set
-   covers the frontier. Record the generator in the registration so a reader can
-   check it against the evaluated set.
-
-7. **Acceptance review** of the 236 authored artifacts, per
-   `paraphrase_protocol.md` §6 and plan §10.3 — after step 6, never before.
-
-> **Sequencing trap, now unavoidable.** Under the compact plan the re-authoring
-> was conditional and steps 5–7 could sometimes start early. They cannot here:
-> reviewing text that is about to be regenerated wastes the review. Order is
-> re-author → realism → acceptance, and a text changed afterwards re-enters both.
+> **Re-authoring and the two reviews are now Phase 1b**, after the integration
+> smoke, because the smoke is the first point at which a cost projection exists
+> and those three steps are months of people-time spent on material a cost
+> decision could still drop. Realism review may start early since it has no model
+> dependency, but must not *finish* before the projection; re-authoring and
+> acceptance must not start.
 
 ---
 
@@ -171,6 +175,40 @@ execution.
   near-miss twin loads with the widened policy, and its cells resolve a placement
   in the same way T1's do.
 
+**Then produce the early cost projection, and circulate it.** Extrapolate the
+smoke's measured tokens and turns to the near-cap envelope against a dated price
+table, marked clearly as a projection from a one-run-per-group sample rather than
+the cost gate.
+
+It answers one question before anyone spends reviewer-months: **which rung of
+plan §10.4's ladder is this project actually running?** If rung 0 looks
+implausible, the rung is chosen now and Phase 1b reviews only what it schedules.
+Choosing after 236 artifacts have been reviewed and 156 texts re-authored wastes
+whichever of them the rung drops. The formal cost gate still runs at Phase 3b on
+the sizing pilot's measured usage.
+
+---
+
+## Phase 1b — Human gates (no model spend, months of people-time)
+
+Ordered, and the order is not negotiable: **re-author → realism → acceptance.**
+Reviewing text that is about to be regenerated wastes the review, and a text
+changed after either review re-enters both.
+
+1. **Re-author all 156 injection texts** through `paraphrase_protocol.md` §5's
+   three-step pipeline: human-written request-family seeds, an out-of-set
+   open-weight renderer, named human acceptance. Record the seed author, the
+   renderer and its version, and the accepting reviewer per text.
+
+2. **Realism review** — finish what Phase 0 step 5 may have started, against the
+   re-authored texts. Two independent non-author HPC practitioners, 214 blocks
+   and 319 ratings each; `realism_rubric.md` holds the gate.
+
+3. **Acceptance review** of the 236 authored artifacts, per
+   `paraphrase_protocol.md` §6 and plan §10.3.
+
+Scope this phase to the ladder rung the Phase 1 projection selected.
+
 ---
 
 ## Phase 2 — Sizing pilot (414 target runs, ≤1,038 attempts, out-of-set model)
@@ -196,7 +234,7 @@ reading, not only on the vehicle. It measures five things in priority order:
 4. **Inconclusive rate and reasons** → turn and token caps are set here, before
    results.
 5. **The overblocking null-denominator drop rate** — how often a near-miss run
-   neither does the job nor declines the action, and so records
+   neither does the job nor declines the action. Such a run records
    `overblocked: null` and leaves the denominator (plan §8.3). N = 36 was chosen
    against a target precision on the *realized* denominator; if the drop would
    push a (task, action) block below 24, the design is re-versioned **before
@@ -215,35 +253,53 @@ Both must pass before signing.
   --clustering pilot/clustering.json --out pilot/power.json
 ```
 
-Only this exact invocation can pass the release gate: 500 simulations over the
-**broad allocation** — 24 injected groups at N = 9 with cap 27, twelve near-miss
-blocks at N = 36, five clean blocks, eight families — with the registered effect
-sizes and exposure rates, the 0.30 logit-scale family difference, seed 1, 2,000
-draws, prior SD 2.5, 95% intervals, and whatever random-effects structure the
-Phase −1 rank check admitted.
+Only this exact invocation can pass the release gate. It runs 500 simulations
+over the **broad allocation** — 24 injected groups at N = 9 with cap 27, twelve
+near-miss blocks at N = 36, five clean blocks, eight families — with the
+registered effect sizes and exposure rates, the 0.30 logit-scale family
+difference, seed 1, 2,000 draws, prior SD 2.5, 95% intervals, and whatever
+random-effects structure the Phase −1 rank check admitted.
 
 **It inherits nothing from the compact design's gate, in either direction.**
 Eight families and five tasks plainly add information; the registered model also
 gained a `task` term and possibly a variance component. A gate discharged by
 argument is not discharged.
 
-- **≥80% power** across the clustering range for the sole confirmatory estimand:
-  attack susceptibility with the lower 95% bound **above the 0.10
-  practical-risk floor** — not merely excluding zero.
+**Two estimands, both simulated, both required** (plan §9.5). Holm over the two
+is applied inside the simulation, so the gate runs against the correction the
+report will actually use:
+
+- **C1 — attack susceptibility**: ≥80% power across the clustering range for the
+  lower 95% bound **above the 0.10 practical-risk floor** — not merely excluding
+  zero.
+- **C2 — scope discrimination**: ≥80% power across the same range for the lower
+  95% bound of `1 − D` **above the 0.20 imperfect-discrimination floor**,
+  simulated over the primary model and the near-miss action model jointly.
+
+Other conditions on both:
+
 - Both a measured narrowing and the documented unchanged-range refusal are valid.
   An omitted or hand-authored range is diagnostic only. Failed fits count as
   non-detections; every per-seed outcome is retained.
 - Record `result_sha256` and freeze it into the pre-registration.
 
-Scope selectivity, overblocking, the task contrast, and the two factorial effects
-are exploratory resolution diagnostics; they do not gate this release. Report the
-overblocking half-width against its declared target (plan §9.5) so a reader can
-see whether the precision N = 36 was bought was delivered.
+Tier 2 and Tier 3 quantities are resolution diagnostics and gate nothing. Report
+the overblocking half-width against its declared target (plan §9.5) so a reader
+can see whether the precision that N = 36 bought was delivered.
 
-> **If this gate fails**, the release is blocked (plan §11.2). The scope-reduction
+> **If C1 fails**, the release is blocked (plan §11.2). The scope-reduction
 > ladder in plan §10.4 addresses *cost* binding, not power binding — every rung on
 > it lowers power further. Decide the response before running the gate, not after
 > seeing it fail.
+>
+> **If C2 fails**, the registered response is to demote C2 to Tier 2 before
+> signing and run the release on C1 alone. The 20pp floor is **not** lowered until
+> the design clears it; choosing a threshold off the power curve is choosing it
+> with results in view, even when the results are simulated. This response is
+> written down here so it is not invented on the day.
+>
+> **If rung 4 of the ladder is taken**, near-miss halves and C2's simulation must
+> be re-run at N = 18 before signing. Rungs 1–3 leave near-miss untouched.
 
 ### 3b. Cost gate
 
@@ -339,10 +395,10 @@ export TB_CANARY_SEED=<release_seed>
    .venv/bin/python -m taskbound.runner audit report --worksheet audit/ws.json
    ```
    **Budget the people for this, and re-budget for eight families.** The 5% floor
-   is not the operative number: the sampler applies a floor of 20 per gated
-   `condition|action|verdict` stratum, so a full sweep can put many hundreds of
-   runs in front of a human, with 20% of them double-scored. On the 143
-   development results the sampler selected 110 (77%). Across 7,560 runs the
+   is not the operative number. The sampler instead applies a floor of 20 per
+   gated `condition|action|verdict` stratum, so a full sweep can put many
+   hundreds of runs in front of a human, with 20% of them double-scored. On the
+   143 development results the sampler selected 110 (77%). Across 7,560 runs the
    percentage falls but the absolute count does not — estimate it from a dry run
    of `audit sample` against the pilot before Phase 5 starts, not after.
 2. **Signed aggregation** from the immutable release manifest:
@@ -367,7 +423,7 @@ export TB_CANARY_SEED=<release_seed>
 
 `pilot_protocol.md` Stage 1 asks for **one run per applicable condition and
 populated group** — 24 attacked + 24 benign + 4 inert + 12 near-miss + 5 clean =
-**69 runs** — and gives the command `--exposed-target 1 --attempt-cap 3`.
+**69 runs** — and gives the command `--exposed-target 1 --attempt-cap 3`. But
 `sweep plan` rejects any target that is not a multiple of three
 (`taskbound/sweep.py:67`). That guard keeps the paraphrase allocation balanced
 for the variance decomposition (plan §7.5), which the smoke stage does not
@@ -384,8 +440,8 @@ placement resolution, and result completeness, none of which depend on paraphras
 balance.
 
 **Still open, and narrower than it was.** Phase −1 scoped the guard to groups
-that carry paraphrases, so near-miss and clean blocks are already free of it —
-but `--exposed-target 1` is an *injected* target, and three paraphrases still
+that carry paraphrases, so near-miss and clean blocks are already free of it.
+But `--exposed-target 1` is an *injected* target, and three paraphrases still
 cannot be balanced across one run. So A and B both remain on the table, and B is
 now a smaller change than it was: the guard already knows which groups it is
 protecting, and the remaining question is whether a non-release schedule may opt
@@ -397,18 +453,28 @@ out of it entirely.
 
 1. **Which eight model families, in what registered order** — the order is the
    print order and the ladder's drop order, so it cannot be settled later.
-2. **Which out-of-set generator re-authors the 156 texts**, and who reviews them.
-   This gates Phase 0 and therefore everything after it.
-3. **Compute budget at near-cap across eight families** (15,048 attempts), per
-   pilot-measured per-run cost. This is the gate most likely to bind; decide
-   which §10.4 rung applies if it does, *before* the number arrives.
-4. **Two HPC practitioners** for realism review — arrange before Phase 2, and
+2. **Who writes the twelve request-family seeds, which out-of-set open-weight
+   model renders them, and who accepts each text** (plan §12). This gates Phase
+   1b and therefore everything after it.
+3. **Compute budget at near-cap across eight families** (15,048 attempts). The
+   Phase 1 projection gives an early read and the Phase 3b gate gives the number.
+   Decide which §10.4 rung applies **before** Phase 1b commits reviewer-months.
+4. **Two HPC practitioners** for realism review — arrange before Phase 1b, and
    brief them that one item is whether a single allocation plausibly carries all
    five task situations at once.
-5. **Oracle-audit staffing** at eight families' volume.
+5. **Oracle-audit staffing** at eight families' volume — a 5% stratified sample
+   of 7,560 runs is roughly 378 runs hand-scored, with two reviewers on an
+   overlapping 20%.
 6. **Stage 1 smoke**: option A or B above. Phase −1 narrowed it but did not
    settle it.
-7. **The response to a failed power gate**, decided before Phase 3a runs.
+7. **The response to a failed C1 power gate**, decided before Phase 3a runs. C2's
+   response is already registered — demote, never lower the floor.
+8. **Whether to run the optional real-cluster fidelity probe** (plan §11.5): a
+   small set of clean and near-miss runs against a real scheduler on a testbed,
+   reported as a qualitative external-validity appendix. It contributes to no
+   estimand and enters no registered table — an unregistered probe feeding a
+   registered number would be worse than no probe. Decide it early or not at all;
+   it needs a testbed and a collaborator, not a budget line.
 
 ## Who does what
 
@@ -427,10 +493,11 @@ Maps every PENDING or empty item in `preregistration.draft.json` to what fills
 it, what produces it, and when it can be settled. Nothing below may be filled
 "with results in view" (plan §13 milestone 8, §12).
 
-**Stage keys:** `[P-1]` in the broad-scope harness phase · `[P0]` before any
-pilot (no model spend) · `[P2]` after the sizing pilot · `[SIG]` at signing, after
-gates pass, before main results · `[SWEEP]` only after results exist (recorded in
-release metadata, not a signing item).
+**Stage keys:** `[P-1]` in the broad-scope harness phase · `[P-0.5]` in the `r2`
+analysis-support phase · `[P0]` before any model spend · `[P1b]` in the human-gate
+phase, after the smoke's cost projection · `[P2]` after the sizing pilot · `[SIG]`
+at signing, after gates pass, before main results · `[SWEEP]` only after results
+exist (recorded in release metadata, not a signing item).
 
 ## Top-level identity
 
@@ -441,6 +508,7 @@ release metadata, not a signing item).
 | `signed` | `true` (only at signing) | `[SIG]` |
 | `signed_at` | UTC timestamp of signing | `[SIG]` |
 | `release` | already `v1.0-broad` — confirm unchanged | `[P0]` |
+| `registration_revision` | already `r2` — confirm unchanged. The release version names the allocation, the revision names the claim set, and both are frozen here and recorded on every result | `[P0]` |
 
 ## `allocation`
 
@@ -472,13 +540,18 @@ Re-affirm at signing: `selected_before_attacked_pilot_results=true`, and every
 | Field | Fill with | Stage |
 |-------|-----------|-------|
 | `model_matrix.rank_check` | Rank of each fitted block on the broad design matrix, duplicated columns named, and the admit/exclude decision for `task`, `request_family`, and `task:cell` with its synthetic recovery | `[P-1]` |
+| `model_matrix.near_miss_blocks` | Rank and synthetic recovery for the overblocking and in-scope action fits, and the recovery of a known simulated gap by C2's draw-wise difference | `[P-0.5]` |
 | `power.result_sha256` | SHA-256 of `pilot/power.json` from the Phase 3a invocation | `[P2]` |
-| `power.status` | `MET` only at ≥80% power above the 0.10 floor across the range; else the release is blocked | `[P2]` |
+| `power.c1_status` | `MET` only at ≥80% power for susceptibility above the 0.10 floor across the range; else the release is blocked | `[P2]` |
+| `power.c2_status` | `MET` only at ≥80% power for the discrimination deficit above the 0.20 floor across the range; if `NOT MET`, C2 is demoted to Tier 2 here and the floor is not moved | `[P2]` |
+| `estimands[].role` | Confirms which estimands are Tier 1 at signing — C1 and C2, or C1 alone if C2 was demoted | `[SIG]` |
 | `cost.price_table_date` | Provider price-table date used by the cost manifest | `[P2]` |
 | `cost.status` | `PASS` only after near-cap cost + 20% contingency is approved | `[P2]` |
-| `realism_review.status` | `PASS` when `runner realism report` accepts both reviewers | `[P0]`/`[P2]` |
-| `acceptance_review.status` | `PASS` after the 236-artifact acceptance review, run on the re-authored texts | `[P0]`/`[P2]` |
-| `generator_provenance.generator` | The out-of-set model that re-authored all 156 texts, checkable against the eight evaluated families | `[P0]` |
+| `realism_review.status` | `PASS` when `runner realism report` accepts both reviewers, on the re-authored texts | `[P1b]` |
+| `acceptance_review.status` | `PASS` after the 236-artifact acceptance review, run on the re-authored texts | `[P1b]` |
+| `generator_provenance.generator` | The out-of-set open-weight model that rendered all 156 texts, checkable against the eight evaluated families | `[P2]` |
+| `generator_provenance.seed_author` | The human who wrote the twelve request-family seeds and paraphrase intents (plan §12) | `[P2]` |
+| `inference_cross_check` | The reference implementation used, the fit compared, and the agreement figures (plan §11.3) | `[P2]` |
 | `oracle_audit.status` | `PASS` — **only after results exist**; not a signing item | `[SWEEP]` |
 
 ## `canary_generation` and `reproducibility`
@@ -498,7 +571,7 @@ signing:
 
 - The exact `primary_model` and `exposure_model` formulas *as the rank check left
   them*, priors (SD 2.5), standardization weights (equal over T1's 16 cells for the
-  confirmatory frame, tasks-then-cells for the exploratory all-task one), interval
+  confirmatory frame, tasks-then-cells for the Tier 3 all-task one), interval
   type (95%), and the convergence fallback — collectively the registered analysis
   settings, seed 1, 2,000 draws.
 - The `overblocking_model` and its realized-denominator rule, with the declared
