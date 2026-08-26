@@ -2,9 +2,9 @@
 
 Status: **the harness plans and analyses the `r1` claim set; nothing runs until
 the pre-execution gates pass.** Phase −1 is complete — `sweep plan` emits the
-release schedule at 69 groups, 945 target runs, 1,881 maximum attempts. Phase
-−0.5 (milestone 7d, the analysis support registration revision `r2` needs) is
-**not started** and blocks the power gate.
+release schedule at 69 groups, 945 target runs, 1,881 maximum attempts, and
+Phase −0.5 (milestone 7d, the analysis support `r2` needs) is complete except for
+the §11.3 inference cross-check, whose comparison is external.
 
 This document explains how to get from the current repository to a signed,
 reproduced `v1.0-broad` release: the phase order, the gates, and the
@@ -73,27 +73,28 @@ maximum attempts** per model family.
 
 ---
 
-## Phase −0.5 — Confirmatory support for `r2` — **not started**
+## Phase −0.5 — Confirmatory support for `r2` — **complete, bar one external step**
 
 Plan milestone 7d, itemised there. `r2` claims two confirmatory estimands and a
 tiered report from the allocation Phase −1 already plans; this is the analysis
-code that makes those claims computable. **It adds no runs**, and it blocks the
-power gate, because C2 cannot be simulated before the model it is estimated from
-exists.
+code that makes those claims computable. It added no runs.
 
 Each item ships the way 7c's did — exercised on synthetic data with known truth,
-not against a mock. Two are worth calling out because they are where a mistake
-would be silent:
+not against a mock. Two were where a mistake would have been silent, and both are
+covered: the **in-scope action rate** is scored on the full near-miss denominator
+and stays mechanically distinct from overblocking's realized one, with fixtures
+for all three cases (action performed, action declined while doing the job, and
+neither — `overblocked: null`, which still counts in the in-scope denominator);
+and **C2's draw-wise difference** recovers a known simulated gap.
 
-- the **in-scope action rate** must be scored on the full near-miss denominator
-  and stay mechanically distinct from overblocking's realized one, with fixtures
-  covering all three cases: action performed, action declined while doing the
-  job, and neither (`overblocked: null`, which still counts in the in-scope
-  denominator);
-- **C2's draw-wise difference** must recover a known simulated gap.
-
-Exit criterion: `runner power` simulates both gates over the exact broad
+Exit criterion, met: `runner power` simulates both gates over the exact broad
 allocation, and the aggregator emits all six tables with tier labels.
+
+**What remains is external.** The §11.3 inference cross-check needs `lme4` or
+`glmmTMB`, which this standard-library-only repository does not depend on.
+`runner aggregate --export-frame` writes the exact primary-fit frame plus a
+reference-fit script carrying the registered formula; the comparison is run once
+by hand and its agreement figures recorded in the registration before signing.
 
 ---
 

@@ -358,9 +358,9 @@ the in-scope action rate on the full near-miss denominator, C2's model and
 draw-wise interval, explicit family weighting, per-family Holm, C2's power
 simulation, tier labels, and the §9.6 re-scoring. All five tasks, all 156 texts, twelve request
 families, twelve near-miss tasks, and 50 calibration fixtures exist and validate.
-No pilot or main sweep has been run yet. The remaining gates are: milestone 7d,
-re-authoring, acceptance review, independent realism review, model-family
-selection and provenance, pilot power and cost, and the post-sweep oracle audit.
+No pilot or main sweep has been run yet. The remaining gates are: re-authoring,
+acceptance review, independent realism review, model-family selection and
+provenance, pilot power and cost, and the post-sweep oracle audit.
 
 One remainder is external rather than pending: the §11.3 inference cross-check
 needs `lme4` or `glmmTMB`, which this standard-library-only repository does not
