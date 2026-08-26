@@ -615,11 +615,10 @@ Everything below is a release gate; none is a benchmark result yet.
 4. **Model families are not selected.** Eight immutable model/configuration
    hashes and their registered print order must be frozen, spanning at least four
    distinct providers.
-5. **Milestone 7d is not started.** Registration revision `r2` claims two
-   confirmatory estimands and a tiered report from the allocation the harness
-   already plans; the analysis code for the second estimand, the tier labels,
-   the comparability re-scoring, and the reference-GLMM cross-check do not exist
-   yet. It adds no runs, and it blocks the power gate.
+5. **Milestone 7d is complete.** The second confirmatory estimand, its model
+   and draw-wise interval, explicit family weighting, per-family Holm, C2's
+   power simulation, tier labels, and the §9.6 comparability re-scoring are
+   implemented and exercised on synthetic data. It added no runs.
 6. **Power and cost gates await the sizing pilot.** Every registered N is fixed.
    Two confirmatory gates must each show at least 80% simulated power across the
    valid clustering-step artifact — including its unchanged-range refusal when
@@ -638,9 +637,10 @@ Everything below is a release gate; none is a benchmark result yet.
    hand-scored, with two reviewers on an overlapping 20%. Its sampler and gate
    exist, but per-action precision and recall can only be assessed after the
    sweep.
-9. **The specification is ahead of the code in one place.** `aggregate.py` still
-   carries §7.5's retired `supersedes_factorial` promotion path; removing it is
-   milestone 7d work (`docs/design_history.md` §7).
+9. **The inference cross-check is scaffolded, not run.** `aggregate
+   --export-frame` writes the primary-fit frame and a reference-fit script, but
+   the comparison needs `lme4` or `glmmTMB` and this repository is standard
+   library only. It is run once by hand before signing (plan §11.3).
 
 The planned budget is 945 target runs per model family, 7,560 across eight
 families, with a hard cap of 15,048 total attempts.

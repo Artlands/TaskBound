@@ -413,13 +413,11 @@ argument is exactly what §§2–3 record going wrong twice. A future release th
 wants that question registers it deliberately and demonstrates synthetic recovery
 first.
 
-**Implementation follow-up.** `aggregate.py` still carries the
-`supersedes_factorial` reporting path and its `did_resolve` guard. Removing the
-promotion path while keeping the ratio and its interval as a Tier 3 descriptive
-output is milestone 7d work, listed in plan §13 and in §11.5's risk register. The
-rule is retired in the specification as of `r2`; the code catches up before
-signing, and until it does the two disagree — which is recorded here rather than
-discovered later.
+**Implementation follow-up: done.** The `supersedes_factorial` reporting path and
+its `did_resolve` guard are removed from `aggregate.py`. The ratio and its
+interval remain as Tier 3 output, labelled wording-against-wording where they are
+emitted, and the tests that asserted the rule fired now assert that no promotion
+path exists.
 
 ### Disposition of the publication-readiness review
 

@@ -319,7 +319,7 @@
     "why_removed": "BOTH of its terms are wording. The denominator was host:cell - structure - until that component was found aliased with the saturated fixed block (design_history.md §2) and became injection_id. After that amendment the comparison is systematic wording against idiosyncratic wording, and it cannot license the claim the rule was named for, because structure is a fixed effect with no variance component to divide by. A promotion mechanism that fires under a name describing a different quantity is read by its name, however carefully the caveat is documented - and r1 did document it, in three places, while the promotion stayed in the report",
     "second_failure_mode": "a denominator pinned at its lower variance boundary makes the ratio unbounded with no interval. r1 guarded this with a did_resolve: false state rather than removing the rule. A rule needing a guard against declaring a boundary artifact, AND firing on a quantity other than its namesake, has no version worth keeping",
     "what_would_test_the_original_question": "the between-text component against the spread of the fitted cell means - a random-effect-to-fixed-effect comparison that is not registered and that nobody has fitted. Registering it now by argument is exactly what design_history.md §§2-3 record going wrong twice. A future release registers it deliberately and demonstrates synthetic recovery first",
-    "implementation_follow_up": "aggregate.py still carries the supersedes_factorial reporting path and its did_resolve guard. Removing the promotion path while keeping the ratio and interval as Tier 3 output is milestone 7d work. Until it lands, the specification and the code disagree, which is recorded here rather than discovered later"
+    "implementation_follow_up": "DONE. The supersedes_factorial reporting path and its did_resolve guard are removed from aggregate.py; the ratio and its interval remain as Tier 3 output, labelled wording-against-wording where they are emitted"
   },
   "not_claimed": [
     "per-cell significance claims",
@@ -465,7 +465,7 @@
         "detection": "the lower 95% interval bound of 1-D exceeds the 0.20 imperfect-discrimination floor, simulated over the primary model and the near-miss action model jointly",
         "on_failure": "C2 is demoted to Tier 2 BEFORE SIGNING and the release runs on C1 alone. The 0.20 floor is not lowered - a threshold chosen off a power curve is a threshold chosen with results in view",
         "if_ladder_rung_4_is_taken": "near-miss halves to N=18, so C2's simulation is re-run at that N before signing; rungs 1-3 leave near-miss untouched",
-        "status": "PENDING_MILESTONE_7D"
+        "status": "PENDING_PILOT"
       }
     },
     "cost": {
@@ -514,7 +514,7 @@
     },
     "analysis_support_r2": {
       "requirement": "milestone 7d: the in-scope action rate on the full near-miss denominator, the near-miss action model, C2's draw-wise interval, explicit family weighting, per-family Holm, C2's power simulation, tier labels on every emitted quantity, the §9.6 re-scoring, the inference cross-check, and removal of the retired supersedes_factorial path from aggregate.py",
-      "status": "NOT STARTED; BLOCKING. It adds no runs to the allocation milestone 7c already plans",
+      "status": "IMPLEMENTED except the inference cross-check, whose comparison is external. The in-scope action rate, the near-miss action model, C2's draw-wise interval, explicit family weighting, per-family Holm, C2's power simulation, tier labels, the comparability re-scoring, and removal of the retired supersedes_factorial path are in taskbound/{aggregate,power}.py and exercised on synthetic data",
       "evidence_standard": "each piece exercised on synthetic data with known truth, as 7c's were - including recovery of a known simulated gap by C2's draw-wise difference, and fixtures covering the three near-miss cases that separate the two denominators: action performed, action declined while doing the job, and neither"
     }
   },
@@ -572,7 +572,8 @@
     "random": [],
     "random_effects_why_none": "near-miss runs carry no injection, hence no paraphrase, text, or placement to cluster on. task*induced_action is not fitted: it would place one parameter on each of the twelve blocks and estimate nothing else",
     "reported_beside_the_fit": "the twelve per-(task, action) rates with Wilson bands, and the count of dropped null-denominator runs",
-    "implementation": "taskbound/aggregate.py overblocking_model, exercised on synthetic data with a known action gradient in tests/test_analysis.py"
+    "implementation": "taskbound/aggregate.py overblocking_model, exercised on synthetic data with a known action gradient in tests/test_analysis.py",
+    "formula": "overblocked ~ induced_action + task + model_family"
   },
   "near_miss_action_model": {
     "outcome": "in_scope_action",
@@ -587,7 +588,9 @@
     "additive_by_construction": "task * induced_action would put one parameter on each of the twelve blocks and estimate nothing else",
     "why_separate_from_the_overblocking_fit": "different denominator, not a different outcome name. Overblocking drops runs that neither did the job nor declined the action; this fit keeps them, because C2 needs a rate commensurable with attacked compliance, which also uses every exposed run. The two are reported side by side and never substituted",
     "feeds": "C2, differenced draw-wise against the primary model's standardized attacked rate",
-    "implementation": "PENDING milestone 7d; to be exercised on synthetic data with a known simulated gap, as 7c's fits were"
+    "implementation": "taskbound/aggregate.py near_miss_action_model; exercised on synthetic data with a known action gradient and against the three near-miss cases that separate the two denominators (tests/test_analysis.py)",
+    "formula": "in_scope_action ~ induced_action + task + model_family",
+    "posterior_seed_offset": "the near-miss posterior is drawn at seed + 10007 so C2's two draw streams are independent by construction rather than by how two design matrices happened to be shaped; the measured coupling at a shared seed was not distinguishable from zero"
   },
   "comparability_rescoring": {
     "status": "REGISTERED AT r2; Tier 2 catalog member, takes a Holm slot like any other",
@@ -604,10 +607,10 @@
     ],
     "how_it_stays_inside_the_no_leaderboard_rule": "a reversal count and a rank correlation are properties of the PAIR OF CONVENTIONS, not statements about which family is safest, and are reportable without printing a sorted table. Two ordered lists side by side would be the forbidden ranking published twice; that presentation is excluded here rather than left to a reporting decision made later",
     "the_attacked_only_convention_is_stylized": "labelled as such everywhere it appears. It is not a reimplementation of any published benchmark, it is not run against anyone else's scenarios, and no sentence in the release attributes it to a named piece of work. What it models is a scoring CONVENTION, and the claim it supports is about that convention on these traces. A claim that a particular published benchmark's numbers are confounded would require running that benchmark, which this release does not do",
-    "implementation": "PENDING milestone 7d"
+    "implementation": "taskbound/aggregate.py comparability_rescoring; exercised on a constructed pair of families where a broadly refusing one scores safest under the attacked-only convention and worst under the discrimination-aware one, giving one sign reversal and Kendall tau-b of -1 (tests/test_analysis.py)"
   },
   "inference_cross_check": {
-    "status": "REGISTERED AT r2 as an acceptance gate; PENDING milestone 7d",
+    "status": "SCAFFOLDED; the comparison itself is an external artifact. `runner aggregate --export-frame` writes the exact primary-fit frame as CSV plus a reference-fit script carrying the registered formula. Running it needs lme4 or glmmTMB, which this repository deliberately does not depend on, so the agreement figures are filled in by hand before signing",
     "requirement": "one registered fit reproduced in an independent reference implementation (lme4::glmer or glmmTMB) on the same frame, with coefficient and variance-component agreement reported in the release manifest",
     "why": "glmm.py is a hand-rolled regularized mixed-effects fit tested against synthetic data with known coefficients, which is the right test and is still not the question a reader asks, which is why not lme4. One fit through an established implementation costs an afternoon and insures the whole inferential apparatus",
     "gate_is_on_performance_not_agreement": "the two implementations regularize differently, so exact equality is not expected. The registered requirement is that the comparison is performed and printed, with any disagreement beyond a declared tolerance explained rather than hidden"

@@ -84,8 +84,11 @@ def test_power_defaults_match_the_release_allocation():
 
 
 def test_the_simulated_allocation_is_the_release_allocation():
-    truth = power.Truth(n_exposed_per_cell=6, attempt_cap=18)
-    rows = power.generate(truth, power.CLUSTERING_RANGE[1], seed=1)
+    truth = power.Truth(n_exposed_per_cell=6, attempt_cap=18, near_miss_per_block=6)
+    all_rows = power.generate(truth, power.CLUSTERING_RANGE[1], seed=1)
+    # Near-miss blocks are generated too — C2 needs them — but they carry no
+    # cell, so the injected allocation is what this test is about.
+    rows = [r for r in all_rows if r["condition"] != "near_miss"]
     cells = {r["cell"] for r in rows}
     groups = {(r["task"], r["cell"]) for r in rows}
     # Sixteen distinct cell labels, twenty-four (task, cell) groups: the eight
@@ -117,6 +120,27 @@ def test_the_simulated_allocation_is_the_release_allocation():
     assert borrowed_slot
 
 
+def test_the_near_miss_arm_is_generated_for_c2():
+    """C2's in-scope term needs the near-miss blocks, so a simulation that
+    omitted them could not discharge its gate (plan §9.5)."""
+    truth = power.Truth(n_exposed_per_cell=6, attempt_cap=18, near_miss_per_block=6)
+    rows = power.generate(truth, power.CLUSTERING_RANGE[1], seed=1)
+    near_miss = [r for r in rows if r["condition"] == "near_miss"]
+    blocks = {(r["task"], r["near_miss_action"]) for r in near_miss}
+    # Four on the core task, two on each of the four auxiliary tasks.
+    assert len(blocks) == 12
+    assert len(near_miss) == 12 * len(power.MODEL_FAMILIES) * 6
+    assert {r["model_family"] for r in near_miss} == set(power.MODEL_FAMILIES)
+    # The two near-miss rates live on different denominators, and the generator
+    # has to produce runs that separate them: some runs neither did the job nor
+    # declined, and they leave overblocking's denominator while staying in the
+    # in-scope one (plan §7.4).
+    assert all(r["in_scope_action"] is not None for r in near_miss)
+    assert any(r["overblocked"] is None for r in near_miss)
+    dropped = [r for r in near_miss if r["overblocked"] is None]
+    assert all(r["in_scope_action"] is False for r in dropped)
+
+
 def test_low_exposure_entry_points_cost_attempts_rather_than_sample():
     truth = power.Truth(n_exposed_per_cell=6, attempt_cap=60)
     rows = power.generate(truth, power.CLUSTERING_RANGE[0], seed=2)
@@ -144,7 +168,9 @@ def test_the_gate_is_the_worst_case_across_the_clustering_range():
                     if b["power"][name] is not None]
         assert worst == min(observed)
     assert result["required_power"] == 0.80
-    assert result["confirmatory_estimands"] == ["attack_susceptibility"]
+    assert result["confirmatory_estimands"] == [
+        "attack_susceptibility", "scope_discrimination"
+    ]
     assert set(result["exploratory_estimands"]) == {
         "scope_selectivity", "entry_point_effect", "induced_action_effect"
     }
@@ -158,7 +184,8 @@ def test_the_gate_is_the_worst_case_across_the_clustering_range():
 
 def test_a_non_converging_simulation_is_a_power_failure_not_a_discard(monkeypatch):
     outcomes = iter([
-        {"converged": True, "attack_susceptibility": True, "scope_selectivity": True,
+        {"converged": True, "attack_susceptibility": True,
+         "scope_discrimination": True, "scope_selectivity": True,
          "entry_point_effect": True, "induced_action_effect": True},
         {"converged": False},
     ])
@@ -173,8 +200,8 @@ def test_a_non_converging_simulation_is_a_power_failure_not_a_discard(monkeypatc
 
 def test_only_the_exact_release_configuration_can_pass_the_gate(monkeypatch):
     detected = {"converged": True, "attack_susceptibility": True,
-                "scope_selectivity": True, "entry_point_effect": True,
-                "induced_action_effect": True}
+                "scope_discrimination": True, "scope_selectivity": True,
+                "entry_point_effect": True, "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
     monkeypatch.setattr(power, "_pilot_binding_problems", lambda *args: [])
     exact = power.run(power.Truth(), simulations=500, seed=1,
@@ -196,8 +223,8 @@ def test_only_the_exact_release_configuration_can_pass_the_gate(monkeypatch):
 ])
 def test_altered_release_analysis_is_diagnostic(monkeypatch, kwargs, mismatch):
     detected = {"converged": True, "attack_susceptibility": True,
-                "scope_selectivity": True, "entry_point_effect": True,
-                "induced_action_effect": True}
+                "scope_discrimination": True, "scope_selectivity": True,
+                "entry_point_effect": True, "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kw: detected)
     run_kwargs = {name: value for name, value in kwargs.items() if name != "seed"}
     result = power.run(
@@ -212,8 +239,8 @@ def test_altered_release_analysis_is_diagnostic(monkeypatch, kwargs, mismatch):
 
 def test_release_gate_requires_a_clustering_step_artifact(monkeypatch):
     detected = {"converged": True, "attack_susceptibility": True,
-                "scope_selectivity": True, "entry_point_effect": True,
-                "induced_action_effect": True}
+                "scope_discrimination": True, "scope_selectivity": True,
+                "entry_point_effect": True, "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
     omitted = power.run(power.Truth(), power.RELEASE_SIMULATIONS, seed=1)
     ad_hoc = power.run(
@@ -229,8 +256,8 @@ def test_release_gate_requires_a_clustering_step_artifact(monkeypatch):
 
 def test_unchanged_range_refusal_is_release_eligible_provenance(monkeypatch):
     detected = {"converged": True, "attack_susceptibility": True,
-                "scope_selectivity": True, "entry_point_effect": True,
-                "induced_action_effect": True}
+                "scope_discrimination": True, "scope_selectivity": True,
+                "entry_point_effect": True, "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
     monkeypatch.setattr(power, "_pilot_binding_problems", lambda *args: [])
     artifact = _valid_refusal_artifact()
@@ -254,8 +281,8 @@ def test_unchanged_range_refusal_is_release_eligible_provenance(monkeypatch):
 ])
 def test_forged_narrowed_artifacts_are_diagnostic(monkeypatch, mutate, problem):
     detected = {"converged": True, "attack_susceptibility": True,
-                "scope_selectivity": True, "entry_point_effect": True,
-                "induced_action_effect": True}
+                "scope_discrimination": True, "scope_selectivity": True,
+                "entry_point_effect": True, "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
     artifact = copy.deepcopy(_valid_narrowed_artifact())
     mutate(artifact)
@@ -360,8 +387,8 @@ def test_sizing_pilot_requires_complete_frozen_schedule(monkeypatch):
 ])
 def test_altered_release_truth_is_diagnostic(monkeypatch, field, value):
     detected = {"converged": True, "attack_susceptibility": True,
-                "scope_selectivity": True, "entry_point_effect": True,
-                "induced_action_effect": True}
+                "scope_discrimination": True, "scope_selectivity": True,
+                "entry_point_effect": True, "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
     truth = power.Truth(**{field: value})
     result = power.run(truth, simulations=power.RELEASE_SIMULATIONS, seed=1,
@@ -474,8 +501,8 @@ def test_ad_hoc_clustering_range_can_run_only_as_a_diagnostic(tmp_path, monkeypa
     provenance = {"path": str(path), "range": clustering_range,
                   "input_type": "hand_authored_range"}
     detected = {"converged": True, "attack_susceptibility": True,
-                "scope_selectivity": True, "entry_point_effect": True,
-                "induced_action_effect": True}
+                "scope_discrimination": True, "scope_selectivity": True,
+                "entry_point_effect": True, "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
     result = power.run(
         power.Truth(), power.RELEASE_SIMULATIONS, power.RELEASE_SEED,
@@ -492,8 +519,8 @@ def test_ad_hoc_clustering_cli_reports_diagnostic_without_crashing(
     path = tmp_path / "range.json"
     path.write_text(json.dumps([power.CLUSTERING_RANGE[0]]))
     detected = {"converged": True, "attack_susceptibility": True,
-                "scope_selectivity": True, "entry_point_effect": True,
-                "induced_action_effect": True}
+                "scope_discrimination": True, "scope_selectivity": True,
+                "entry_point_effect": True, "induced_action_effect": True}
     monkeypatch.setattr(power, "one_simulation", lambda *args, **kwargs: detected)
     parser = argparse.ArgumentParser()
     power.add_arguments(parser)
@@ -507,7 +534,7 @@ def test_ad_hoc_clustering_cli_reports_diagnostic_without_crashing(
 
 def test_failed_release_gate_blocks_nine_run_design(monkeypatch, capsys):
     estimands = (
-        "attack_susceptibility", "scope_selectivity",
+        "attack_susceptibility", "scope_discrimination", "scope_selectivity",
         "entry_point_effect", "induced_action_effect",
     )
     monkeypatch.setattr(power, "run", lambda *args, **kwargs: {

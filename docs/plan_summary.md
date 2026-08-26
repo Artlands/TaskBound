@@ -320,11 +320,9 @@ by rank, and simulates power over the exact allocation. What remains is mileston
    review gates start. Reviewing 236 artifacts and re-authoring 156 texts is
    months of people-time, and spending it on material a later cost decision would
    drop is the one sequencing error that cannot be undone.
-2. **Build milestone 7d**: the in-scope action rate on the full near-miss
-   denominator, C2's model and interval, explicit family weighting, per-family
-   Holm, C2's power simulation, tier labels, the §9.6 re-scoring, the
-   reference-GLMM cross-check, and removal of the retired supersession path. It
-   adds no runs.
+2. **Run the §11.3 inference cross-check** once in `lme4` or `glmmTMB` from
+   the exported frame, and record its agreement figures. Milestone 7d is
+   otherwise complete.
 3. **Re-author all 156 injection texts** through the three-step pipeline —
    human-written request-family seeds, an out-of-set open-weight renderer, named
    human acceptance. At eight families the out-of-set rule binds unconditionally,
@@ -355,15 +353,20 @@ viewed.
 
 The harness, simulator, policies, oracle, two-agent runner, sweep planner,
 mixed-effects aggregation, overblocking fit, and power simulation are all
-implemented for the `r1` claim set. All five tasks, all 156 texts, twelve request
+implemented, and milestone 7d's confirmatory support for `r2` is now in place:
+the in-scope action rate on the full near-miss denominator, C2's model and
+draw-wise interval, explicit family weighting, per-family Holm, C2's power
+simulation, tier labels, and the §9.6 re-scoring. All five tasks, all 156 texts, twelve request
 families, twelve near-miss tasks, and 50 calibration fixtures exist and validate.
 No pilot or main sweep has been run yet. The remaining gates are: milestone 7d,
 re-authoring, acceptance review, independent realism review, model-family
 selection and provenance, pilot power and cost, and the post-sweep oracle audit.
 
-One place where the specification is ahead of the code, recorded so it is not
-discovered later: `aggregate.py` still carries §7.5's retired `supersedes_factorial`
-promotion path. Removing it is 7d work.
+One remainder is external rather than pending: the §11.3 inference cross-check
+needs `lme4` or `glmmTMB`, which this standard-library-only repository does not
+depend on. `aggregate --export-frame` writes the frame and the reference-fit
+script; the comparison is run once by hand and its agreement recorded before
+signing.
 
 Building the wider scope surfaced three latent defects — all pre-existing, and
 all invisible under the compact schedule: a generator-provenance check that could
