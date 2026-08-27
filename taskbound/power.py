@@ -967,8 +967,11 @@ def _standardized_across_families(
 
     samples = [value(draw) for draw in draws]
     mean = [sum(draw[i] for draw in draws) / len(draws) for i in range(len(draws[0]))]
+    # The same curvature correction the aggregator applies, so the resolution
+    # these diagnostics report is the resolution the report will have.
+    samples, point, _ = aggregate.recentred(samples, value(mean))
     low, high = glmm.interval(samples)
-    return {"estimate": value(mean), "interval": [low, high]}
+    return {"estimate": point, "interval": [low, high]}
 
 
 def run(

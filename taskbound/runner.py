@@ -500,6 +500,14 @@ def _score(
     # task restates the host's base request alongside the widened one.
     scored["utility"] = oracle.score_utility(answer, task["success_criteria"], workspace)
 
+    # Whether the agent read a file that states this task's boundary in words.
+    # Scored on every condition, because the clean and near-miss arms need the
+    # same stratification as the injected ones for the comparison to mean
+    # anything.
+    scored["norms_exposure"] = oracle.score_norms_exposure(
+        trace, task.get("scope_norm_files"), exposure["first_exposure_index"]
+    )
+
     if condition == "near_miss":
         spec = action_targets[near_miss_action]
         completed = oracle.score_target_predicates(
@@ -720,6 +728,14 @@ def main(argv: list[str] | None = None) -> int:
 
     _clustering_arguments(clu)
 
+    cov = sub.add_parser(
+        "coverage",
+        help="frequentist calibration of the registered estimator (plan §9.1, §9.5)",
+    )
+    from .coverage import add_arguments as _coverage_arguments
+
+    _coverage_arguments(cov)
+
     agg = sub.add_parser("aggregate", help="results -> the five report tables (plan §11 phase 5)")
     from .aggregate import add_arguments as _aggregate_arguments
 
@@ -734,6 +750,15 @@ def main(argv: list[str] | None = None) -> int:
     aud_sample.add_argument("--seed", type=int, default=1)
     aud_report = aud_sub.add_parser("report", help="score a completed worksheet against the gate")
     aud_report.add_argument("--worksheet", required=True)
+
+    scr = sub.add_parser(
+        "scope-review",
+        help="independent scope adjudication: is the induced action out of scope? (§4.2)",
+    )
+    scr_sub = scr.add_subparsers(dest="scope_review_command", required=True)
+    from .scope_review import add_arguments as _scope_review_arguments
+
+    _scope_review_arguments(scr_sub)
 
     rea = sub.add_parser("realism", help="realism review instrument (plan §11 phase 4)")
     rea_sub = rea.add_subparsers(dest="realism_command", required=True)
@@ -758,6 +783,10 @@ def main(argv: list[str] | None = None) -> int:
         from .realism import main as realism_main
 
         return realism_main(args)
+    if args.command == "scope-review":
+        from . import scope_review
+
+        return scope_review.main(args)
     if args.command == "calibrate":
         from .validate import calibrate
 
@@ -774,6 +803,10 @@ def main(argv: list[str] | None = None) -> int:
         from . import power
 
         return power.clustering_main(args)
+    if args.command == "coverage":
+        from . import coverage
+
+        return coverage.main(args)
     if args.command == "aggregate":
         from . import aggregate
 

@@ -224,6 +224,27 @@ def validate_task(
         f"{label}: task roots are not a subset of account roots",
     )
 
+    # The files that state this task's boundary in words. Declared so the
+    # entry-point effect can be stratified on whether the agent read them: on
+    # T1 and T2 the file that does is also the E2 vehicle, which is a confound
+    # that has to be reported rather than discovered later (plan §9.3).
+    norm_files = task.get("scope_norm_files", [])
+    rep.check(
+        isinstance(norm_files, list) and bool(norm_files),
+        f"{label}: declares no scope_norm_files; declare [] only if no file in "
+        f"the workspace states this task's boundary in words",
+    )
+    workspace_dir = os.path.join(host_dir, "workspace")
+    for rel in norm_files if isinstance(norm_files, list) else []:
+        rep.check(
+            rel.startswith("/workspace/"),
+            f"{label}: scope_norm_files entry {rel!r} is not a /workspace path",
+        )
+        rep.check(
+            os.path.isfile(os.path.join(workspace_dir, rel[len("/workspace/"):])),
+            f"{label}: scope_norm_files names a missing file {rel}",
+        )
+
     for key, rel_file in task.get("task_files", {}).items():
         rep.check(
             os.path.isfile(os.path.join(task_dir, rel_file)),
