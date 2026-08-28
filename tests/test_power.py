@@ -159,7 +159,7 @@ def test_the_truth_is_recovered_in_direction_by_the_analysis_function():
     assert estimates["scope_selectivity"] < 0  # benign followed less often than attacked
 
 
-def test_the_gate_is_the_worst_case_across_the_clustering_range():
+def test_the_reported_power_is_the_worst_case_across_the_clustering_range():
     """Not the best guess within it: the pilot has not yet said where we are."""
     result = power.run(power.Truth(n_exposed_per_cell=3, attempt_cap=6), simulations=1, seed=9,
                        clustering_range=power.CLUSTERING_RANGE[:2], draws=100)
@@ -179,7 +179,7 @@ def test_the_gate_is_the_worst_case_across_the_clustering_range():
         susceptibility is not None and susceptibility >= 0.80
     )
     assert result["evaluation_type"] == "diagnostic"
-    assert result["gate_passed"] is False
+    assert result["registered_settings"] is False
 
 
 def test_a_non_converging_simulation_is_a_power_failure_not_a_discard(monkeypatch):
@@ -198,7 +198,7 @@ def test_a_non_converging_simulation_is_a_power_failure_not_a_discard(monkeypatc
     assert block["power"]["attack_susceptibility"] == 0.5
 
 
-def test_only_the_exact_release_configuration_can_pass_the_gate(monkeypatch):
+def test_only_the_exact_release_configuration_counts_as_registered(monkeypatch):
     detected = {"converged": True, "attack_susceptibility": True,
                 "scope_discrimination": True, "scope_selectivity": True,
                 "entry_point_effect": True, "induced_action_effect": True}
@@ -209,11 +209,14 @@ def test_only_the_exact_release_configuration_can_pass_the_gate(monkeypatch):
                       clustering_provenance=_valid_refusal_artifact())
     diagnostic = power.run(power.Truth(), simulations=499, seed=1,
                            clustering_range=power.CLUSTERING_RANGE[:1])
-    assert exact["evaluation_type"] == "release_gate"
-    assert exact["gate_passed"] is True
+    # Both are diagnostics -- there is no gate. What separates them is whether
+    # the numbers describe the registered allocation or some other one.
+    assert exact["evaluation_type"] == "diagnostic"
+    assert exact["registered_settings"] is True
+    assert exact["power_requirement_met"] is True
     assert diagnostic["evaluation_type"] == "diagnostic"
+    assert diagnostic["registered_settings"] is False
     assert diagnostic["power_requirement_met"] is True
-    assert diagnostic["gate_passed"] is False
 
 
 @pytest.mark.parametrize("kwargs,mismatch", [
@@ -233,11 +236,11 @@ def test_altered_release_analysis_is_diagnostic(monkeypatch, kwargs, mismatch):
         clustering_range=power.CLUSTERING_RANGE,
         clustering_provenance=_valid_refusal_artifact(), **run_kwargs,
     )
-    assert result["gate_passed"] is False
+    assert result["registered_settings"] is False
     assert mismatch in result["release_analysis_mismatches"]
 
 
-def test_release_gate_requires_a_clustering_step_artifact(monkeypatch):
+def test_registered_settings_require_a_clustering_step_artifact(monkeypatch):
     detected = {"converged": True, "attack_susceptibility": True,
                 "scope_discrimination": True, "scope_selectivity": True,
                 "entry_point_effect": True, "induced_action_effect": True}
@@ -248,8 +251,8 @@ def test_release_gate_requires_a_clustering_step_artifact(monkeypatch):
         clustering_range=[dict(power.CLUSTERING_RANGE[0])],
         clustering_provenance={"measured": True, "range": [dict(power.CLUSTERING_RANGE[0])]},
     )
-    assert omitted["evaluation_type"] == "diagnostic"
-    assert ad_hoc["evaluation_type"] == "diagnostic"
+    assert omitted["registered_settings"] is False
+    assert ad_hoc["registered_settings"] is False
     assert omitted["clustering_artifact_problems"]
     assert ad_hoc["clustering_artifact_problems"]
 
@@ -266,7 +269,7 @@ def test_unchanged_range_refusal_is_release_eligible_provenance(monkeypatch):
         clustering_range=artifact["range"], clustering_provenance=artifact,
     )
     assert result["clustering_artifact_problems"] == []
-    assert result["gate_passed"] is True
+    assert result["registered_settings"] is True
 
 
 @pytest.mark.parametrize("mutate,problem", [
@@ -291,7 +294,7 @@ def test_forged_narrowed_artifacts_are_diagnostic(monkeypatch, mutate, problem):
         artifact["range"], clustering_provenance=artifact,
     )
     assert result["evaluation_type"] == "diagnostic"
-    assert result["gate_passed"] is False
+    assert result["registered_settings"] is False
     assert any(problem in message for message in result["clustering_artifact_problems"])
 
 
@@ -394,7 +397,7 @@ def test_altered_release_truth_is_diagnostic(monkeypatch, field, value):
     result = power.run(truth, simulations=power.RELEASE_SIMULATIONS, seed=1,
                        clustering_range=power.CLUSTERING_RANGE[:1])
     assert result["evaluation_type"] == "diagnostic"
-    assert result["gate_passed"] is False
+    assert result["registered_settings"] is False
     assert field in result["release_truth_mismatches"]
 
 
@@ -510,7 +513,7 @@ def test_ad_hoc_clustering_range_can_run_only_as_a_diagnostic(tmp_path, monkeypa
     )
     assert payload == [power.CLUSTERING_RANGE[0]]
     assert result["evaluation_type"] == "diagnostic"
-    assert result["gate_passed"] is False
+    assert result["registered_settings"] is False
 
 
 def test_ad_hoc_clustering_cli_reports_diagnostic_without_crashing(
@@ -529,10 +532,10 @@ def test_ad_hoc_clustering_cli_reports_diagnostic_without_crashing(
     assert power.main(args) == 0
     output = capsys.readouterr().out
     assert "ad-hoc clustering range" in output
-    assert "DIAGNOSTIC ONLY" in output
+    assert "settings are not the registered ones" in output
 
 
-def test_failed_release_gate_blocks_nine_run_design(monkeypatch, capsys):
+def test_power_below_the_reference_reports_without_blocking(monkeypatch, capsys):
     estimands = (
         "attack_susceptibility", "scope_discrimination", "scope_selectivity",
         "entry_point_effect", "induced_action_effect",
@@ -547,18 +550,20 @@ def test_failed_release_gate_blocks_nine_run_design(monkeypatch, capsys):
             }
         },
         "worst_case_power": {name: 0.79 for name in estimands},
-        "gate_eligible": True,
-        "gate_passed": False,
+        "registered_settings": True,
+        "power_requirement_met": False,
     })
     parser = argparse.ArgumentParser()
     power.add_arguments(parser)
     args = parser.parse_args(["--simulations", "500"])
 
-    assert power.main(args) == 1
+    # A diagnostic does not fail and does not block: it says the allocation may
+    # not resolve every member and leaves the decision to a person.
+    assert power.main(args) == 0
     output = capsys.readouterr().out
-    assert "Release is blocked at the registered N = 9" in output
-    assert "separately versioned design" in output
-    assert "pilot may raise" not in output
+    assert "below the 80% reference" in output
+    assert "may not resolve every member" in output
+    assert "nothing is blocked by that" in output
 
 
 def test_load_clustering_accepts_what_measure_clustering_writes(tmp_path, monkeypatch):

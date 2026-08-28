@@ -374,7 +374,6 @@ Then aggregate:
 ```sh
 .venv/bin/python -m taskbound.runner aggregate \
   --results results --preregistration preregistration.json \
-  --power-result pilot/power.json \
   --out reports/v10_broad.json
 ```
 

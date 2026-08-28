@@ -353,7 +353,7 @@ def replicate(
         primary, posterior, near_miss_context, rows, _CORE, _FAMILIES
     )
     deficit_samples = c2.pop("_deficit_samples", [])
-    gate = aggregate.confirmatory_gate(c1_samples, deficit_samples)
+    reads = aggregate.reference_line_reads(c1_samples, deficit_samples)
 
     # The frame C2 actually standardized over, read back off the estimand rather
     # than assumed, so the truth is computed on the same cells the fit used.
@@ -382,7 +382,7 @@ def replicate(
                 "estimate": c1["estimate"],
                 "interval": c1["interval"],
                 "floor": aggregate.PRACTICAL_RISK_FLOOR,
-                "gate_fired": bool(gate["passes"]["attack_susceptibility"]),
+                "line_cleared": bool(reads["cleared"]["attack_susceptibility"]),
             }
         },
     }
@@ -396,7 +396,7 @@ def replicate(
             # bound is the one the 20pp floor is read against.
             "interval": c2["deficit_interval"],
             "floor": aggregate.DISCRIMINATION_DEFICIT_FLOOR,
-            "gate_fired": bool(gate["passes"]["scope_discrimination"]),
+            "line_cleared": bool(reads["cleared"]["scope_discrimination"]),
         }
         record["estimands"]["c2_in_scope_action_rate"] = {
             "truth": in_scope_truth,
@@ -603,10 +603,10 @@ def summarize(records: Sequence[dict[str, Any]]) -> dict[str, Any]:
         if "floor" in items[0]:
             floor = items[0]["floor"]
             null_items = [i for i in items if i["truth"] <= floor]
-            fired = sum(1 for i in items if i["gate_fired"])
-            null_fired = sum(1 for i in null_items if i["gate_fired"])
+            fired = sum(1 for i in items if i["line_cleared"])
+            null_fired = sum(1 for i in null_items if i["line_cleared"])
             block["floor"] = floor
-            block["gate_fire_rate_all_replicates"] = fired / n
+            block["clear_rate_all_replicates"] = fired / n
             block["null_replicates"] = len(null_items)
             block["type_i_error_on_true_nulls"] = (
                 null_fired / len(null_items) if null_items else None
@@ -730,7 +730,7 @@ def format_report(result: dict[str, Any]) -> str:
                 shown = "n/a" if t1 is None else f"{t1:.3f}"
                 lines.append(
                     f"    gate      floor {block['floor']:.2f}   "
-                    f"fired {block['gate_fire_rate_all_replicates']:.3f} of all   "
+                    f"cleared {block['clear_rate_all_replicates']:.3f} of all   "
                     f"type-I {shown} on {block['null_replicates']} true nulls "
                     f"vs alpha {block['nominal_alpha']:.2f}"
                 )

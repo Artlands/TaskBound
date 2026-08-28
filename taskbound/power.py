@@ -868,9 +868,11 @@ def one_simulation(truth: Truth, clustering: dict[str, float], seed: int,
         primary, posterior, near_miss_context, rows, CORE_TASK, MODEL_FAMILIES
     )
     deficit_samples = c2.pop("_deficit_samples", [])
-    # Holm over the two confirmatory members, applied inside the simulation so
-    # the gate runs against the correction the report will use (plan §9.2).
-    gate = aggregate.confirmatory_gate(c1_samples, deficit_samples)
+    # Read each member against its reference line exactly as the report does:
+    # unadjusted, because the report applies no correction across them
+    # (design_history.md §9). A simulation that corrected where the report does
+    # not would be describing a different procedure.
+    reads = aggregate.reference_line_reads(c1_samples, deficit_samples)
 
     selectivity = _standardized_across_families(
         design, posterior, cells,
@@ -887,11 +889,11 @@ def one_simulation(truth: Truth, clustering: dict[str, float], seed: int,
     return {
         "converged": True,
         # Excluding zero is nearly tautological for a positive rate, and for a
-        # gap. Each confirmatory member is detected when its Holm-adjusted
-        # posterior tail below its registered floor clears alpha, which is the
-        # same decision as a one-sided interval test at the adjusted level.
-        "attack_susceptibility": bool(gate["passes"]["attack_susceptibility"]),
-        "scope_discrimination": bool(gate["passes"]["scope_discrimination"]),
+        # gap. Each member counts as resolved when its posterior tail below its
+        # reference line clears alpha -- the one-sided interval read, which is
+        # what the report prints.
+        "attack_susceptibility": bool(reads["cleared"]["attack_susceptibility"]),
+        "scope_discrimination": bool(reads["cleared"]["scope_discrimination"]),
         "scope_selectivity": _excludes_zero(selectivity),
         "entry_point_effect": _excludes_zero(entry),
         "induced_action_effect": _excludes_zero(action),
@@ -905,8 +907,7 @@ def one_simulation(truth: Truth, clustering: dict[str, float], seed: int,
             "induced_action_effect": action["estimate"],
         },
         "gate": {
-            "posterior_tail_below_floor": gate["posterior_tail_below_floor"],
-            "adjusted": gate["adjusted"],
+            "posterior_tail_below_line": reads["posterior_tail_below_line"],
         },
     }
 
@@ -1059,7 +1060,10 @@ def run(
         for name, registered in registered_analysis.items()
         if actual_analysis.get(name) != registered
     }
-    gate_eligible = (
+    # Not eligibility for a gate any more -- there is none. It records whether
+    # this run used the registered settings, which is what makes its numbers
+    # comparable to the allocation they describe rather than to some other one.
+    registered_settings = (
         simulations == RELEASE_SIMULATIONS
         and not truth_mismatches
         and not analysis_mismatches
@@ -1077,11 +1081,7 @@ def run(
         "release_analysis_mismatches": analysis_mismatches,
         "attack_susceptibility_null": PRACTICAL_SUSCEPTIBILITY_FLOOR,
         "scope_discrimination_deficit_null": DISCRIMINATION_DEFICIT_FLOOR,
-        "confirmatory_gate_correction": "holm over the two confirmatory members, applied inside each simulation",
-        "on_c2_failure": (
-            "demote scope_discrimination to Tier 2 before signing and run on "
-            "attack_susceptibility alone; the 20pp floor is not lowered"
-        ),
+        "correction": None,
         "required_power": REQUIRED_POWER,
         # Which range this gate was evaluated against is part of the result: a
         # pass at measured clustering and a pass at the a-priori bracket are
@@ -1096,13 +1096,15 @@ def run(
         "worst_case_power": worst,
         "confirmatory_estimands": list(confirmatory),
         "exploratory_estimands": [name for name in estimands if name not in confirmatory],
-        "evaluation_type": "release_gate" if gate_eligible else "diagnostic",
-        "gate_eligible": gate_eligible,
+        # Every run of this command is a diagnostic now (design_history.md §9).
+        # What differs between runs is whether the settings were the registered
+        # ones, so that is what the artifact records.
+        "evaluation_type": "diagnostic",
+        "registered_settings": registered_settings,
+        # Read the worst case across the range, not the best guess within it: a
+        # resolution claim that holds only at the friendly end depends on a
+        # number nobody has pinned down.
         "power_requirement_met": power_requirement_met,
-        # The gate is the worst case across the range, because a design whose
-        # power claim holds only at the friendly end of the range is a design
-        # whose claim depends on a number nobody has pinned down.
-        "gate_passed": gate_eligible and power_requirement_met,
     }
 
 
@@ -1232,20 +1234,20 @@ def main(args: argparse.Namespace) -> int:
     print("  " + "-" * (len(header) - 2))
     print(f"  {'worst case':<{width}} {'':>5}  " + "  ".join(
         f"{'—' if v is None else format(v, '.2f'):>14}" for v in result["worst_case_power"].values()))
-    if result["gate_eligible"]:
-        print(f"\n{'GATE PASSED' if result['gate_passed'] else 'GATE NOT PASSED'} "
-              f"(requires {REQUIRED_POWER:.0%} across the whole clustering range)")
-    else:
-        print("\nDIAGNOSTIC ONLY (release gate requires the clustering artifact and all "
-              "registered simulation and analysis settings)")
-    if result["gate_eligible"] and not result["gate_passed"]:
-        print(
-            f"Release is blocked at the registered N = {args.n_exposed}; changing N "
-            "requires a separately versioned design (plan §9.5)."
-        )
+    met = result["power_requirement_met"]
+    print(f"\nworst case across the range is "
+          f"{'at or above' if met else 'below'} the {REQUIRED_POWER:.0%} reference")
+    if not result["registered_settings"]:
+        print("  settings are not the registered ones, so these numbers describe "
+              "a different allocation from the release's")
+    if not met:
+        print(f"  at the registered N = {args.n_exposed} this allocation may not "
+              "resolve every member; nothing is blocked by that, and it is the "
+              "reason to run this before the sweep rather than after")
     if args.out:
         with open(args.out, "w", encoding="utf-8") as fh:
             json.dump(result, fh, indent=2)
             fh.write("\n")
         print(f"wrote {args.out}")
-    return 0 if not result["gate_eligible"] or result["gate_passed"] else 1
+    # A diagnostic does not fail.
+    return 0

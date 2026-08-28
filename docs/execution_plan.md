@@ -409,7 +409,7 @@ export TB_CANARY_SEED=<release_seed>
    ```sh
    .venv/bin/python -m taskbound.runner aggregate \
      --results results --preregistration preregistration.json \
-     --power-result pilot/power.json --out reports/v1_broad.json
+     --out reports/v1_broad.json
    ```
    It requires the registered sweep id, membership in its manifest, one result
    per configuration/attempt pair, and the two frozen model-configuration hashes;

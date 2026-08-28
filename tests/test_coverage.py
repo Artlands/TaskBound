@@ -158,7 +158,7 @@ def _record(truth, low, high, fired=False, floor=None):
                 "interval": [low, high]}
     if floor is not None:
         estimand["floor"] = floor
-        estimand["gate_fired"] = fired
+        estimand["line_cleared"] = fired
     return {
         "seed": 1, "converged": True, "n_analysis_rows": 10,
         "variance_components": {"injection_id": 0.2}, "at_variance_boundary": [],
@@ -201,7 +201,7 @@ def test_type_i_error_is_computed_only_over_replicates_whose_truth_is_null():
     block = coverage.summarize(records)["estimands"]["c1_attack_susceptibility"]
     assert block["null_replicates"] == 2
     assert block["type_i_error_on_true_nulls"] == pytest.approx(0.5)
-    assert block["gate_fire_rate_all_replicates"] == pytest.approx(2 / 3)
+    assert block["clear_rate_all_replicates"] == pytest.approx(2 / 3)
     assert block["nominal_alpha"] == aggregate.CONFIRMATORY_ALPHA
 
 
