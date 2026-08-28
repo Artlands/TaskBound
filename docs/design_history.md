@@ -1,15 +1,14 @@
 # TaskBound design history
 
-This file records design decisions that were later superseded, and the evidence
-that retired them. Nothing here is scheduled, claimed, or pooled by `v1.0-broad`;
-`development_plan.md` is the specification, and this file is the audit trail
-behind its amendments.
+This file records superseded design decisions and the evidence behind them.
+Nothing here is scheduled, claimed, or pooled by `v1.0-broad`.
+`development_plan.md` is the current specification.
 
-It exists because the registered analysis model **changed** after implementation.
-If a reader asks "why these three random effects and not five?" or "why is §7.5's
-denominator `injection_id`?", they need the symptoms that prompted the repair, not
-just its result. That evidence lives here rather than in the spec, so the spec can
-read forward.
+The registered analysis model **changed** after implementation. This file keeps
+the symptoms and diagnostics that led to each repair, including why the primary
+model uses three random effects and why §7.5 uses `injection_id` as its
+denominator. The specification can therefore describe the current design
+without carrying all of its history.
 
 | Retired | Superseded by | Section |
 |---------|---------------|---------|

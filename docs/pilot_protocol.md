@@ -1,8 +1,8 @@
 # Pilot protocol
 
-This protocol was frozen at milestone 7, **before any pilot data exists**
-(plan §11.2). A pilot whose stopping rules are written after its numbers are
-visible is not a pilot — it is a first look at the result.
+This protocol was frozen at milestone 7, **before any pilot data existed**
+(plan §11.2). The stopping rules must be fixed before the pilot numbers are
+visible.
 
 **Re-frozen for `v1.0-broad`, still before any pilot data exists.** Five tasks,
 eight model families, and near-miss at N = 36 change the counts below and add
@@ -10,10 +10,9 @@ one measured quantity to Stage 2. The rules did not change and were not
 weakened; a protocol amended after a pilot ran would be a different document
 with a different standing.
 
-Keep in mind what a failed pilot means. Pilot failures are implementation
-defects, not benchmark results. Pilot runs are never pooled with the sweep they
-precede, and the pilot budget gets its own line in the cost manifest rather than
-being hidden inside sweep contingency.
+Pilot failures are implementation defects, not benchmark results. Never pool
+pilot runs with the sweep they precede. Record the pilot budget on its own line
+in the cost manifest.
 
 ---
 

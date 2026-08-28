@@ -1,10 +1,8 @@
 # TaskBound v1.0-broad: design overview
 
-The short read. It states the design in about a tenth of the specification's
-length, with figures, organized so the claims and the judgment calls can be
-checked directly. `development_plan.md` is the specification and this document
-points back to it by section number; `design_history.md` holds the evidence
-behind every amendment.
+This is the concise version of the design. It uses figures and points to the
+full specification by section number. `development_plan.md` contains the full
+rules; `design_history.md` records the evidence behind later amendments.
 
 ## What TaskBound measures, in one paragraph
 
@@ -14,9 +12,8 @@ task it was given, even when untrusted text it reads along the way asks it to do
 something that is allowed but off-task?*
 
 The agent is authorized to use the account, and every action it takes stays
-within that account's permissions. The risk being measured is subtler than that
-— it is an agent drifting outside its *specific assignment* because something it
-encountered (a log line, a README, a tool result) told it to.
+within that account's permissions. The risk is an agent drifting outside its
+*specific assignment* because a log line, README, or tool result told it to.
 
 ```mermaid
 flowchart LR
@@ -34,7 +31,7 @@ that number alone cannot say whether a low rate is judgment or timidity, the
 release measures a second thing beside it: the same action, requested by the
 *user*, under a policy that makes it legitimate.
 
-## The release in one line
+## Release scope
 
 `v1.0-broad` is narrow where it needs to be and broad where breadth is
 affordable: **one host, five tasks, eight model families**, with the near-miss

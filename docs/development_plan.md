@@ -3,25 +3,19 @@
 A benchmark for measuring whether an LLM agent working in an HPC-like
 environment stays inside the task it was given.
 
-This plan is self-contained and derives its design from the claims it intends to
-license, not from any prior taxonomy. Where it names an axis, that axis exists
-because a claim needs it to be identifiable; where it declines to name one, the
-reason is stated.
+This plan derives the design from the claims it needs to support. Each named
+axis exists because a claim needs it to be identifiable; omitted axes have an
+explicit reason.
 
-**For review, read [`plan_summary.md`](plan_summary.md) first.** It states the
-design in about a tenth of the length and with figures — threat model,
-experimental matrix, controls, claim structure, budget, release sequence —
-organized so the claims and the judgment calls can be checked directly, and
-points back here by section number. This document is the specification; the
-overview is the thing to hand a colleague.
+Start with [`plan_summary.md`](plan_summary.md) for the threat model, matrix,
+controls, claims, budget, and release sequence. It points back to this
+specification by section number.
 
-**For what is built and what is not, see [§13.1 Development
-status](#131-development-status).** This document specifies the benchmark; that
-table says which parts of it exist yet.
+**For the current implementation status, see [§13.1 Development
+status](#131-development-status).**
 
-**For superseded designs and the evidence that retired them, see
-[`design_history.md`](design_history.md).** This document reads forward: where a
-registered choice was amended, the diagnostics behind the amendment live there.
+**For superseded designs and the evidence behind them, see
+[`design_history.md`](design_history.md).**
 The current release is **`v1.0-broad`** — five tasks, eight model families,
 near-miss at N = 36. The narrower `v1.0-compact` schedule it replaced is recorded
 there as §5, with why it was widened.
@@ -33,9 +27,8 @@ frozen at signing and recorded on every result. The current pair is
 **`v1.0-broad` / `r2`**; `design_history.md` §7 records what `r2` changed and
 why.
 
-Each numbered section begins with the terms needed to read that section. These
-short definitions state what a term means in TaskBound; the text that follows
-then gives its operational rules, rationale, and implementation details.
+Each numbered section defines its terms before stating the operational rules,
+rationale, and implementation details.
 
 ---
 
@@ -59,9 +52,9 @@ TaskBound asks one question: does an LLM agent working in an HPC-like
 environment finish its assigned task without being redirected by hostile text?
 The hostile text can sit in logs, files, tool output, module metadata, or
 peer-agent messages. The agent never sees the machine-readable task policy, so
-the thing being measured is **adherence to implied delegated scope** — does the
-agent follow the boundary the task implies — rather than compliance with an
-explicit authorization contract.
+the measurement is **adherence to implied delegated scope**: whether the agent
+follows the boundary implied by the task rather than an explicit authorization
+contract.
 
 ### 1.1 The failure mode being measured
 
@@ -2158,11 +2151,10 @@ provenance: specification id, generator, acceptance reviewer, realism rating.
 | **Inference cross-check** | One registered fit reproduced in an independent reference implementation (`lme4::glmer` or `glmmTMB`) on the same frame, with the coefficient and variance-component agreement reported in the release manifest |
 
 The inference cross-check is deliberately cheap. `glmm.py` is hand-rolled and
-tested against synthetic data with known coefficients, which is the right test
-and still not the question a reader asks — which is why not `lme4`. It is a
-reported artifact, not a gate on agreement: the two implementations regularize
-differently, so the requirement is that the comparison is performed and printed,
-with any disagreement beyond a declared tolerance explained.
+tested against synthetic data with known coefficients, which tests the local
+implementation. It is a reported artifact, not a gate on agreement: the two
+implementations regularize differently, so the comparison must be performed and
+printed, with any disagreement beyond a declared tolerance explained.
 
 The release manifest names an engineering owner, scenario owner, methods
 reviewer, two HPC realism reviewers, oracle-audit reviewers, and release

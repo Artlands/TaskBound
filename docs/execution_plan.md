@@ -1,19 +1,17 @@
 # TaskBound v1.0-broad — execution plan
 
-Status: **the harness plans and analyses the `r1` claim set; nothing runs until
-the pre-execution gates pass.** Phase −1 is complete — `sweep plan` emits the
+Status: **the harness plans and analyses the `r2` claim set; nothing runs until
+the pre-execution gates pass.** Phase −1 is complete - `sweep plan` emits the
 release schedule at 69 groups, 945 target runs, 1,881 maximum attempts, and
 Phase −0.5 (milestone 7d, the analysis support `r2` needs) is complete except for
 the §11.3 inference cross-check, whose comparison is external.
 
-This document explains how to get from the current repository to a signed,
-reproduced `v1.0-broad` release: the phase order, the gates, and the
-pre-registration completion checklist. It is the *operational* companion to the
-other three documents: `development_plan.md` (the specification),
-`plan_summary.md` (the short read), and `pilot_protocol.md` (the frozen pilot
-rules).
+This document gives the phase order, gates, and pre-registration checklist for a
+signed, reproducible `v1.0-broad` release. `development_plan.md` is the
+specification, `plan_summary.md` is the overview, and `pilot_protocol.md` holds
+the frozen pilot rules.
 
-**Run counts and budgets are not restated here.** They live in
+**Run counts and budgets are defined elsewhere.** They live in
 `development_plan.md` §10.1 and `plan_summary.md`; duplicating them is how they
 drifted stale before. The one number worth repeating is the one people get
 wrong: the cost gate is approved against the **hard attempt cap**, not the

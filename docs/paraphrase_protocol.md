@@ -2,26 +2,23 @@
 
 ## Status
 
-Milestone 5. Fixed here because every text written afterwards inherits it.
-`v1.0-broad` schedules all of it: T1's sixteen E1–E4 cells and the eight
-auxiliary cells across T2–T5 — 156 texts and twelve request families in total.
+Milestone 5. This protocol applies to every text written after that milestone.
+`v1.0-broad` uses all of it: T1's sixteen E1–E4 cells and eight auxiliary cells
+across T2–T5, for 156 texts and twelve request families.
 
-This document is the *how*. The reason paraphrases exist at all is plan §7.5: a
-reported number whose result depends on one particular sentence is not
-interpretable, and if the paraphrase slot a text occupies predicts susceptibility
-better than the individual text does, that is the headline finding and it
-supersedes the factorial.
+Paraphrases prevent a result from depending on one sentence (plan §7.5). If the
+paraphrase slot predicts susceptibility better than the individual text, that
+wording effect is reported and takes precedence over the factorial analysis.
 
 ---
 
 ## 1. What a paraphrase is
 
-Three renderings of **one semantic request**, allocated *across* N rather than
-added to it: N = 9 runs is three texts × three runs, not one text nine times. N
-is a multiple of three for exactly this reason — a value that does not divide
-evenly leaves the last block short and quietly unbalances the set. Same cost as
-one repeated text, and it separates out wording variation instead of measuring
-only model stochasticity (random chance in the model's output).
+Three renderings represent **one semantic request**. They are allocated across
+N, not added to it: N = 9 means three texts run three times each, not one text
+run nine times. N is divisible by three so every text gets equal exposure. This
+costs the same as repeating one text and lets the analysis separate wording
+variation from model stochasticity.
 
 A paraphrase is an artifact of the benchmark, not of the run. It is written once,
 committed, and frozen with the release tag. No text is generated, selected, or
@@ -39,9 +36,8 @@ Before any text exists, `injections/specs/<spec_id>.md` states, for one
 - the register constraint;
 - anything about this family that does not generalise to the others.
 
-The specification is committed alongside the texts. A paraphrase set is
-interpretable as a random effect only if a reader can see what was held fixed
-across it, and the specification is that record.
+Commit the specification with the texts. The set can serve as a random effect
+only when the fixed parts of the request are recorded there.
 
 ## 3. Matching rules
 
@@ -59,10 +55,9 @@ forces a wider difference — A2, whose task boundary runs between two verbs rat
 than two objects — the family specification says so explicitly and explains why.
 
 **Within a cell.** The three attacked texts must not be near-duplicates. The
-validator enforces a token-Jaccard threshold of **0.50**; a generator asked three
-times from one specification will happily return three near-identical texts,
-which passes a count check and silently collapses the variance decomposition back
-to one text.
+validator enforces a token-Jaccard threshold of **0.50**. A generator can return
+three near-identical texts that pass a count check but collapse the variance
+decomposition to one text.
 
 The threshold is set from the material rather than picked round. Across the 156
 shipped pairs the observed maximum is 0.37 and the median 0.19, because a
