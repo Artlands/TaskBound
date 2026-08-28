@@ -574,8 +574,11 @@ def _build_agent(
 def _scripted_source(args: argparse.Namespace, substitutions: dict[str, str] | None):
     if not args.script:
         raise SystemExit("--agent scripted requires --script")
-    with open(args.script, encoding="utf-8") as fh:
-        raw = fh.read()
+    try:
+        with open(args.script, encoding="utf-8") as fh:
+            raw = fh.read()
+    except OSError as exc:
+        raise SystemExit(f"cannot read --script {args.script!r}: {exc}") from exc
     # A fixture cannot know this release's canary or marker values, so it
     # writes the same slots the injection text does and they are filled in
     # here — which is also what the behaviour being replayed looks like: an
@@ -586,6 +589,12 @@ def _scripted_source(args: argparse.Namespace, substitutions: dict[str, str] | N
 
 
 def _one_agent(args: argparse.Namespace, script: Any = None):
+    # Refused on the live adapter that would drop it: silently ignoring
+    # something the caller believes changes the measurement is worse than
+    # failing. `scripted` replays a fixture and models nothing, so it is exempt.
+    if args.effort is not None and args.agent == "openai_compatible":
+        raise SystemExit("--effort is anthropic-only; --agent openai_compatible would ignore it "
+                         "(use --reasoning-effort if the endpoint accepts it)")
     if args.agent == "scripted":
         return ScriptedAgent(script, turn_limit=args.turn_limit)
     if args.agent == "openai_compatible":
@@ -600,8 +609,24 @@ def _one_agent(args: argparse.Namespace, script: Any = None):
             token_param=args.token_param,
         )
     return AnthropicAgent(
-        model=args.model, max_tokens=args.max_tokens, turn_limit=args.turn_limit, effort=args.effort
+        model=args.model, max_tokens=args.max_tokens, turn_limit=args.turn_limit,
+        effort=args.effort or "high",
     )
+
+
+def _check_out_writable(out: str) -> None:
+    """Refuse an unusable --out before the model calls, creating nothing.
+
+    Discovering it after the run loses a result that was already paid for, but
+    a refused run must leave no results directory behind either — an empty one
+    reads as a started attempt (§11.2). So this checks the nearest existing
+    ancestor and leaves the directory itself to be made after the run.
+    """
+    probe = os.path.abspath(out)
+    while not os.path.exists(probe) and os.path.dirname(probe) != probe:
+        probe = os.path.dirname(probe)
+    if not os.path.isdir(probe) or not os.access(probe, os.W_OK):
+        raise SystemExit(f"cannot write results to {out!r}: {probe} is not a writable directory")
 
 
 def _run_id(args: argparse.Namespace, task_id: str, started: str) -> str:
@@ -692,8 +717,11 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--model", default="claude-opus-5")
     run.add_argument("--max-tokens", type=int, default=16000)
     run.add_argument("--turn-limit", type=int, default=TURN_LIMIT)
-    run.add_argument("--effort", default="high", choices=("low", "medium", "high", "xhigh", "max"),
-                     help="anthropic adapter only")
+    # Default stays None so the run can tell "not given" from "given": every
+    # other adapter drops this flag, and silently dropping something the caller
+    # believes changes the measurement is worse than refusing it.
+    run.add_argument("--effort", default=None, choices=("low", "medium", "high", "xhigh", "max"),
+                     help="anthropic adapter only (default high)")
     _add_openai_flags(run)
     run.add_argument("--seed", type=int, default=1, help="placement seed for this attempt")
     run.add_argument("--canary-seed", default="dev-generation", help="never commit a real one")
@@ -830,6 +858,7 @@ def main(argv: list[str] | None = None) -> int:
             return audit.write_sample(args.results, args.out, args.fraction, args.seed)
         return audit.print_report(args.worksheet)
 
+    _check_out_writable(args.out)
     record = assemble_and_run(args)
     os.makedirs(args.out, exist_ok=True)
     path = os.path.join(args.out, record["run_id"] + ".json")

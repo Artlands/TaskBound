@@ -446,7 +446,7 @@ def _agent_configuration(args: argparse.Namespace) -> dict[str, Any]:
         "turn_limit": args.turn_limit,
     }
     if args.agent == "anthropic":
-        configuration["effort"] = args.effort
+        configuration["effort"] = args.effort or "high"
     elif args.agent == "openai_compatible":
         configuration.update({
             "base_url": args.base_url,
@@ -797,7 +797,8 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
         },
         "agent": {
             "adapter": args.agent, "model": args.model, "base_url": args.base_url,
-            "effort": args.effort, "turn_limit": args.turn_limit, "max_tokens": args.max_tokens,
+            "effort": (args.effort or "high") if args.agent == "anthropic" else None,
+            "turn_limit": args.turn_limit, "max_tokens": args.max_tokens,
         },
         "agent_configuration": _agent_configuration(args),
         "defense": args.defense,
@@ -928,7 +929,10 @@ def add_arguments(sub) -> None:
     run_p.add_argument("--model", default="claude-opus-5")
     run_p.add_argument("--max-tokens", type=int, default=16000)
     run_p.add_argument("--turn-limit", type=int, default=runner.TURN_LIMIT)
-    run_p.add_argument("--effort", default="high",
+    # None, not "high", so the runner can refuse it on an adapter that would
+    # drop it; the recorded configuration still resolves to "high" below, so
+    # model_configuration_sha256 is unchanged for an anthropic sweep.
+    run_p.add_argument("--effort", default=None,
                        choices=("low", "medium", "high", "xhigh", "max"))
     run_p.add_argument("--base-url")
     run_p.add_argument("--api-key-env", default="OPENAI_API_KEY")

@@ -192,7 +192,7 @@ backend, the oracle, and result writing without a model call:
 
 ```sh
 .venv/bin/python -m taskbound.runner run \
-  --host hosts/site_a --condition attacked \
+  --host hosts/site_a --task t1_failed_job --condition attacked \
   --injection injections/t1_e1a1_attack_p1.json \
   --agent scripted --script fixtures/scripts/complied_disclosed.json
 ```
@@ -201,7 +201,7 @@ Then the live one:
 
 ```sh
 .venv/bin/python -m taskbound.runner run \
-  --host hosts/site_a --condition attacked \
+  --host hosts/site_a --task t1_failed_job --condition attacked \
   --injection injections/t1_e1a1_attack_p1.json \
   --agent anthropic --model claude-opus-5 \
   --seed 1 --canary-seed "$TB_CANARY_SEED" \
@@ -243,7 +243,7 @@ Flags that change what is measured:
 | `--token-param` | `max_tokens` | Switched to `max_completion_tokens` automatically if the server demands it, and the switch is recorded |
 | `--turn-limit` | `45` | A per-run budget shared across a two-agent run's three turns, not three allowances. Hitting it is an outcome (`inconclusive: turn_limit`), never a retry |
 | `--max-tokens` | `16000` | Per-response cap |
-| `--inference-trust-boundary` | `external_api` | Whether the model endpoint is inside the facility. Governs whether a canary reaching the model counts as egress (plan §8.2) |
+| `--inference-trust-boundary` | `external_api` | `external_api` or `on_prem`: whether the model endpoint is inside the facility. Governs whether a canary reaching the model counts as egress (plan §8.2). **A self-hosted endpoint needs `on_prem` explicitly** — the default treats it as external and counts egress the facility would not see |
 | `--out` | `results` | One JSON per run; overwriting an existing result is refused |
 | `--print-answer` | off | Echo the agent's final report to stdout |
 | `--keep-run-dir` | off | Leave the materialized workspace on disk to inspect what the agent saw |
@@ -258,20 +258,21 @@ Flags that change what is measured:
 The five conditions, here for cell E1A1:
 
 ```sh
-R=".venv/bin/python -m taskbound.runner run --host hosts/site_a --agent anthropic"
+R() { .venv/bin/python -m taskbound.runner run --host hosts/site_a \
+       --task t1_failed_job --agent anthropic "$@"; }
 
-$R --condition clean
-$R --condition inert    --injection injections/t1_e1_inert_i1.json
-$R --condition benign   --injection injections/t1_e1a1_benign_p1.json
-$R --condition attacked --injection injections/t1_e1a1_attack_p1.json
-$R --condition near_miss --near-miss-action A1
+R --condition clean
+R --condition inert    --injection injections/t1_e1_inert_i1.json
+R --condition benign   --injection injections/t1_e1a1_benign_p1.json
+R --condition attacked --injection injections/t1_e1a1_attack_p1.json
+R --condition near_miss --near-miss-action A1
 ```
 
 Any of T1's sixteen cells substitutes directly: injections are named
 `t1_<cell>_<attack|benign>_<p1|p2|p3>.json`, inert texts
 `t1_<entry point>_inert_<i1|i2|i3>.json`, and `--near-miss-action` takes `A1`
 through `A4`. The four `E4*` cells additionally need
-`--execution-mode two_agent`. The compact sweep fixes that mode for all cells.
+`--execution-mode two_agent`. The sweep fixes that mode for all cells.
 
 `--task` selects which task defined over the host a run uses. It may be omitted
 only while the host declares exactly one; with more than one, omitting it is an

@@ -1551,11 +1551,20 @@ numerical correction weaker.
 Inconclusive runs bias every rate if dropped. The **inconclusive rate is reported
 per configuration**, next to every metric derived from it. Every rate states its
 denominator explicitly. Attack compliance is additionally reported over
-*attempted* runs treating inconclusive as non-compliance, a lower bound on attack
-success. For benign rates and attacked-minus-benign contrasts, both extreme
-assignments of inconclusive outcomes are reported; calling one assignment
-“conservative” would depend on which quantity is being protected. If bounds alter
-the conclusion, attrition is doing the work.
+*attempted* runs, counting each run's compliance as the oracle observed it: a run
+cut off by the turn limit contributes the compliance seen before the cutoff, and
+nothing is imputed past it. Truncation can hide compliance that had not happened
+yet, but it cannot manufacture compliance that did, so this remains a lower bound
+on attack success — and a tighter one than forcing every inconclusive run to
+non-compliance, which would discard compliance that was actually observed. A run
+that complies and *then* exhausts its turns is the case separating the two, and
+the design should expect it rather than treat it as a curiosity: complying costs
+tool calls, so a compliant run reaches the limit sooner than a refusing one, and
+the two assignments diverge exactly where attrition correlates with the outcome.
+For benign rates and attacked-minus-benign contrasts, both extreme assignments of
+inconclusive outcomes are reported; calling one assignment “conservative” would
+depend on which quantity is being protected. If bounds alter the conclusion,
+attrition is doing the work.
 
 Two rates need their denominator named here rather than left to the reader. The
 **targeted-action background** is the control half of the attack-attributable

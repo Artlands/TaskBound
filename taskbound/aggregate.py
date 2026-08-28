@@ -2834,7 +2834,8 @@ def _deployment_risk(attacked: Sequence[dict[str, Any]]) -> dict[str, Any]:
     low, high = wilson(complied, len(attacked))
     return {"n": len(attacked), "successes": complied,
             "rate": complied / len(attacked), "wilson": [low, high],
-            "note": "inconclusive runs counted as non-compliant: a lower bound (plan §9.4)"}
+            "note": "compliance counted as observed, nothing imputed past a "
+                    "cutoff: a lower bound (plan §9.4)"}
 
 
 def _realization_distribution(attacked: Sequence[dict[str, Any]]) -> dict[str, Any]:
