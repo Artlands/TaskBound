@@ -205,11 +205,11 @@ flowchart TB
     M2 --> EST
     MD --> EST
     M8 --> EST
-    EST --> G1[C1: lower bound > 10pp risk floor]
-    EST --> G2[C2: lower bound of 1−D > 20pp deficit floor]
-    M1 --> PF[Per-family Holm, within estimand]
+    EST --> G1[C1: lower bound vs 10pp reference line]
+    EST --> G2[C2: lower bound of 1−D vs 20pp reference line]
+    M1 --> PF[Per-family intervals]
     M8 --> PF
-    PF --> K["the floor is cleared in k of 8 families"]
+    PF --> K["the line is cleared in k of 8 families"]
 ```
 
 C2 is the one the field has no instrument for, and it is why near-miss gets 46%
@@ -312,14 +312,13 @@ flowchart LR
     RUN --> AUDIT[Oracle audit + reproducible aggregation]
 ```
 
-Milestone 7c is complete: the harness plans this scope (69 groups, 945 target
-runs, 1,881 attempts per family), carries `task` in both registered blocks, fits
-overblocking on its realized denominator, decides the reopened random components
-by rank, and simulates power over the exact allocation. What remains is milestone
-7d, plus the parts that need people, money, and an out-of-set generator.
+The harness plans this scope (69 groups, 945 target runs, 1,881 attempts per
+family), carries `task` in both registered blocks, fits overblocking on its
+realized denominator, and decides the reopened random components by rank. What
+remains needs people, money, and an out-of-set generator.
 
-1. **Run the integration smoke** with an out-of-set model — 69 runs, one per
-   group — and circulate a rough cost projection from it *before* the human
+1. **Run the integration smoke** — 69 runs, one per group, any model — and
+   circulate a rough cost projection from it *before* the human
    review gates start. Reviewing 236 artifacts and re-authoring 156 texts is
    months of people-time, and spending it on material a later cost decision would
    drop is the one sequencing error that cannot be undone.
@@ -356,15 +355,16 @@ viewed.
 ## Current state
 
 The harness, simulator, policies, oracle, two-agent runner, sweep planner,
-mixed-effects aggregation, overblocking fit, and power simulation are all
-implemented, and milestone 7d's analysis support for `r2` is now in place:
-the in-scope action rate on the full near-miss denominator, C2's model and
-draw-wise interval, explicit family weighting, per-family Holm, C2's power
-simulation, tier labels, and the §9.6 re-scoring. All five tasks, all 156 texts, twelve request
-families, twelve near-miss tasks, and 50 calibration fixtures exist and validate.
-No pilot or main sweep has been run yet. The remaining gates are: re-authoring,
-acceptance review, independent realism review, model-family selection and
-provenance, pilot power and cost, and the post-sweep oracle audit.
+mixed-effects aggregation, overblocking fit, and the analysis support `r2` needs
+are all implemented: the in-scope action rate on the full near-miss denominator,
+C2's model and draw-wise interval, explicit family weighting, per-family
+reporting, tier labels, and the §9.6 re-scoring. All five tasks, all 156 texts,
+twelve request families, twelve near-miss tasks, and 50 calibration fixtures
+exist and validate. No pilot or main sweep has been run yet.
+
+The open gates are listed once, in the README's
+[Known gaps](../README.md#known-gaps-before-this-is-a-v10-broad-result), rather
+than restated here where the two would drift apart.
 
 One remainder is external rather than pending: the §11.3 inference cross-check
 needs `lme4` or `glmmTMB`, which this standard-library-only repository does not

@@ -3,7 +3,7 @@
 ## Purpose
 
 Before an injection text enters a release, two HPC practitioners who did not
-write the cell review it with this rubric (plan §11.1, phase 4). Each reviewer
+write the cell review it with this rubric (plan §11.3). Each reviewer
 must find the scenario plausible in a real HPC workflow. Resolve disagreements
 before collecting model results. Record the scores as a per-cell covariate;
 never use them to choose which cells to report (plan §9.3).

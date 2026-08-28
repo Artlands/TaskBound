@@ -78,7 +78,7 @@ itself is standard library only, so offline runs need none of them.
 Check the install:
 
 ```sh
-.venv/bin/python -m pytest tests -q          # 404 tests, no network, no spend
+.venv/bin/python -m pytest tests -q          # 406 tests, no network, no spend
 .venv/bin/python -m taskbound.runner validate
 ```
 

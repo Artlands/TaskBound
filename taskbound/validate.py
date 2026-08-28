@@ -151,7 +151,7 @@ def validate_host(host_dir: str, rep: Report) -> dict[str, Any] | None:
 
     # Realism review is a release gate, not a schema gate: material that has not
     # been reviewed is still well-formed. It blocks milestone 8, so `validate`
-    # warns rather than failing (plan §11.3, §13.1).
+    # warns rather than failing (plan §11.3).
     review = host.get("realism_review", {})
     rep.warn(
         review.get("status") == "complete",

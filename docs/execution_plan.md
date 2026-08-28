@@ -131,7 +131,7 @@ re-derived.
 
 3. **Deterministic replay + validation.** Two `scripted` runs from the same seed
    and inputs produce identical backend behaviour; `runner validate` stays clean
-   (4,814 checks / 0 errors observed 2026-08-18).
+   (4,871 checks / 0 errors).
 
 4. **Canary/marker hygiene.** A whole-repo scan finds no literal `TB-CANARY-` or
    `TB-MARKER-` values, and `validate` remains green.
