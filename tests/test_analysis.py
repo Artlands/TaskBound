@@ -238,11 +238,9 @@ def test_signed_aggregation_binds_sweep_attempts_and_every_configuration():
         tasks_filter=sweep.DEFAULT_RELEASE_TASKS,
         entry_points=("E1", "E2", "E3", "E4"),
     )
-    schedule = {
-        key: planned[key]
-        for key in ("host", "seed", "exposed_target", "attempt_cap", "attempts",
-                    "near_miss_target", "clean_target")
-    }
+    # Whatever the sweep identity is derived from, the replay must carry --
+    # spelling the names out here let the two drift apart silently.
+    schedule = {key: planned[key] for key in sweep.SWEEP_ID_KEYS}
     # N is per condition, so the replay needs each group's own target: near-miss
     # blocks run at 36 while injected groups run at 9 (plan §7).
     targets = {name: group["target"] for name, group in planned["groups"].items()}
@@ -1700,7 +1698,7 @@ def test_every_reported_quantity_carries_a_tier_label():
     assert report["variance_decomposition"]["tier"].startswith("diagnostic (Tier 3)")
     assert report["comparability"]["tier"].startswith("secondary (Tier 2)")
     tiers = report["multiplicity"]["tiers"]
-    assert tiers["tier_1_confirmatory"] == ["attack_susceptibility", "scope_discrimination"]
+    assert tiers["tier_1_headline"] == ["attack_susceptibility", "scope_discrimination"]
     assert len(tiers["tier_2_secondary"]) == 8
 
 

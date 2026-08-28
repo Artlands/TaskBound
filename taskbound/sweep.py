@@ -73,6 +73,7 @@ def plan(
     entry_points: Sequence[str] | None = None,
     near_miss_target: int | None = None,
     clean_target: int | None = None,
+    integration_smoke: bool = False,
 ) -> dict[str, Any]:
     """Freeze the attempt schedule for one release's scope.
 
@@ -87,12 +88,25 @@ def plan(
     single target for everything is what a diagnostic run wants and what the
     release schedule must not have.
     """
-    if exposed_target % len(PARAPHRASES):
-        raise SystemExit("exposed target must divide evenly across the three paraphrases")
     # The multiple-of-three rule protects the paraphrase allocation the variance
     # decomposition reads (plan §7.5). Near-miss and clean blocks have no
     # paraphrases, so applying it to them would be a guard on a property they do
     # not have — which is what kept near-miss pinned to the injected N.
+    #
+    # It is also over-broad for the pilot's Stage 1 smoke, which asks for one run
+    # per populated group to check wiring, exposure, placement resolution and
+    # result completeness — none of which reads the paraphrase allocation, and
+    # three paraphrases cannot be balanced across one run. `integration_smoke`
+    # is that opt-out (execution_plan.md "Open decision: Stage 1 smoke", option
+    # B). It is recorded in the schedule rather than left implicit, so a
+    # schedule states whether it is a release schedule instead of a reader
+    # inferring it from the target, and `sweep run` refuses to aggregate one as
+    # if it were confirmatory.
+    if exposed_target % len(PARAPHRASES) and not integration_smoke:
+        raise SystemExit(
+            "exposed target must divide evenly across the three paraphrases; "
+            "pass --integration-smoke for the pilot's Stage 1, which does not "
+            "read the paraphrase allocation")
     near_miss_target = NEAR_MISS_TARGET if near_miss_target is None else near_miss_target
     clean_target = CLEAN_TARGET if clean_target is None else clean_target
     for label, value in (("near-miss", near_miss_target), ("clean", clean_target)):
@@ -158,6 +172,10 @@ def plan(
         # can see every registered N without re-deriving it from the groups.
         "near_miss_target": near_miss_target,
         "clean_target": clean_target,
+        # Stamped on the artifact so the schedule says what it is. A smoke
+        # schedule is an integration check, never a measurement, and pooling its
+        # runs with the sweep it precedes is forbidden (pilot_protocol.md).
+        "integration_smoke": integration_smoke,
         "block": BLOCK,
         "groups": {
             name: {k: v for k, v in g.items() if k != "attempts"}
@@ -284,7 +302,11 @@ def _interleave(groups: dict[str, dict[str, Any]], rng: random.Random) -> list[d
 # should name it rather than leave a reader to infer it from a slot count.
 SWEEP_ID_KEYS = (
     "host", "seed", "exposed_target", "attempt_cap",
-    "near_miss_target", "clean_target", "attempts",
+    # Whether this is an integration check or a measurement is part of what the
+    # schedule *is*, so it belongs in the identity rather than beside it. Without
+    # it, a smoke schedule and a release schedule that happened to share every N
+    # would hash identically and a resumed directory could not tell them apart.
+    "near_miss_target", "clean_target", "integration_smoke", "attempts",
 )
 
 
@@ -592,6 +614,11 @@ def _apply_result(
         "group": attempt["group"],
         "order": attempt["order"],
         "block": attempt["block"],
+        # Carried onto the result, not just the schedule: pilot runs must never
+        # be pooled with the sweep they precede (pilot_protocol.md), and a
+        # result that has been copied out of its directory would otherwise
+        # carry no trace of having been an integration check.
+        "integration_smoke": schedule.get("integration_smoke", False),
         "agent_configuration": configuration,
     }
     _write(args.out, attempt["attempt_id"], record)
@@ -754,12 +781,13 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
         "git_source_sha256": runner._git_source_sha256(),
         "git_dirty": runner._git_dirty(),
         "schedule": {
-            **{
-                k: schedule[k]
-                for k in ("host", "seed", "exposed_target", "attempt_cap", "attempts")
-            },
-            "near_miss_target": schedule.get("near_miss_target"),
-            "clean_target": schedule.get("clean_target"),
+            # Derived from SWEEP_ID_KEYS rather than a parallel list of the same
+            # names. The two had already drifted once: adding a key to the
+            # identity left the manifest reproducing a different hash, so a
+            # signed aggregation would have failed its own binding check for a
+            # reason that had nothing to do with the sweep. Whatever the
+            # identity is derived from, the manifest carries.
+            **{k: schedule.get(k) for k in SWEEP_ID_KEYS},
             # Per-group targets, because N is per condition (plan §7): replaying
             # recruitment against one global target would hold near-miss blocks
             # to the injected N and read every one of them as short.
@@ -811,6 +839,7 @@ def cmd_plan(args: argparse.Namespace) -> int:
     extra = {
         "near_miss_target": getattr(args, "near_miss_target", None),
         "clean_target": getattr(args, "clean_target", None),
+        "integration_smoke": getattr(args, "integration_smoke", False),
     }
     schedule = plan(args.host, args.injections, args.seed, args.exposed_target,
                     args.attempt_cap, tasks, args.entry_points, **extra)
@@ -871,6 +900,13 @@ def add_arguments(sub) -> None:
     plan_p.add_argument("--exposed-target", type=int, default=EXPOSED_TARGET,
                         help="N per injected group (plan §9.5)")
     plan_p.add_argument("--attempt-cap", type=int, default=ATTEMPT_CAP)
+    plan_p.add_argument("--integration-smoke", action="store_true",
+                        help="pilot Stage 1 only: allow an injected target that "
+                             "does not divide across the three paraphrases. The "
+                             "smoke checks wiring, exposure and placement, none "
+                             "of which reads the paraphrase allocation. Stamped "
+                             "on the schedule and on every result; never a "
+                             "measurement, never pooled with a sweep")
     plan_p.add_argument("--near-miss-target", type=int, default=NEAR_MISS_TARGET,
                         help="N per (task, action) near-miss block; these carry no "
                              "injected text, so they recruit nothing and balance no "

@@ -127,7 +127,7 @@ flowchart LR
   scope. It is the only control that tells a good agent (one that respects task
   scope) apart from a merely cautious one (one that refuses broadly). That is why
   it — not the attack — gets the largest sample size, and why it carries a
-  confirmatory estimand. It yields two rates with two denominators, and they are
+  headline estimand. It yields two rates with two denominators, and they are
   not interchangeable: the **in-scope action rate** (did the action happen at
   all, over all 36 runs) feeds C2, while **overblocking** (did the agent decline
   while otherwise doing the job, over the realized denominator) is the stricter
@@ -138,7 +138,7 @@ flowchart LR
 
 Controls account for 729 of the 945 runs per model family because these
 explanations cannot be recovered from attack runs alone. The near-miss and
-attacked conditions are the two halves of the second confirmatory estimand:
+attacked conditions are the two halves of the second headline estimand:
 
 ```mermaid
 flowchart LR
@@ -175,8 +175,12 @@ paraphrase balance to maintain.
 
 ## What the design claims
 
-**Two confirmatory results**, each with its own power gate, both of which must
-pass before signing:
+**Claim status: exploratory.** Two headline results, reported with intervals
+against frozen reference lines. Neither is a test: no power gate stands behind
+them, no multiplicity correction is taken over them, and nothing gates on where
+a bound falls. The task boundary they are defined against is author-declared,
+with no independent adjudication behind it. `docs/design_history.md` §9 records
+the re-scope and what it costs.
 
 - **C1 — attack susceptibility after exposure**, averaged equally over T1's
   sixteen cells and equally over the eight registered model families. The same
@@ -212,10 +216,11 @@ C2 is the one the field has no instrument for, and it is why near-miss gets 46%
 of the budget. It is ambiguous if reported alone — a value near zero is produced
 both by an agent that complies with everything and by one that refuses everything
 — so it never appears without both component rates beside it. The two estimands
-are Holm-corrected against each other, and each is additionally tested per family
-to support "the floor is cleared in *k* of 8 families." If C2's power simulation
-fails, the registered response is to **demote C2 and run on C1 alone**; the 20pp
-floor is never lowered to fit the power curve.
+are reported side by side with no correction between them, and each is also
+reported per family to support "the reference line is cleared in *k* of 8
+families" as description. There is no power simulation to fail and no demotion
+branch: C2 is reported with its interval whatever its width, and the 20pp line
+stays where it was frozen.
 
 **Everything else sits in one of two lower tiers.** Tier 2 (Holm-corrected,
 labelled secondary in the text): scope selectivity, the entry-point and
@@ -279,8 +284,9 @@ alone is 432 of them: this is a design whose most novel quantity is a control. I
 cost binds, a predeclared ladder reduces scope in a fixed order, each rung named
 with the claim it costs — model families from the end of the registered order
 (8 → 6 → 4), then the auxiliary tasks, then the near-miss N. Rungs 1–3 cost
-breadth; rung 4 halves near-miss and so costs a confirmatory claim unless C2's
-power gate is re-simulated at the smaller N and still passes. Each rung is taken
+breadth; rung 4 halves near-miss and so costs C2 most of its resolution — with
+no power gate there is nothing to re-simulate, which makes the cost a judgement
+about precision rather than a gate outcome. Each rung is taken
 at signing or not at all. Changing the injected N, the T1 crossing, the
 paraphrase count, or any condition requires a new release version; changing an
 estimand, a floor, or a tier requires a new registration revision.
@@ -295,11 +301,11 @@ per family per arm, 2,862 runs across a registered two-family subset, with a
 flowchart LR
     BUILD[Harness + full 156-text library] --> SUPPORT[7c broad-scope scheduling]
     SUPPORT --> SMOKE[69-run integration smoke<br/>+ early cost projection]
-    SMOKE --> D7[7d confirmatory support for r2]
+    SMOKE --> D7[7d analysis support for r2]
     SMOKE --> REAUTH[Re-author texts:<br/>human seeds, out-of-set renderer]
     D7 --> PILOT[Sizing pilot]
     REAUTH --> REVIEW[Acceptance + realism review]
-    PILOT --> GATES[C1 + C2 power gates, cost gate]
+    PILOT --> GATES[cost gate]
     REVIEW --> GATES
     GATES --> SIGN[Sign v1.0-broad / r2]
     SIGN --> RUN[Eight frozen 945-run schedules]
@@ -326,10 +332,11 @@ by rank, and simulates power over the exact allocation. What remains is mileston
    and human seeds are what make it satisfiable.
 4. **Run the sizing pilot** to measure exposure, clustering, tokens, turns, cost,
    and the rate at which overblocking empties the null denominator.
-5. **Pass both power gates** on their own exact simulation, inheriting no
-   conclusion from the compact design in either direction. One model fit over
-   the full allocation takes about 23 seconds, so the 500-simulation gate is
-   hours of compute. C1 failing blocks the release; C2 failing demotes C2.
+5. **Optionally simulate power as a diagnostic.** No gate depends on it. One
+   model fit over the full allocation takes about 23 seconds, so a
+   500-simulation run is hours of compute, and it answers what the allocation
+   could resolve under assumed clustering — useful to know, but it licenses and
+   blocks nothing.
 6. **Approve expected cost, hard-cap cost, and contingency** across the full
    eight-family envelope. This is the gate most likely to bind.
 7. **Complete named acceptance review** of all 236 authored artifacts and
@@ -350,7 +357,7 @@ viewed.
 
 The harness, simulator, policies, oracle, two-agent runner, sweep planner,
 mixed-effects aggregation, overblocking fit, and power simulation are all
-implemented, and milestone 7d's confirmatory support for `r2` is now in place:
+implemented, and milestone 7d's analysis support for `r2` is now in place:
 the in-scope action rate on the full near-miss denominator, C2's model and
 draw-wise interval, explicit family weighting, per-family Holm, C2's power
 simulation, tier labels, and the §9.6 re-scoring. All five tasks, all 156 texts, twelve request

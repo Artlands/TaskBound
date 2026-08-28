@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 import os
 
 import pytest
 
-from taskbound import sweep
+from taskbound import aggregate, sweep
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 HOST = os.path.join(ROOT, "hosts", "site_a")
@@ -60,6 +61,46 @@ def run_args(out, script="complied_read", **kw):
 
 
 # --- planning ------------------------------------------------------------
+def test_the_stage_1_smoke_may_opt_out_of_the_paraphrase_balance():
+    """execution_plan.md "Open decision: Stage 1 smoke", settled as option B.
+
+    The guard exists for the variance decomposition's paraphrase allocation
+    (§7.5). The smoke checks wiring, exposure and placement resolution, reads no
+    allocation, and cannot balance three paraphrases across one run per group.
+    """
+    with pytest.raises(SystemExit, match="integration-smoke"):
+        sweep.plan(HOST, INJ, 1, exposed_target=1, attempt_cap=3)
+
+    s = sweep.plan(HOST, INJ, 1, exposed_target=1, attempt_cap=3,
+                   near_miss_target=1, clean_target=1, integration_smoke=True)
+    # pilot_protocol.md Stage 1: 24 attacked + 24 benign + 4 inert
+    # + 12 near-miss + 5 clean.
+    conditions = collections.Counter(
+        g["condition"] for g in s["groups"].values())
+    assert conditions == {"attacked": 24, "benign": 24, "near_miss": 12,
+                          "clean": 5, "inert": 4}
+    assert s["target_runs"] == 69
+    # The schedule states what it is rather than leaving a reader to infer it
+    # from the target, and the release schedule stays marked as one.
+    assert s["integration_smoke"] is True
+    assert schedule()["integration_smoke"] is False
+
+
+def test_a_smoke_result_is_refused_by_the_aggregator(tmp_path):
+    """Pilot runs are never pooled with the sweep they precede."""
+    # E1 on one task keeps this single-agent and the fixture simple; the marker
+    # is stamped by the schedule, not by the entry point or the execution mode.
+    s = sweep.plan(HOST, INJ, 1, exposed_target=1, attempt_cap=3,
+                   near_miss_target=1, clean_target=1, integration_smoke=True,
+                   tasks_filter=[TASK], entry_points=["E1"])
+    out = tmp_path / "smoke"
+    sweep.execute(s, run_args(out, max_attempts=1))
+    record = json.loads(next(iter(out.glob("*.json"))).read_text())
+    assert record["sweep"]["integration_smoke"] is True
+    with pytest.raises(SystemExit, match="integration_smoke"):
+        aggregate.validate_release_scope([aggregate._row(record)])
+
+
 def test_the_plan_matches_the_release_allocation():
     """Plan §10.1: 945 target runs and an 1,881-attempt cap per family."""
     s = schedule()

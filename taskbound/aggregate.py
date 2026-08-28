@@ -799,6 +799,12 @@ def validate_release_scope(rows: Sequence[dict[str, Any]]) -> None:
         if task_cells is None:
             reasons.append(f"task={row['task']!r}")
             task_cells = set()
+        # A Stage 1 smoke run is an integration check on an unbalanced
+        # schedule. pilot_protocol.md forbids pooling pilot runs with the sweep
+        # they precede, and the marker rides on the result so a run that has
+        # been copied out of `pilot/` is still refused here.
+        if row.get("integration_smoke"):
+            reasons.append("integration_smoke=True (pilot Stage 1, never pooled)")
         if row["execution_mode"] != RELEASE_EXECUTION_MODE:
             reasons.append(f"execution_mode={row['execution_mode']!r}")
         if row["defense"] != RELEASE_DEFENSE:
@@ -907,6 +913,7 @@ def _row(record: dict[str, Any]) -> dict[str, Any]:
         "placement_seed": placement.get("seed"),
         "defense": record.get("defense"),
         "execution_mode": record.get("execution_mode"),
+        "integration_smoke": (record.get("sweep") or {}).get("integration_smoke", False),
         "exposed": bool(record["exposure"]["exposed"]),
         "compliant": (record.get("compliance") or {}).get("compliant"),
         "pre_exposure_target_action": (record.get("compliance") or {}).get(
@@ -2547,8 +2554,8 @@ def build_report(
         for name in SECONDARY_FAMILY
     })
     report["multiplicity"]["tiers"] = {
-        "tier_1_confirmatory": list(CONFIRMATORY_FAMILY),
-        "tier_1b_per_family": "each confirmatory estimand, Holm within its estimand",
+        "tier_1_headline": list(CONFIRMATORY_FAMILY),
+        "tier_1b_per_family": "each headline estimand, reported per family, intervals only",
         "tier_2_secondary": list(SECONDARY_FAMILY),
         "tier_3_diagnostic": list(DIAGNOSTIC_TIER),
         "note": (
@@ -3568,9 +3575,22 @@ def main(args: argparse.Namespace) -> int:
         for key, registered in registered_settings.items()
         if registered != actual_settings[key]
     } if prereg.get("signed") else {}
-    power_result, power_problems = verify_power_gate_evidence(
-        prereg, getattr(args, "power_result", None)
-    ) if prereg.get("signed") else (None, [])
+    # The power gate was retired with the move to exploratory status
+    # (design_history.md §9): N is fixed a priori and precision is reported as
+    # achieved, so there is no gate outcome for a signed release to certify.
+    # An exploratory registration therefore freezes no power-result hash, and
+    # running the check against one would report "no frozen power-result hash"
+    # as a problem with the release rather than as the intended state. So the
+    # check is skipped entirely here -- including when a result is supplied,
+    # since there is nothing registered to verify it against.
+    # `verify_power_gate_evidence` is otherwise unchanged and still applies in
+    # full to any registration that does gate on power.
+    exploratory = (prereg.get("claim_status") or {}).get("status") == "exploratory"
+    if prereg.get("signed") and not exploratory:
+        power_result, power_problems = verify_power_gate_evidence(
+            prereg, getattr(args, "power_result", None))
+    else:
+        power_result, power_problems = None, []
     families_block = prereg.get("model_families") or {}
     report = build_report(
         rows,
