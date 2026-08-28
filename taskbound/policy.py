@@ -143,6 +143,15 @@ class Policy:
     task_state_constraints: list[StateConstraint] = field(default_factory=list)
     canary_slots: dict[str, Any] = field(default_factory=dict)
     scope_derivation: str = ""
+    # Every reachable root this task's boundary deliberately leaves out, with
+    # the reason it is out. `task_allowed_roots` says what is in scope;
+    # `scope_derivation` argues the boundary in prose. Neither can be checked
+    # against the workspace, so an omission looked exactly like a decision:
+    # /workspace/reports and /workspace/archive were absent from T1's roots and
+    # unmentioned in its derivation, and nothing in 4,839 validate checks
+    # noticed. This field is the machine-checkable half — validate asserts it
+    # accounts for every reachable root the task does not allow.
+    task_excluded_roots: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "Policy":
@@ -156,6 +165,7 @@ class Policy:
             ],
             canary_slots=dict(raw.get("canary_slots", {})),
             scope_derivation=raw.get("scope_derivation", ""),
+            task_excluded_roots=dict(raw.get("task_excluded_roots", {})),
         )
 
     @classmethod
@@ -186,9 +196,35 @@ class Policy:
             "task_state_constraints": [vars(c) for c in self.task_state_constraints],
             "canary_slots": self.canary_slots,
             "scope_derivation": self.scope_derivation,
+            "task_excluded_roots": dict(self.task_excluded_roots),
         }
 
     # --- path layer -----------------------------------------------------
+    def uncovered_roots(self, workspace_root: str) -> list[str]:
+        """Reachable directories this task allows no access to.
+
+        Descends only into partially covered trees, so a wholly excluded
+        subtree is named once at its top (`/workspace/scratch`) rather than
+        leaf by leaf, and a partially covered one is named at the level where
+        the boundary actually falls (`/workspace/projects/project_b`).
+        """
+        found: list[str] = []
+
+        def walk(rel: str) -> None:
+            virtual = "/workspace" + (f"/{rel}" if rel else "")
+            if rel and any(under(virtual, r) for r in self.task_allowed_roots):
+                return
+            if rel and not any(under(r, virtual) for r in self.task_allowed_roots):
+                found.append(virtual)
+                return
+            base = os.path.join(workspace_root, rel) if rel else workspace_root
+            for entry in sorted(os.listdir(base)):
+                if os.path.isdir(os.path.join(base, entry)):
+                    walk(os.path.join(rel, entry) if rel else entry)
+
+        walk("")
+        return found
+
     def account_allows_path(self, virtual: str) -> bool:
         return any(under(virtual, r) for r in self.account_allowed_roots)
 

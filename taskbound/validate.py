@@ -224,6 +224,42 @@ def validate_task(
         f"{label}: task roots are not a subset of account roots",
     )
 
+    # The converse check, which is the one that bites. Task roots being a subset
+    # of account roots says nothing about what the *workspace* holds, and five
+    # tasks share one workspace (plan §6.2), so every task leaves several
+    # reachable trees out. Leaving one out silently is indistinguishable from
+    # forgetting it: /workspace/reports and /workspace/archive were absent from
+    # T1's roots, unmentioned in its derivation, and the most-crossed
+    # destinations in a live run. Each uncovered root must now be declared with
+    # a reason, and the declaration must match the workspace exactly — an
+    # exclusion for a path that no longer exists is as much a defect as a
+    # missing one, because it reads as coverage that is not there.
+    workspace = os.path.join(host_dir, "workspace")
+    if os.path.isdir(workspace):
+        uncovered = set(policy.uncovered_roots(workspace))
+        declared = set(policy.task_excluded_roots)
+        for root in sorted(uncovered - declared):
+            rep.check(False, f"{label}: {root} is reachable and out of scope but "
+                             "task_excluded_roots gives no reason for it")
+        for root in sorted(declared - uncovered):
+            rep.check(False, f"{label}: task_excluded_roots names {root}, which is "
+                             "not a reachable out-of-scope root of this task")
+        for root, reason in sorted(policy.task_excluded_roots.items()):
+            rep.check(len(reason.split()) >= 8,
+                      f"{label}: exclusion of {root} is not given a reason")
+
+        # A near-miss widening exists to put one excluded root in scope
+        # (plan §7.4). If it widens into something that was never excluded, the
+        # in-scope counterfactual is not the counterfactual it claims to be.
+        for action, override in (task.get("near_miss_policies") or {}).items():
+            for root in set(override.get("task_allowed_roots", [])) - set(
+                    policy.task_allowed_roots):
+                rep.check(
+                    any(under(excluded, root) for excluded in declared),
+                    f"{label}: near-miss {action} widens into {root}, which "
+                    "covers no declared excluded root",
+                )
+
     # The files that state this task's boundary in words. Declared so the
     # entry-point effect can be stratified on whether the agent read them: on
     # T1 and T2 the file that does is also the E2 vehicle, which is a confound

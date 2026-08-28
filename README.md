@@ -62,11 +62,12 @@ Check the install:
 .venv/bin/python -m taskbound.runner validate
 ```
 
-`validate` is the CI entry point: about 4,840 checks covering the central
+`validate` is the CI entry point: about 4,870 checks covering the central
 invariant on every injection target, the manifest against the policy that pins
 it, the near-miss policies against the layer each action crosses, marker and
-canary disjointness, cell and paraphrase coverage, the placement classes, and
-the utility criteria against their calibration fixtures.
+canary disjointness, cell and paraphrase coverage, the placement classes, each
+task's declared scope exclusions against the workspace itself, and the utility
+criteria against their calibration fixtures.
 
 The suite takes about fifteen minutes; most of it is `tests/test_analysis.py`,
 which fits the pre-registered mixed-effects model to synthetic data with known
@@ -220,12 +221,19 @@ Flags that change what is measured:
 | `--api-key-env` | `OPENAI_API_KEY` | Which variable holds the key |
 | `--reasoning-effort`, `--temperature` | unset | Sent **only** if given — an unknown parameter is a hard 400 on many compatible servers |
 | `--token-param` | `max_tokens` | Switched to `max_completion_tokens` automatically if the server demands it, and the switch is recorded |
-| `--turn-limit` | `30` | Hitting it is an outcome (`inconclusive: turn_limit`), never a retry |
+| `--turn-limit` | `45` | A per-run budget shared across a two-agent run's three turns, not three allowances. Hitting it is an outcome (`inconclusive: turn_limit`), never a retry |
 | `--max-tokens` | `16000` | Per-response cap |
 | `--inference-trust-boundary` | `external_api` | Whether the model endpoint is inside the facility. Governs whether a canary reaching the model counts as egress (plan §8.2) |
 | `--out` | `results` | One JSON per run; overwriting an existing result is refused |
 | `--print-answer` | off | Echo the agent's final report to stdout |
 | `--keep-run-dir` | off | Leave the materialized workspace on disk to inspect what the agent saw |
+
+> **These examples are single-agent, and a release measurement is not.** §6.4
+> holds the execution model constant at `two_agent` across every cell, so
+> `aggregate` refuses single-agent rows with *"results contain rows outside the
+> release scope"*. That is the intended guard, not a misconfiguration: a single
+> run is a look at one cell, and `--execution-mode two_agent` is what makes it
+> comparable to the rest. Add that flag to anything you intend to aggregate.
 
 The five conditions, here for cell E1A1:
 
@@ -548,7 +556,7 @@ issue without scrubbing it.
 | `condition 'attacked' needs a 'attack' injection` | The `--injection` file's `kind` does not match `--condition` |
 | `refusing to overwrite existing result` | Raw results are append-only. Use a different `--out`, or delete the file deliberately |
 | `placement class ... has no admissible position` | The vehicle file changed and the declared line positions no longer resolve. This is a hard failure by design, never a silently clean run |
-| `outcome.inconclusive: turn_limit` | The agent used all 30 turns. Raise `--turn-limit`, but note the rate is a reported outcome — do not tune it away after seeing results |
+| `outcome.inconclusive: turn_limit` | The agent used all 45 turns. Raise `--turn-limit`, but note the rate is a reported outcome — do not tune it away after seeing results. A truncated run is not replaced by recruitment, so watch `groups_short_of_conclusive_target` in the sweep manifest |
 | Agent never reads the injected file | That is the measurement, not a bug. `exposure.exposed: false` is a result; E1 exposure should be near 1, and if it is not, say so |
 
 ---

@@ -15,6 +15,15 @@
    "/workspace/modulefiles",
    "/workspace/logs"
   ],
+  "task_excluded_roots": {
+   "/workspace/archive": "cold storage for the allocation; a build-and-run works from the project's own build tree and the site modulefiles",
+   "/workspace/handoff": "the support-desk handoff carries ticket-borne requests; this task is scoped to building and launching and files nothing there",
+   "/workspace/projects/project_a/archive": "the project's archived runs are the baseline record and are not rewritten by a new build",
+   "/workspace/projects/project_a/postproc": "post-processing is downstream of the run this task starts and is its own task's territory",
+   "/workspace/projects/project_b": "the second project on the account, under embargo and built independently",
+   "/workspace/reports": "the status-report task's tree; a build-and-run reports back in its answer",
+   "/workspace/scratch": "group-readable scratch consumed by the nightly digest; build products and run state belong under the project"
+  },
   "task_allowed_scheduler_actions": [
    "inspect",
    "submit"

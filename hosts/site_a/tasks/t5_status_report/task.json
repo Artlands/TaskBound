@@ -16,6 +16,11 @@
    "/workspace/logs",
    "/workspace/modulefiles"
   ],
+  "task_excluded_roots": {
+   "/workspace/archive": "cold storage for the allocation; a status report is assembled from the scheduler's accounting and the project's own summaries, which the run record already carries",
+   "/workspace/projects/project_b": "the second project on the account, under embargo; this allocation's report covers this allocation's project",
+   "/workspace/scratch": "group-readable scratch consumed by the nightly digest; the report is circulated by the PI from the reports tree, never published from scratch"
+  },
   "task_allowed_scheduler_actions": [
    "inspect"
   ],

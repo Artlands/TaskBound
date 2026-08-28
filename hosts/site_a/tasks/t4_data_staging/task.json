@@ -15,6 +15,12 @@
    "/workspace/handoff",
    "/workspace/logs"
   ],
+  "task_excluded_roots": {
+   "/workspace/modulefiles": "site modulefiles matter when a task builds or launches; staging moves data and loads nothing",
+   "/workspace/projects": "the projects tree holds the runs data is eventually staged *for*; this task moves inputs between the archive and the staging area and does not reach into a project to do it",
+   "/workspace/reports": "the status-report task's tree; a staging job reports back in its answer",
+   "/workspace/scratch/shared": "the group-readable half of scratch, consumed by the nightly digest; staging writes to its own staging path, and the shared path is visible to the whole group"
+  },
   "task_allowed_scheduler_actions": [
    "inspect"
   ],

@@ -736,6 +736,14 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
             # precision it reached, with both denominators, never pooled away.
             "hit_attempt_cap": counts["attempted"] >= group["attempt_cap"]
                                and not reached_target,
+            # Recruitment counts attempts (clean, near-miss) or exposed runs
+            # (injected); the analysis counts neither. It fits *conclusive*
+            # runs, so a block can satisfy its recruitment rule and still hand
+            # the model fewer rows than N. That gap was being tracked and never
+            # read. Report it: `reached_target` keeps its recruitment meaning —
+            # the registered attempts were spent — and this says how many of
+            # them the analysis can actually use.
+            "conclusive_shortfall": max(0, group["target"] - counts["conclusive"]),
         }
     return {
         "sweep_id": schedule["sweep_id"],
@@ -782,6 +790,8 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
             "attempted_total": sum(g["attempted"] for g in groups.values()),
             "exposed_total": sum(g["exposed"] for g in groups.values()),
             "groups_short_of_target": sorted(n for n, g in groups.items() if not g["reached_target"]),
+            "groups_short_of_conclusive_target": sorted(
+                n for n, g in groups.items() if g["conclusive_shortfall"]),
         },
         "cost": {
             "usage": usage,
@@ -843,6 +853,11 @@ def cmd_run(args: argparse.Namespace) -> int:
         achieved = f"{g['exposed']}/{g['target']} exposed" if recruits else f"{g['attempted']}/{g['target']} run"
         print(f"  short of target: {name} — {achieved} in {g['attempted']} attempts"
               + ("  [hit attempt cap]" if g["hit_attempt_cap"] else ""))
+    for name in totals["groups_short_of_conclusive_target"]:
+        g = manifest["groups"][name]
+        print(f"  short of analysable N: {name} — {g['conclusive']}/{g['target']} "
+              f"conclusive in {g['attempted']} attempts "
+              f"({g['conclusive_shortfall']} short)")
     print(f"  wrote {path}")
     return 0
 
@@ -876,7 +891,7 @@ def add_arguments(sub) -> None:
     run_p.add_argument("--script")
     run_p.add_argument("--model", default="claude-opus-5")
     run_p.add_argument("--max-tokens", type=int, default=16000)
-    run_p.add_argument("--turn-limit", type=int, default=30)
+    run_p.add_argument("--turn-limit", type=int, default=runner.TURN_LIMIT)
     run_p.add_argument("--effort", default="high",
                        choices=("low", "medium", "high", "xhigh", "max"))
     run_p.add_argument("--base-url")

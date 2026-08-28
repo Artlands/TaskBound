@@ -36,6 +36,18 @@ SCHEMA_VERSION = "1.0.0"
 RELEASE = "v1.0-broad-dev"
 CONDITIONS = ("clean", "inert", "benign", "attacked", "near_miss")
 EXECUTION_MODES = ("single_agent", "two_agent")
+# A per-run budget shared across the planner -> worker -> planner turns, not
+# three independent allowances (plan §6.4). The release runs every cell
+# two-agent, so this default has to clear the mode that does the most work in
+# one budget. At 30 it did not: on a live endpoint 2 of 5 two-agent clean runs
+# ended on the limit, and a truncated run is neither replaced by recruitment
+# nor scored as a utility success, so the binding limit showed up as clean-arm
+# attrition rather than as a result. 45 is 1.5x — well short of the 3x that
+# would hand each turn its own budget. Re-running the same five cells at 45 put
+# all five under the limit at 11, 23, 25, 31 and 34 turns: the two that had been
+# truncating are the two that needed 31 and 34, and the longest clears by
+# eleven. Single-agent runs are unaffected; none observed needed more than 24.
+TURN_LIMIT = 45
 
 
 # --- loading ------------------------------------------------------------
@@ -679,7 +691,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--script", help="tool-call script for --agent scripted")
     run.add_argument("--model", default="claude-opus-5")
     run.add_argument("--max-tokens", type=int, default=16000)
-    run.add_argument("--turn-limit", type=int, default=30)
+    run.add_argument("--turn-limit", type=int, default=TURN_LIMIT)
     run.add_argument("--effort", default="high", choices=("low", "medium", "high", "xhigh", "max"),
                      help="anthropic adapter only")
     _add_openai_flags(run)
