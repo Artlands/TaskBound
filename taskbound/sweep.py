@@ -397,10 +397,28 @@ def _group_complete(group: dict[str, Any], counts: dict[str, Any]) -> bool:
     if counts["attempted"] >= group["attempt_cap"]:
         return True
     if group["recruits_to_exposure"]:
-        target = group["target"] // len(group["paraphrases"])
-        return all(counts["exposed_by_paraphrase"].get(p, 0) >= target
-                   for p in group["paraphrases"])
+        # Both conjuncts, because the per-paraphrase floor alone is not the
+        # rule. The Stage 1 smoke recruits one exposed run per group across
+        # three paraphrases, so the floor is 0 and "every paraphrase has at
+        # least 0" reads as complete on a group that has never run — every
+        # injected group skipped, and the manifest reporting it as reached.
+        # The group's own target is what recruitment owes.
+        return (counts["exposed"] >= group["target"]
+                and all(counts["exposed_by_paraphrase"].get(p, 0)
+                        >= _paraphrase_target(group)
+                        for p in group["paraphrases"]))
     return counts["attempted"] >= group["target"]
+
+
+def _paraphrase_target(group: dict[str, Any]) -> int:
+    """Exposed runs each paraphrase is owed.
+
+    Floor division: a release group's target divides evenly across its three
+    paraphrases, and a smoke group's does not divide at all, which is what
+    ``--integration-smoke`` opts out of. There the floor is 0 and the total
+    target in ``_group_complete`` is what binds.
+    """
+    return group["target"] // len(group["paraphrases"])
 
 
 def _resolve_attempt(
@@ -408,13 +426,19 @@ def _resolve_attempt(
 ) -> dict[str, Any]:
     if not group["recruits_to_exposure"]:
         return attempt
-    target = group["target"] // len(group["paraphrases"])
+    target = _paraphrase_target(group)
     start = group["paraphrases"].index(attempt["paraphrase"])
     options = attempt.get("paraphrase_options") or (
         group["paraphrases"][start:] + group["paraphrases"][:start]
     )
+    exposed = counts["exposed_by_paraphrase"]
+    # Below the floor first, which is the release path and unchanged. When no
+    # paraphrase is below it — a smoke group, whose floor is 0 — the group is
+    # still short on its total, so fall back to the least-recruited paraphrase
+    # in the same rotation order rather than raising StopIteration.
     paraphrase = next(
-        p for p in options if counts["exposed_by_paraphrase"].get(p, 0) < target
+        (p for p in options if exposed.get(p, 0) < target),
+        min(options, key=lambda p: exposed.get(p, 0)),
     )
     if paraphrase == attempt["paraphrase"]:
         return attempt
@@ -737,8 +761,7 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
         counts = state["counts"].get(name, _empty_counts())
         achieved = counts["exposed"] if group["recruits_to_exposure"] else counts["attempted"]
         paraphrase_target = (
-            group["target"] // len(group["paraphrases"])
-            if group["recruits_to_exposure"] else None
+            _paraphrase_target(group) if group["recruits_to_exposure"] else None
         )
         exposed_by_paraphrase = {
             p: counts["exposed_by_paraphrase"].get(p, 0) for p in group["paraphrases"]
@@ -747,9 +770,12 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
             p: max(0, paraphrase_target - exposed_by_paraphrase[p])
             for p in group["paraphrases"]
         }
-        reached_target = (
+        # `achieved >= target` on both arms: a smoke group's per-paraphrase
+        # shortfalls are all 0 against a floor of 0, so the balance test alone
+        # certifies a group that recruited nothing.
+        reached_target = achieved >= group["target"] and (
             all(shortfall == 0 for shortfall in shortfall_by_paraphrase.values())
-            if group["recruits_to_exposure"] else achieved >= group["target"]
+            if group["recruits_to_exposure"] else True
         )
         groups[name] = {
             **counts,

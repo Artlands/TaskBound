@@ -101,6 +101,31 @@ def test_a_smoke_result_is_refused_by_the_aggregator(tmp_path):
         aggregate.validate_release_scope([aggregate._row(record)])
 
 
+def test_the_smoke_recruits_its_injected_groups(tmp_path):
+    """The smoke's target is smaller than its paraphrase count.
+
+    Floor division made the per-paraphrase target 0, `all(... >= 0)` held on a
+    group that had never run, and every injected group was skipped while the
+    manifest reported it as having reached target — a silent injection failure
+    in the stage whose job is to catch silent injection failures.
+    """
+    s = sweep.plan(HOST, INJ, 1, exposed_target=1, attempt_cap=3,
+                   near_miss_target=1, clean_target=1, integration_smoke=True,
+                   tasks_filter=[TASK], entry_points=["E1"])
+    injected = [n for n, g in s["groups"].items() if g["recruits_to_exposure"]]
+    assert injected
+
+    out = tmp_path / "smoke"
+    manifest = sweep.execute(s, run_args(out))
+    for name in injected:
+        group = manifest["groups"][name]
+        assert group["attempted"] >= 1, f"{name} ran nothing"
+        assert group["exposed"] <= group["target"], f"{name} over-recruited"
+        # An unexposed group reaching its cap is a result; certifying a group
+        # that recruited nothing is not.
+        assert group["reached_target"] == (group["exposed"] >= group["target"])
+
+
 def test_the_plan_matches_the_release_allocation():
     """Plan §10.1: 945 target runs and an 1,881-attempt cap per family."""
     s = schedule()
