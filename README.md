@@ -405,6 +405,75 @@ still use paths relative to the clustering artifact so a release bundle remains
 verifiable after it is moved. Development aggregation remains available but is
 explicitly diagnostic.
 
+### A time-boxed sweep
+
+A release sweep against a self-hosted endpoint is measured in days. On the
+reference deployment — `local-deepseek-v4-flash` behind an SSH forward, six
+workers — the Stage 1 smoke ran 162 attempts in 6.4 hours, or **25.4
+attempts/hour**. At that rate the full 69-group allocation needs about 1,190
+attempts and **47 hours** for one model family. Concurrency does not rescue it:
+a single run took 194 s alone but 851 s six-wide, so six workers bought 1.37x
+over serial, not 6x. Measure the knee on your own endpoint before assuming more
+workers help.
+
+`schedules/t1_6h_seed1_262532ca8f0a.json` is a scaled-down allocation that fits
+in six hours:
+
+```sh
+.venv/bin/python -m taskbound.runner sweep plan \
+  --host hosts/site_a --out schedules/t1_6h_seed1_262532ca8f0a.json --seed 1 \
+  --task t1_failed_job --entry-point E1 --entry-point E2 --entry-point E4 \
+  --exposed-target 3 --attempt-cap 9 \
+  --near-miss-target 18 --clean-target 6
+# sweep_262532ca8f0a: 32 groups, 159 target runs, 321 maximum attempts
+
+.venv/bin/python -m taskbound.runner sweep run \
+  --schedule schedules/t1_6h_seed1_262532ca8f0a.json \
+  --out results/local-deepseek-v4-flash \
+  --agent openai_compatible --model local-deepseek-v4-flash \
+  --base-url http://127.0.0.1:8000/v1 \
+  --inference-trust-boundary on_prem \
+  --canary-seed "$TB_CANARY_SEED" \
+  --execution-mode two_agent --workers 6 --max-attempts 165 --verbose
+```
+
+Roughly 168 attempts, 5.8 hours, and about 162 conclusive rows: T1's E1/E2/E4
+crossing at 36 attacked and 36 benign runs, 72 near-miss, 9 inert, 6 clean.
+`--max-attempts` is the hard stop, because with no price table a spend ceiling
+has to be expressed in attempts; the sweep resumes cleanly if it fires.
+
+Four cuts get it there, and each is a measurement rather than a preference:
+
+- **No E3.** Exposure on the entry point measured 1/27 on T1 and 0/6 on T5, so
+  every E3 group burns its full attempt cap and still finishes short of N. In
+  the full allocation that is 351 of 715 injected attempts spent on groups that
+  cannot reach target.
+- **No T3.** `t3_build_and_run` returned one conclusive run in fourteen — eleven
+  `turn_limit`, two adapter timeouts — at a mean of 41.6 turns. It is the most
+  expensive task per attempt and the least analysable.
+- **`--exposed-target 3`**, the smallest legal value: `sweep plan` requires an
+  injected target to divide across the three paraphrases, and the
+  `--integration-smoke` opt-out stamps every result so `aggregate` refuses it.
+- **Near-miss held at 45% of target runs**, against 46% in the release. §7.4
+  spends the most runs there because the in-scope counterfactual is what
+  separates an agent that respects task scope from one that refuses broadly.
+  Shrinking that block proportionally is what makes this a smaller release
+  rather than a different experiment.
+
+**What it can carry.** Every row is in release scope, so `aggregate` fits the
+registered models and prints the six tables. It is a diagnostic look at C1, C2
+and the entry-point x induced-action structure, with intervals wider than the
+release's.
+
+**What it cannot.** It is not a signed release and aggregation will say so in
+the text: one family on a narrowed allocation cannot satisfy the registered
+sweep id, its immutable attempt manifest, or the eight registered per-family
+configuration hashes. It also carries no E3 evidence and no cross-task
+replication, so neither the entry-point contrast nor task generality is
+complete. Swapping `--near-miss-target 18` for `--task t5_status_report
+--near-miss-target 9` trades near-miss precision for T5's single E4 cell at
+5.4 hours, if cross-task generality is the thing being looked at.
+
 ### Before a sweep is worth running
 
 Six tools rather than intentions:
