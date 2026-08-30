@@ -1,13 +1,13 @@
-# TaskBound v1.0-broad — execution plan
+# TaskBound v1.1-budget — execution plan
 
 Status: **the harness plans and analyses the `r2` claim set; nothing runs until
 the pre-execution gates pass.** Phase −1 is complete - `sweep plan` emits the
-release schedule at 69 groups, 945 target runs, 1,881 maximum attempts, and
+release schedule at 66 groups, 228 target runs, 462 maximum attempts, and
 Phase −0.5 (milestone 7d, the analysis support `r2` needs) is complete except for
 the §11.3 inference cross-check, whose comparison is external.
 
 This document gives the phase order, gates, and pre-registration checklist for a
-signed, reproducible `v1.0-broad` release. `development_plan.md` is the
+signed, reproducible `v1.1-budget` release. `development_plan.md` is the
 specification, `plan_summary.md` is the overview, and `pilot_protocol.md` holds
 the frozen pilot rules.
 
@@ -15,14 +15,16 @@ the frozen pilot rules.
 `development_plan.md` §10.1 and `plan_summary.md`; duplicating them is how they
 drifted stale before. The one number worth repeating is the one people get
 wrong: the cost gate is approved against the **hard attempt cap**, not the
-nominal target — 1,881 per family, 15,048 across the eight.
+nominal target — 462 per family, 3,696 across the eight. On a self-hosted
+endpoint the binding constraint is wall clock rather than spend: about 11 hours
+per family at the throughput 399 live attempts measured (design_history.md §10).
 
 > **Schedule status.** Both committed pilot schedules are **stale against
-> `v1.0-broad`** and must be regenerated. `pilot/sizing_schedule.json` was built
+> `v1.1-budget`** and must be regenerated. `pilot/sizing_schedule.json` was built
 > for the compact scope (41 groups, 246 target runs) and
 > `pilot/smoke_schedule.json` is still the pre-E4 `0.5.0` artifact. The planner
-> can now produce both — sizing regenerates at 69 groups / 414 target runs /
-> 1,038 attempts; smoke still waits on the open decision below.
+> can now produce both. `pilot/smoke_schedule.json` was regenerated against the
+> five-task scope and the Stage 1 decision is settled; sizing is still stale.
 
 ---
 
@@ -61,7 +63,7 @@ release preset, `task` in both registered models with its rank check, the
 overblocking fit on its realized denominator, and power simulation over the exact
 broad allocation.
 
-Exit criterion, met: `sweep plan` reports **69 groups, 945 target runs, 1,881
+Exit criterion, met: `sweep plan` reports **66 groups, 228 target runs, 462
 maximum attempts** per model family.
 
 > **Two costs this exposed.** First, one fit over the full allocation takes
@@ -116,7 +118,7 @@ re-derived.
      --exposed-target 6 --attempt-cap 18 \
      --near-miss-target 6 --clean-target 6
    ```
-   Expect **69 groups, 414 target runs, 1,038 maximum attempts**. The sizing
+   Expect **66 groups, 396 target runs, 825 maximum attempts**. The sizing
    pilot runs every group at six — it is measuring exposure, clustering, cost,
    and the overblocking drop rate, none of which need the release's N. Smoke —
    see the open decision below.
@@ -354,7 +356,7 @@ cost = uncached_input*rate_in + cached_input*rate_cached + output*rate_out
    ```
    These are the planner's defaults; passing them explicitly is what puts every
    registered N in the command that froze the schedule. Confirm it reports
-   **69 groups, 945 target runs, 1,881 maximum attempts** and matches plan §10.1.
+   **66 groups, 228 target runs, 462 maximum attempts** and matches plan §10.1.
 5. **Fill every PENDING item** — the checklist is in the appendix below.
 6. **Rename** `preregistration.draft.json` → `preregistration.json` and sign. The
    validator treats that filename as the signed article and enforces the
@@ -609,7 +611,7 @@ signing:
    recorded.
 7. All eight families pinned, every `configuration_sha256` frozen, families and
    their registered order chosen before attacked-pilot results.
-8. `sweep_id` frozen at 69 groups / 945 target runs; canary/marker `release_seed`
+8. `sweep_id` frozen at 66 groups / 228 target runs; canary/marker `release_seed`
    set from the environment.
 9. `preregistration.draft.json` renamed to `preregistration.json` and signed.
 

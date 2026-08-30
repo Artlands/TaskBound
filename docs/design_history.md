@@ -19,6 +19,7 @@ without carrying all of its history.
 | `v1.0-compact`: T1 only, two families, near-miss N = 9 | `v1.0-broad`: five tasks, eight families, near-miss N = 36 | §5 |
 | Three checks that passed for the wrong reason | Fixes found by implementing the broad scope | §6 |
 | `r1`: one confirmatory estimand, §7.5's supersession rule, one ten-member catalog | `r2`: two confirmatory estimands, tiered reporting, the rule retired | §7 |
+| `v1.0-broad`: N = 9, cap 27, near-miss N = 36, 945 runs per family | `v1.1-budget`: N = 3, cap 9, near-miss N = 6, 228 runs per family | §10 |
 
 ---
 
@@ -575,3 +576,62 @@ retiring it as a *release gate* rather than deleting the instrument.
 **This does not touch contamination control.** Plan §12's
 generator-outside-the-evaluated-set rule, enforced at `validate.py:675`, binds on
 all 156 injection texts exactly as before.
+
+---
+
+## 10. The `v1.0-broad` allocation
+
+`v1.0-broad` scheduled 69 groups, 945 target runs and an 1,881-attempt cap per
+model family. It was sized in units of money — the assumption being that a
+sweep's binding constraint is the provider bill — and it is retired because on a
+self-hosted endpoint the binding constraint is wall clock, and there the
+allocation cost **58 hours per model family**.
+
+That figure is measured, not modelled from list prices. Three live runs over
+`hosts/site_a` — a Stage 1 smoke, a time-boxed T1 sweep and an E4 follow-up,
+399 attempts in total — put throughput at 30.7 attempts/hour at six workers with
+a batch-aware model reproducing the T1 sweep to 2%. The registered allocation
+needs about 1,161 attempts once measured exposure is accounted for.
+
+**Concurrency is not the answer, which is why the allocation had to change.**
+Six workers bought 1.37x over serial; twelve bought 1.08x over six. The endpoint
+saturates near 2.4x serial throughput however many workers are pointed at it.
+That also disposes of the one scheduling improvement on the table: `_run_parallel`
+folds a whole batch before starting the next, costing each batch its slowest
+member, but recovering that buys nothing against a saturated server — so the
+reproducibility guarantee it exists to provide was kept.
+
+Three reductions, each priced rather than chosen:
+
+- **N from 9 to 3, cap from 27 to 9.** The 3N ratio is unchanged, because that
+  ratio is what earns a low-exposure entry point the same N as the rest.
+- **Near-miss from 36 to 6.** This is the largest concession and the one to
+  argue with first: near-miss falls from 46% of the sweep to 26%. §7.4's reason
+  for weighting it is untouched — the in-scope counterfactual is what separates
+  an agent respecting task scope from one refusing broadly — and at N = 6 the
+  interval it buys is wide. That is reported as achieved precision, not hidden.
+- **E3 gets its own attempt cap of one recruitment block.** The old rationale
+  assumed E3 exposure around 0.40; it measured **0.04 on T1 and 0.00 on T5**. At
+  that rate no cap reaches N, so E3's reported quantity is its exposure — itself
+  a registered result (§7.2) — rather than a compliance estimate it cannot
+  reach. Without this, roughly a quarter of the sweep bought nothing.
+
+**What was considered and rejected: dropping T3.** T3 is the most expensive task
+in the sweep — 1,175 s median against T1's 506 s, at the turn limit on most
+attempts, returning one conclusive run in fourteen — and dropping it saves 3.3
+hours. It is kept because its two cells, `E1A2` and `E3A3`, are the only
+auxiliary occurrences holding E1, E3, A2 and A3 at three tasks apiece. Without
+them the counts go to `{E1: 2, E2: 3, E3: 2, E4: 3}` and `{A1: 3, A2: 2, A3: 2,
+A4: 3}`, and §6.2's property — that the task effect is identified within cell —
+is gone. A measured task difference would then be partly an entry-point and
+induced-action difference.
+
+T3 therefore carries **cells only**: its four injected groups at the injected N,
+and no near-miss or clean block of its own. The balance is a statement about
+cells, so the blocks are not what secures it, and they were 15 of T3's 27
+attempts. `validate_release_scope` rejects a near-miss or clean row on a
+cells-only task, so a hand-widened schedule cannot quietly reintroduce them.
+
+The result is 66 groups, 228 target runs, a 462-attempt cap, and about **11
+hours per model family** — against a target of 8, which no allocation preserving
+§6.2's balance could reach.

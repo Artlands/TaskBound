@@ -183,12 +183,12 @@ def test_signed_aggregation_binds_sweep_attempts_and_every_configuration():
         "signed": True,
         "allocation": {
             "sweep_id": sweep_id,
-            "n_exposed_per_injected_group": 9,
-            "attempt_cap_per_injected_group": 27,
-            "n_near_miss_per_block": 36,
-            "n_clean_per_task": 9,
-            "target_runs_per_model_family": 945,
-            "max_attempts_per_model_family": 1881,
+            "n_exposed_per_injected_group": 3,
+            "attempt_cap_per_injected_group": 9,
+            "n_near_miss_per_block": 6,
+            "n_clean_per_task": 3,
+            "target_runs_per_model_family": 228,
+            "max_attempts_per_model_family": 462,
         },
         "model_families": {
             "evaluated_model_families": ["family_0", "family_1"],

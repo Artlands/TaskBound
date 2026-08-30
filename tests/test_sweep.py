@@ -37,7 +37,11 @@ def diagnostic_schedule(seed: int = 7, **kw):
     One task, three entry points, and every condition at the same small N: this
     exercises runner mechanics, not the release allocation.
     """
-    scope = dict(tasks_filter=[TASK], entry_points=["E1", "E2", "E3"])
+    # Opts out of the release's E3 cap: these tests exercise runner mechanics
+    # against a uniform cap, and the release's per-entry-point reduction would
+    # silently change what they are asserting about recruitment.
+    scope = dict(tasks_filter=[TASK], entry_points=["E1", "E2", "E3"],
+                 entry_point_attempt_caps={})
     merged = {**scope, **kw}
     target = merged.get("exposed_target", sweep.EXPOSED_TARGET)
     merged.setdefault("near_miss_target", target)
@@ -77,9 +81,11 @@ def test_the_stage_1_smoke_may_opt_out_of_the_paraphrase_balance():
     # + 12 near-miss + 5 clean.
     conditions = collections.Counter(
         g["condition"] for g in s["groups"].values())
-    assert conditions == {"attacked": 24, "benign": 24, "near_miss": 12,
-                          "clean": 5, "inert": 4}
-    assert s["target_runs"] == 69
+    # Near-miss and clean follow the release allocation, so T3 — which carries
+    # cells only — contributes no blocks for the smoke to check either.
+    assert conditions == {"attacked": 24, "benign": 24, "near_miss": 10,
+                          "clean": 4, "inert": 4}
+    assert s["target_runs"] == 66
     # The schedule states what it is rather than leaving a reader to infer it
     # from the target, and the release schedule stays marked as one.
     assert s["integration_smoke"] is True
@@ -126,30 +132,100 @@ def test_the_smoke_recruits_its_injected_groups(tmp_path):
         assert group["reached_target"] == (group["exposed"] >= group["target"])
 
 
+def test_an_entry_point_may_carry_its_own_attempt_cap():
+    """Recruitment cost is per entry point, because exposure is.
+
+    E3 measured 0.04 exposure on T1 and 0.00 on T5 in the live runs, so its
+    groups spend the injected cap to report a shortfall. A smaller cap there
+    keeps the exposure rate — a reported result in its own right — without
+    paying for a target the entry point cannot reach.
+    """
+    s = schedule(entry_point_attempt_caps={"E3": 6})
+    caps = {(g["cell"] or "")[:2]: g["attempt_cap"]
+            for g in s["groups"].values() if g["recruits_to_exposure"]}
+    assert caps == {"E1": 9, "E2": 9, "E3": 6, "E4": 9}
+    # Fewer scheduled attempts, not merely an earlier stop: the saving has to
+    # show up in the frozen attempt list or it buys no wall clock.
+    uncapped = schedule(entry_point_attempt_caps={})
+    assert s["max_attempts"] < uncapped["max_attempts"]
+    assert sum(1 for a in s["attempts"] if (a["cell"] or "").startswith("E3")) == 13 * 6
+
+    # The allocation is part of the identity, so two schedules differing only
+    # in where recruitment stops cannot share a sweep id.
+    assert s["sweep_id"] != uncapped["sweep_id"]
+
+    # A cap below the exposed target is the intended use, not an error, and it
+    # is what the release carries for E3.
+    assert schedule()["entry_point_attempt_caps"] == {"E3": 3}
+
+    with pytest.raises(SystemExit, match="unknown entry point"):
+        schedule(entry_point_attempt_caps={"E9": 6})
+    with pytest.raises(SystemExit, match="multiple of 3"):
+        schedule(entry_point_attempt_caps={"E3": 7})
+
+
 def test_the_plan_matches_the_release_allocation():
-    """Plan §10.1: 945 target runs and an 1,881-attempt cap per family."""
+    """`v1.1-budget`: 228 target runs and a 462-attempt cap per family.
+
+    Sized to a wall-clock budget on a self-hosted endpoint, where v1.0-broad's
+    945 runs cost about 58 hours per family.
+    """
     s = schedule()
-    assert len(s["groups"]) == 69
-    assert s["target_runs"] == 945
-    assert s["max_attempts"] == 1881
-    assert s["exposed_target"] == 9
-    assert s["attempt_cap"] == 27
-    assert s["near_miss_target"] == 36
-    assert s["clean_target"] == 9
+    assert len(s["groups"]) == 66
+    assert s["target_runs"] == 228
+    assert s["max_attempts"] == 462
+    assert s["exposed_target"] == 3
+    assert s["attempt_cap"] == 9
+    assert s["near_miss_target"] == 6
+    assert s["clean_target"] == 3
     # N is a multiple of three so the paraphrase blocks stay balanced (§7.5).
     assert s["exposed_target"] % 3 == 0
+    # The two reductions that are not simply smaller N.
+    assert s["entry_point_attempt_caps"] == {"E3": 3}
+    assert s["cells_only_tasks"] == ["t3_build_and_run"]
     conditions = [g["condition"] for g in s["groups"].values()]
     assert conditions.count("attacked") == 24   # 16 core cells + 8 auxiliary
     assert conditions.count("benign") == 24
     assert conditions.count("inert") == 4       # per entry point, core task only
-    assert conditions.count("near_miss") == 12  # per (task, induced action)
-    assert conditions.count("clean") == 5       # per task
-    # The run budget by condition, per model family (plan §10.1).
+    assert conditions.count("near_miss") == 10  # per (task, action), less T3's
+    assert conditions.count("clean") == 4       # per task, less T3's
+    # The run budget by condition, per model family.
     runs = {}
     for group in s["groups"].values():
         runs[group["condition"]] = runs.get(group["condition"], 0) + group["target"]
-    assert runs == {"attacked": 216, "benign": 216, "inert": 36,
-                    "near_miss": 432, "clean": 45}
+    assert runs == {"attacked": 72, "benign": 72, "inert": 12,
+                    "near_miss": 60, "clean": 12}
+
+
+def test_a_cells_only_task_keeps_the_crossing_balanced():
+    """Plan §6.2: the auxiliary cells exist to identify the task effect.
+
+    Every entry point and every induced action appears in exactly three tasks,
+    and T3's E1A2 and E3A3 are the only auxiliary occurrences holding E1, E3, A2
+    and A3 at three. Dropping T3 to save wall clock would confound the task term
+    with both factors; carrying its cells without its blocks does not.
+    """
+    s = schedule()
+    assert not [n for n in s["groups"]
+                if n.startswith(("near_miss|t3", "clean|t3"))]
+    cells = collections.defaultdict(set)
+    for g in s["groups"].values():
+        if g["condition"] in ("attacked", "benign") and g["cell"]:
+            cells[g["task"]].add(g["cell"])
+    assert "t3_build_and_run" in cells
+    for level in ("E1", "E2", "E3", "E4"):
+        assert sum(1 for cs in cells.values()
+                   if any(c.startswith(level) for c in cs)) == 3
+    for level in ("A1", "A2", "A3", "A4"):
+        assert sum(1 for cs in cells.values()
+                   if any(c.endswith(level) for c in cs)) == 3
+
+    # An explicit task outside the scope is a mistake; the default is not.
+    with pytest.raises(SystemExit, match="outside this schedule's scope"):
+        sweep.plan(HOST, INJ, 7, tasks_filter=[TASK], entry_points=["E1"],
+                   cells_only_tasks=["t3_build_and_run"])
+    narrowed = sweep.plan(HOST, INJ, 7, tasks_filter=[TASK], entry_points=["E1"])
+    assert narrowed["cells_only_tasks"] == []
 
 
 def test_every_auxiliary_cell_is_also_a_core_cell():
@@ -176,7 +252,7 @@ def test_every_auxiliary_cell_is_also_a_core_cell():
 
 
 def test_near_miss_carries_its_own_n_without_the_paraphrase_guard():
-    """N is per condition: 36 for near-miss beside 9 for injected groups (§7.4).
+    """N is per condition: 6 for near-miss beside 3 for injected groups (§7.4).
 
     The multiple-of-three rule protects the paraphrase allocation, which
     near-miss and clean blocks do not have — applying it to them is what kept
@@ -185,11 +261,11 @@ def test_near_miss_carries_its_own_n_without_the_paraphrase_guard():
     s = schedule()
     for group in s["groups"].values():
         if group["condition"] == "near_miss":
-            assert group["target"] == 36
-            assert group["attempt_cap"] == 36     # nothing to recruit, no headroom
+            assert group["target"] == 6
+            assert group["attempt_cap"] == 6      # nothing to recruit, no headroom
             assert group["paraphrases"] == []
         elif group["condition"] in ("attacked", "benign", "inert"):
-            assert group["target"] == 9
+            assert group["target"] == 3
     # A near-miss target that is not a multiple of three is legal; an injected
     # one is not.
     odd = sweep.plan(HOST, INJ, 7, near_miss_target=10, **RELEASE)

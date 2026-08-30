@@ -268,19 +268,26 @@ Per model family:
 
 | Component | Target runs |
 |-----------|------------:|
-| Attacked: 24 groups × 9 | 216 |
-| Benign: 24 groups × 9 | 216 |
-| Inert: 4 entry points × 9 | 36 |
-| Near-miss: 12 blocks × 36 | 432 |
-| Clean: 5 tasks × 9 | 45 |
-| **Total** | **945** |
+| Attacked: 24 groups × 3 | 72 |
+| Benign: 24 groups × 3 | 72 |
+| Inert: 4 entry points × 3 | 12 |
+| Near-miss: 10 blocks × 6 | 60 |
+| Clean: 4 tasks × 3 | 12 |
+| **Total** | **228** |
 
 Injected groups may retry up to three times per target; near-miss and clean
-blocks have fixed counts. That is a hard cap of **1,881 attempts** per family —
-**7,560 target runs against a 15,048-attempt cap** across the eight.
+blocks have fixed counts. That is a hard cap of **462 attempts** per family —
+**1,824 target runs against a 3,696-attempt cap** across the eight. On a
+self-hosted endpoint that is about **11 hours per model family**, which is what
+this allocation is sized against (`design_history.md` §10).
 
-Controls account for **729** of the 945 target runs per family, and near-miss
-alone is 432 of them: this is a design whose most novel quantity is a control. If
+Ten near-miss blocks and four clean, not twelve and five: T3 carries its two
+cells and no blocks of its own, because those cells are what keep every entry
+point and induced action present in three tasks apiece while its runs are the
+most expensive in the sweep.
+
+Controls account for **156** of the 228 target runs per family, and near-miss
+alone is 60 of them: this is a design whose most novel quantity is a control. If
 cost binds, a predeclared ladder reduces scope in a fixed order, each rung named
 with the claim it costs — model families from the end of the registered order
 (8 → 6 → 4), then the auxiliary tasks, then the near-miss N. Rungs 1–3 cost

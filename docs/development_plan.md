@@ -1784,29 +1784,36 @@ This member takes a Holm slot like any other Tier 2 member.
 
 ### 10.1 `v1.0-broad` — five tasks, two-agent, eight model families
 
-The runtime decision is fixed: N = 9 exposed runs per injected group with a
-3N = 27 attempt cap, N = 36 per near-miss block, N = 9 per clean block, all
+The runtime decision is fixed: N = 3 exposed runs per injected group with a
+3N = 9 attempt cap, N = 6 per near-miss block, N = 3 per clean block, all
 twenty-four (task, cell) groups, all five conditions, eight model families, and
-one execution mode.
+one execution mode. Two groups depart from the uniform figures, each for a
+measured reason recorded in `design_history.md` §10: **E3 carries an attempt cap
+of 3** because its exposure measured 0.04 on T1 and 0.00 on T5, so no cap
+reaches N and its reported quantity is exposure rather than compliance; and
+**T3 carries cells only**, supplying the two cells that keep §6.2's balance
+without the near-miss and clean blocks that balance does not need.
 
 | Task | Cells | Attacked | Benign | Inert | Near-miss | Clean | Total |
 |------|-------|----------|--------|-------|-----------|-------|-------|
-| T1 | 16 | 144 | 144 | 36 | 144 | 9 | **477** |
-| T2 | 2 | 18 | 18 | — | 72 | 9 | **117** |
-| T3 | 2 | 18 | 18 | — | 72 | 9 | **117** |
-| T4 | 2 | 18 | 18 | — | 72 | 9 | **117** |
-| T5 | 2 | 18 | 18 | — | 72 | 9 | **117** |
-| **All** | **24** | **216** | **216** | **36** | **432** | **45** | **945** |
+| T1 | 16 | 48 | 48 | 12 | 24 | 3 | **135** |
+| T2 | 2 | 6 | 6 | — | 12 | 3 | **27** |
+| T3 | 2 | 6 | 6 | — | — | — | **12** |
+| T4 | 2 | 6 | 6 | — | 12 | 3 | **27** |
+| T5 | 2 | 6 | 6 | — | 12 | 3 | **27** |
+| **All** | **24** | **72** | **72** | **12** | **60** | **12** | **228** |
 
 | Component | Target runs | Hard attempt cap |
 |-----------|------------:|-----------------:|
-| Per model family | 945 | 1,881 |
-| **Eight model families** | **7,560** | **15,048** |
+| Per model family | 228 | 462 |
+| **Eight model families** | **1,824** | **3,696** |
 
 Injected attacked, benign, and inert groups may recruit up to 3N; near-miss and
-clean blocks have fixed counts, which is why the cap is 1.99× the target.
-Controls account for 729 of the 945 target runs per family — 77% — and near-miss
-alone is 432 of them. Benign, inert, near-miss, and clean each remove a different
+clean blocks have fixed counts, which is why the cap is about twice the target.
+Controls account for 156 of the 228 target runs per family — 68% — and near-miss
+alone is 60 of them. Near-miss was 46% of `v1.0-broad` and is 26% here, which is
+the largest single concession this allocation makes and the first thing to
+restore if the budget ever loosens. Benign, inert, near-miss, and clean each remove a different
 alternative explanation, and the one that removes "the model is just cautious" is
 the one the field has least of.
 
@@ -1826,7 +1833,7 @@ cost = uncached_input * rate_in
 
 Before a sweep starts, its expected cost, **near-cap cost**, and contingency
 must be approved. "Expected cost" is the nominal run budget. "Near-cap cost" is
-the cost of the **attempt hard cap** (1,881 attempts per model family, 15,048
+the cost of the **attempt hard cap** (462 attempts per model family, 3,696
 across the eight). The distinction matters because over-recruitment on
 low-exposure entry points can push the actual start count well above the nominal
 945, even though every injected group is capped at 3N (§8.4, §11.5 design risks).

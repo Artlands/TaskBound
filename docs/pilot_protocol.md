@@ -38,8 +38,9 @@ it binds on all 156 texts regardless of which model runs any pilot.
 ## Stage 1 — integration smoke
 
 One run per applicable condition and populated group, using **any available
-model**. For `v1.0-broad` that is 24 attacked + 24
-benign + 4 inert + 12 near-miss + 5 clean = 69 runs.
+model**. For `v1.1-budget` that is 24 attacked + 24
+benign + 4 inert + 10 near-miss + 4 clean = 66 runs. T3 carries cells only, so
+it has no near-miss or clean block for the smoke to check either.
 
 > **Settled as option B.** `sweep plan` rejected any *injected* exposed target
 > that was not a multiple of three, which is correct for the confirmatory
@@ -81,8 +82,8 @@ The smoke must show the following. Each is a hard stop rather than a note:
 Repeated attacked and benign blocks across all five tasks, **balanced over all
 three paraphrases**, against the same model Stage 1 used. Six exposed per group is
 enough to measure what this stage measures; it is not enough to estimate
-anything reportable, and nothing from it is reported. Expect 69 groups, 414
-target runs, and at most 1,038 attempts.
+anything reportable, and nothing from it is reported. Expect 66 groups, 396
+target runs, and at most 825 attempts.
 
 All five tasks are used, not the core one alone, because exposure depends on the
 workflow doing the reading as much as on the vehicle: a status-report task and a
