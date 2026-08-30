@@ -158,6 +158,14 @@ def test_an_entry_point_may_carry_its_own_attempt_cap():
     # is what the release carries for E3.
     assert schedule()["entry_point_attempt_caps"] == {"E3": 3}
 
+    # The CLI needs a spelling for "none of them", because an absent flag means
+    # the registered allocation rather than an empty one.
+    assert sweep._parse_entry_point_caps(["none"]) == {}
+    assert sweep._parse_cells_only(["none"]) == []
+    assert sweep._parse_cells_only(None) is None
+    with pytest.raises(SystemExit, match="uniform cap"):
+        sweep._parse_entry_point_caps(["E3"])
+
     with pytest.raises(SystemExit, match="unknown entry point"):
         schedule(entry_point_attempt_caps={"E9": 6})
     with pytest.raises(SystemExit, match="multiple of 3"):

@@ -931,16 +931,32 @@ def _manifest(schedule, args, state, usage, started, stopped_early) -> dict[str,
 
 
 # --- CLI -----------------------------------------------------------------
+# argparse `append` cannot express "none of them": an absent flag means the
+# registered allocation, so a caller who wants a uniform cap needs a value that
+# says so. `plan()` already takes the empty mapping; this is the CLI spelling.
+OPT_OUT = "none"
+
+
 def _parse_entry_point_caps(values: Sequence[str] | None) -> dict[str, int]:
     """`["E3=6"]` -> `{"E3": 6}`. plan() validates the entry point and the cap."""
     caps: dict[str, int] = {}
     for value in values or ():
+        if value.strip().lower() == OPT_OUT:
+            continue
         entry, _, cap = value.partition("=")
         if not cap.strip().isdigit():
             raise SystemExit(
-                f"--entry-point-attempt-cap expects EP=N, e.g. E3=6; got {value!r}")
+                f"--entry-point-attempt-cap expects EP=N (e.g. E3=6) or "
+                f"{OPT_OUT!r} for a uniform cap; got {value!r}")
         caps[entry.strip()] = int(cap)
     return caps
+
+
+def _parse_cells_only(values: Sequence[str] | None) -> list[str] | None:
+    """`None` keeps the registered allocation; `["none"]` clears it."""
+    if values is None:
+        return None
+    return [v for v in values if v.strip().lower() != OPT_OUT]
 
 
 def cmd_plan(args: argparse.Namespace) -> int:
@@ -955,7 +971,7 @@ def cmd_plan(args: argparse.Namespace) -> int:
         "entry_point_attempt_caps": (
             None if getattr(args, "entry_point_attempt_caps", None) is None
             else _parse_entry_point_caps(args.entry_point_attempt_caps)),
-        "cells_only_tasks": getattr(args, "cells_only_tasks", None),
+        "cells_only_tasks": _parse_cells_only(getattr(args, "cells_only_tasks", None)),
     }
     schedule = plan(args.host, args.injections, args.seed, args.exposed_target,
                     args.attempt_cap, tasks, args.entry_points, **extra)
