@@ -37,7 +37,7 @@ from . import runner
 # `v1.1-budget` sizes the allocation to a wall-clock budget on a self-hosted
 # endpoint, where a sweep is measured in days rather than dollars. `v1.0-broad`
 # (N = 9, cap 27, near-miss 36) costs about 58 hours per model family on the
-# reference deployment and is retired to design_history.md; every reduction
+# reference deployment; every reduction
 # below is priced against measurements from 399 live attempts rather than
 # chosen for roundness.
 EXPOSED_TARGET = 3

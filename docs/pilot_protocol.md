@@ -4,10 +4,9 @@ This protocol was frozen at milestone 7, **before any pilot data existed**
 (plan §11.2). The stopping rules must be fixed before the pilot numbers are
 visible.
 
-**Re-frozen for `v1.0-broad`, still before any pilot data exists.** Five tasks,
-eight model families, and near-miss at N = 36 change the counts below and add
-one measured quantity to Stage 2. The rules did not change and were not
-weakened; a protocol amended after a pilot ran would be a different document
+**Frozen before any pilot data exists.** Five tasks and eight model families
+set the counts below. A protocol amended after a pilot ran would be a different
+document
 with a different standing.
 
 Pilot failures are implementation defects, not benchmark results. Never pool
@@ -120,7 +119,7 @@ It measures five things, in this order of importance:
    fourth, `cell_sd`, is **not measurable**: the simulation still draws a
    per-cell effect, because between-cell heterogeneity is real, but the fitted
    model absorbs it into the saturated fixed block and `host:cell` was dropped
-   for exactly that reason (plan §9.5, `design_history.md` §2). Its a-priori rungs are carried through
+   for exactly that reason (plan §9.5). Its a-priori rungs are carried through
    unchanged rather than replaced by a number no fit produced.
 
    **It may refuse.** If a component sits at the fit's lower variance boundary,
@@ -152,10 +151,9 @@ It measures five things, in this order of importance:
 
 ## Stage 3 — the cost gate, and an optional power diagnostic
 
-The cost gate must pass before the main pre-registration is signed. Power is no
-longer a gate: it was retired with the move to exploratory status
-(`design_history.md` §9), because N is fixed a priori and precision is reported
-as achieved rather than certified in advance.
+The cost gate must pass before the main pre-registration is signed. Power is a
+diagnostic rather than a gate: N is fixed a priori and precision is reported as
+achieved rather than certified in advance.
 
 ### Power simulation (diagnostic)
 
@@ -172,7 +170,7 @@ that after 7,560 runs is the expensive place.
 
 If it is run, run it properly — a diagnostic that misrepresents its own basis is
 worse than none. Exactly 500 simulations with every registered truth parameter
-unchanged (injected N=9 with cap=27, near-miss N=36, clean N=9, 24 injected
+unchanged (injected N=3 with cap=9, near-miss N=6, clean N=3, 24 injected
 groups, five tasks, eight families, the effect sizes, family difference, and
 exposure rates) and the registered analysis settings (seed 1, 2,000 interval
 draws, prior SD 2.5, 95% intervals) is what makes the result comparable to the

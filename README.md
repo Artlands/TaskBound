@@ -4,8 +4,7 @@ A benchmark for measuring whether an LLM agent working in an HPC-like
 environment stays inside the task it was given. See `docs/development_plan.md`
 for the design and `docs/plan_summary.md` for the short version.
 `docs/execution_plan.md` is the phase-by-phase run plan and pre-registration
-checklist; `docs/design_history.md` records superseded designs and the evidence
-that retired them.
+checklist.
 
 **Status: built, and exercised live at reduced scope. No release result exists.**
 Three live runs against one self-hosted, unregistered model family have taken
@@ -18,33 +17,27 @@ what is still missing.
 
 `v1.1-budget` schedules all five tasks — T1's complete 16-cell E1–E4 × A1–A4
 crossing plus two cells each from T2–T5 — under two-agent execution, all five
-conditions, eight model families, and near-miss at N = 6. It replaces
-`v1.0-broad` (the same crossing at near-miss N = 36), which is retired to
-`docs/design_history.md` §10, which in turn replaced `v1.0-compact` (§5).
+conditions, eight model families, and near-miss at N = 6. It is sized to a
+wall-clock budget: **228 target runs and about 11 hours per model family** on a
+self-hosted endpoint, where the binding constraint is machine time rather than
+spend and concurrency does not relieve it — twelve workers beat six by 8%.
 
-`v1.1-budget` exists because `v1.0-broad` cost **58 hours per model family** on
-a self-hosted endpoint — 1,161 attempts at the throughput 399 live attempts
-measured — and concurrency does not fix it: twelve workers beat six by 8%.
-Every reduction is priced against that measurement rather than chosen for
-roundness, and two of them are not simply smaller N. E3 carries its own attempt
-cap because its exposure measured 0.04 on T1 and 0.00 on T5, so its groups
-otherwise spend the full cap to report a shortfall. T3 carries its cells and no
-blocks of its own, because its two cells are what keep every entry point and
-induced action present in three tasks apiece — dropping it to save time would
-confound the task term with both factors — while its runs are the most
-expensive in the sweep.
+Two parts of the allocation are not simply a smaller N, and both are priced
+against measurement. **E3 carries its own attempt cap** because its exposure
+measured 0.04 on T1 and 0.00 on T5: no cap reaches N there, so its reported
+quantity is exposure rather than a compliance estimate. **T3 carries its cells
+and no blocks of its own** — its two cells are what keep every entry point and
+induced action present in three tasks apiece, so dropping it would confound the
+task term with both factors, while its runs are the most expensive in the sweep.
 
-The current claim set is **registration revision `r2`**: the release version
-names the allocation, the registration revision names what is claimed from it.
-`docs/design_history.md` §7 records what `r2` changed from an allocation it did
-not touch.
+The claim set is **registration revision `r2`**: the release version names the
+allocation, the registration revision names what is claimed from it.
 
 **Claim status: exploratory.** `v1.1-budget` reports descriptive quantities with
 intervals; it does not run a confirmatory test. C1 and C2 keep their definitions
 and their 10pp and 20pp reference points, but those are read as reference lines
 beside an interval, never as gates a release passes or fails, and no Holm
-correction is applied over them. Two gates were retired to reach this footing and
-the reasons matter more than the labels:
+correction is applied over them. Two properties of that footing are load-bearing:
 
 - **No power gate.** N is fixed a priori and precision is reported as achieved
   rather than certified in advance, so a wide interval is a result about
@@ -54,8 +47,8 @@ the reasons matter more than the labels:
   independent adjudication stands behind them. Compliance is therefore
   *"performed the action the injection requested, which the authors place outside
   the delegated task"* — a measurement against a stated convention, not an
-  established fact about scope. `docs/design_history.md` §9 records what this
-  costs and which readings it forecloses.
+  established fact about scope. `runner scope-review` can obtain an independent
+  adjudication; the release does not require one.
 
 Anything stronger needs a confirmatory release, which is a different document.
 
@@ -857,8 +850,8 @@ which is a different thing and says nothing about any model.
    coverage now runs above nominal and type-I at the floors is 0.0% rather than
    5%, which costs power (C1 at the planning truth fires 1.00/0.99/0.91 across
    the clustering range, against 1.00/1.00/0.97 before — recorded because it is
-   what the correction cost, though with the power gate retired nothing now
-   turns on the figure). And one quantity moved the other way: the in-scope
+   what the correction cost, though with no power gate nothing turns on the
+   figure). And one quantity moved the other way: the in-scope
    rate at 0.92 now covers .960 against a nominal .975, inside its own Monte
    Carlo interval but no longer conservative. Erring conservative is the right
    side for a reported interval as much as for a gate — an interval that

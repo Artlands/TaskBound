@@ -451,7 +451,7 @@ def candidate_aliasing(
     indicators, and ask whether appending them raises the rank of the fixed
     block. A component that adds nothing is aliased — it will estimate zero
     however much data it is given, exactly as `host:cell` and `request_family`
-    did (plan §9.5, `docs/design_history.md` §2), and the fit will not say so.
+    did (plan §9.5), and the fit will not say so.
 
     A random intercept over `L` levels can add at most `L - 1` columns, because
     the intercept is already their sum. `rank_added == L - 1` is fully

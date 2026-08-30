@@ -522,7 +522,7 @@ def test_the_task_term_is_in_both_registered_blocks():
     assert "task" in aggregate.PRIMARY_FIXED
     assert "task" in aggregate.EXPOSURE_FIXED
     # A main effect only: a saturated task block would reproduce exactly the
-    # aliasing design_history.md §2 records (plan §9.1).
+    # aliasing the saturated block would produce (plan §9.1).
     assert not any("task" in term and "*" in term for term in aggregate.PRIMARY_FIXED)
 
 
@@ -554,7 +554,7 @@ def test_the_task_contrast_is_standardized_over_shared_cells_only():
 
 def test_candidate_components_are_decided_by_rank_not_by_argument():
     """Both retired components reached a draft registration by being reasoned
-    about rather than fitted (`design_history.md` §§2-3)."""
+    about rather than fitted."""
     rows = aggregate.analysis_rows(multi_task_frame(5))
     evidence = aggregate.candidate_components(rows)
     assert set(evidence) == set(aggregate.PRIMARY_RANDOM_CANDIDATES)
@@ -865,7 +865,7 @@ def test_deployment_risk_keeps_compliance_observed_before_a_cutoff():
 def test_the_variance_ratio_is_reported_with_no_promotion_path():
     """The supersession rule was retired at r2: a high ratio is still computed
     and printed, and no longer promotes anything (plan §7.5,
-    docs/design_history.md §7)."""
+    no reporting path promotes it)."""
     result = report(11, paraphrase_sd=1.6, injection_sd=0.05, exposure=(1.0, 1.0, 1.0))
     variance = result["variance_decomposition"]
     assert variance["available"]
@@ -1849,7 +1849,7 @@ def test_floor_verdict_clears_when_the_interval_sits_above_the_floor():
     out = aggregate.floor_verdict(samples, 0.10)
     assert out["verdict"] == "floor_cleared"
     # No longer "confirmatory": all three verdicts are Tier 1 findings, and
-    # none of them is a test (design_history.md §9).
+    # none of them is a test under exploratory status.
     assert out["tier"] == "Tier 1 reported outcome; not a test"
 
 

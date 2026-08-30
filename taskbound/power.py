@@ -870,7 +870,7 @@ def one_simulation(truth: Truth, clustering: dict[str, float], seed: int,
     deficit_samples = c2.pop("_deficit_samples", [])
     # Read each member against its reference line exactly as the report does:
     # unadjusted, because the report applies no correction across them
-    # (design_history.md §9). A simulation that corrected where the report does
+    # under exploratory status. A simulation that corrected where the report does
     # not would be describing a different procedure.
     reads = aggregate.reference_line_reads(c1_samples, deficit_samples)
 
@@ -1096,7 +1096,7 @@ def run(
         "worst_case_power": worst,
         "confirmatory_estimands": list(confirmatory),
         "exploratory_estimands": [name for name in estimands if name not in confirmatory],
-        # Every run of this command is a diagnostic now (design_history.md §9).
+        # Every run of this command is a diagnostic now under exploratory status.
         # What differs between runs is whether the settings were the registered
         # ones, so that is what the artifact records.
         "evaluation_type": "diagnostic",

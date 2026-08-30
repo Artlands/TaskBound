@@ -17,14 +17,11 @@ drifted stale before. The one number worth repeating is the one people get
 wrong: the cost gate is approved against the **hard attempt cap**, not the
 nominal target — 462 per family, 3,696 across the eight. On a self-hosted
 endpoint the binding constraint is wall clock rather than spend: about 11 hours
-per family at the throughput 399 live attempts measured (design_history.md §10).
+per family at the throughput 399 live attempts measured (plan §10.1).
 
-> **Schedule status.** Both committed pilot schedules are **stale against
-> `v1.1-budget`** and must be regenerated. `pilot/sizing_schedule.json` was built
-> for the compact scope (41 groups, 246 target runs) and
-> `pilot/smoke_schedule.json` is still the pre-E4 `0.5.0` artifact. The planner
-> can now produce both. `pilot/smoke_schedule.json` was regenerated against the
-> five-task scope and the Stage 1 decision is settled; sizing is still stale.
+> **Schedule status.** `pilot/smoke_schedule.json` is current against the
+> release scope. `pilot/sizing_schedule.json` is stale and must be regenerated
+> before Stage 2 runs.
 
 ---
 
@@ -73,9 +70,9 @@ maximum attempts** per model family.
 > the cells that share a paraphrase slot, and the auxiliary tasks supply two of
 > those instead of eight. A small true value now sits close enough to zero that
 > `runner clustering` refuses to narrow it. That refusal is the documented,
-> correct branch (plan §9.5), but it makes the unchanged-range outcome more
-> likely than the compact design implied. With power now a diagnostic (Phase 3a)
-> nothing turns on which branch it takes, but `clustering_provenance` still
+> correct branch (plan §9.5), and it makes the unchanged-range outcome the
+> likely one. With power a diagnostic (Phase 3a) nothing turns on which branch
+> it takes, but `clustering_provenance` still
 > records measured-versus-assumed clustering wherever a simulation is run.
 
 ---
@@ -129,7 +126,7 @@ re-derived.
    ```
    Across the five tasks, all 25 positive references must pass and all 25
    negative fixtures must fail. This is what makes the overblocking metric
-   interpretable (plan §8.3), and overblocking now carries 432 runs per family.
+   interpretable (plan §8.3), and overblocking carries 60 runs per family.
 
 3. **Deterministic replay + validation.** Two `scripted` runs from the same seed
    and inputs produce identical backend behaviour; `runner validate` stays clean
@@ -253,7 +250,7 @@ reading, not only on the vehicle. It measures five things in priority order:
    results.
 5. **The overblocking null-denominator drop rate** — how often a near-miss run
    neither does the job nor declines the action. Such a run records
-   `overblocked: null` and leaves the denominator (plan §8.3). N = 36 was chosen
+   `overblocked: null` and leaves the denominator (plan §8.3). The near-miss N was chosen
    against a target precision on the *realized* denominator; if the drop would
    push a (task, action) block below 24, the design is re-versioned **before
    signing** rather than adjusted afterwards (plan §9.5).
@@ -264,12 +261,10 @@ reading, not only on the vehicle. It measures five things in priority order:
 
 The cost gate must pass before signing. Power is a diagnostic (3a).
 
-### 3a. Power simulation — diagnostic, no longer a gate
+### 3a. Power simulation — diagnostic
 
-The power gate was retired with the move to exploratory status
-(`design_history.md` §9). N is fixed a priori and precision is reported as
-achieved, so there is no gate outcome for a simulation to establish and nothing
-here blocks signing.
+N is fixed a priori and precision is reported as achieved, so there is no gate
+outcome for a simulation to establish and nothing here blocks signing.
 
 The simulation is still worth running, and still worth running *properly* if it
 is run at all:
@@ -298,7 +293,7 @@ retained.
 
 Tier 2 and Tier 3 quantities are resolution diagnostics and gate nothing, as
 before. Report the overblocking half-width against its declared target (plan
-§9.5) so a reader can see whether the precision that N = 36 bought was delivered.
+§9.5) so a reader can see whether the precision the near-miss N bought was delivered.
 
 > **On the scope-reduction ladder.** Plan §10.4's rungs address *cost* binding.
 > Every rung lowers resolution, and rung 4 halves near-miss, which costs C2 most
@@ -477,9 +472,8 @@ plans exactly the composition Stage 1 names: 24 attacked + 24 benign + 4 inert
 6. ~~**Stage 1 smoke**: option A or B above.~~ **Settled as B** —
    `--integration-smoke`, marked on the schedule and every result, refused by
    the aggregator.
-7. ~~**The response to a failed C1 power gate.**~~ **Moot** — the power gate is
-   retired (Phase 3a). What remains is a judgement to make before the sweep, not
-   after: how wide an interval on C1 or C2 is still worth reporting.
+7. **How wide an interval on C1 or C2 is still worth reporting.** A judgement
+   to make before the sweep, not after.
 8. **Whether to run the optional real-cluster fidelity probe** (plan §11.5): a
    small set of clean and near-miss runs against a real scheduler on a testbed,
    reported as a qualitative external-validity appendix. It contributes to no
@@ -515,10 +509,10 @@ exist (recorded in release metadata, not a signing item).
 | Field | Fill with | Stage |
 |-------|-----------|-------|
 | `preregistration_id` | A stable id (e.g. `taskbound-broad-v1`) | `[SIG]` |
-| `release_tag` | `v1.0-broad` plus the git tag/commit it is signed at | `[SIG]` |
+| `release_tag` | `v1.1-budget` plus the git tag/commit it is signed at | `[SIG]` |
 | `signed` | `true` (only at signing) | `[SIG]` |
 | `signed_at` | UTC timestamp of signing | `[SIG]` |
-| `release` | already `v1.0-broad` — confirm unchanged | `[P0]` |
+| `release` | already `v1.1-budget` — confirm unchanged | `[P0]` |
 | `registration_revision` | already `r2` — confirm unchanged. The release version names the allocation, the revision names the claim set, and both are frozen here and recorded on every result | `[P0]` |
 
 ## `allocation`
@@ -552,7 +546,7 @@ Re-affirm at signing: `selected_before_attacked_pilot_results=true`, and every
 |-------|-----------|-------|
 | `model_matrix.rank_check` | Rank of each fitted block on the broad design matrix, duplicated columns named, and the admit/exclude decision for `task`, `request_family`, and `task:cell` with its synthetic recovery | `[P-1]` |
 | `model_matrix.near_miss_blocks` | Rank and synthetic recovery for the overblocking and in-scope action fits, and the recovery of a known simulated gap by C2's draw-wise difference | `[P-0.5]` |
-| `power.result_sha256` | ~~SHA-256 of `pilot/power.json`~~ **Not filled.** The power gate is retired (Phase 3a); no power result is frozen into the registration | — |
+| `power.result_sha256` | **Not filled.** Power is a diagnostic (Phase 3a); no power result is frozen into the registration | — |
 | `power.c1_status` | ~~`MET` at ≥80% power~~ **Not filled.** No gate status is recorded; if the diagnostic is run, its resolution is reported as description | — |
 | `power.c2_status` | ~~`MET` at ≥80% power~~ **Not filled**, and there is no demotion branch: C2 is reported with its interval whatever its width. The 0.20 line does not move | — |
 | `estimands[].role` | Confirms which estimands are Tier 1 at signing. Both C1 and C2, always — there is no demotion branch to resolve | `[SIG]` |

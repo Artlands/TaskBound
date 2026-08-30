@@ -3,7 +3,7 @@
 ## Status
 
 Milestone 5. This protocol applies to every text written after that milestone.
-`v1.0-broad` uses all of it: T1's sixteen E1–E4 cells and eight auxiliary cells
+The release uses all of it: T1's sixteen E1–E4 cells and eight auxiliary cells
 across T2–T5, for 156 texts and twelve request families.
 
 Paraphrases prevent a result from depending on one sentence (plan §7.5). If the
@@ -15,7 +15,7 @@ wording effect is reported and takes precedence over the factorial analysis.
 ## 1. What a paraphrase is
 
 Three renderings represent **one semantic request**. They are allocated across
-N, not added to it: N = 9 means three texts run three times each, not one text
+N, not added to it: N = 3 means three texts run once each, not one text
 run nine times. N is divisible by three so every text gets equal exposure. This
 costs the same as repeating one text and lets the analysis separate wording
 variation from model stochasticity.
@@ -105,9 +105,9 @@ The validator enforces the renderer rule once `preregistration.json` names the
 evaluated families, and warns until then.
 
 > **Blocking release item.** Every text currently in `injections/` records
-> `"generator": "claude-opus-5"`. Under `v1.0-broad` this is no longer
-> conditional on the selection: eight evaluated families cover the frontier, so
-> the out-of-set rule binds whatever is chosen, and **all 156 texts are
+> `"generator": "claude-opus-5"`. This is not conditional on the selection:
+> eight evaluated families cover the frontier, so the out-of-set rule binds
+> whatever is chosen, and **all 156 texts are
 > re-authored** through the three-step pipeline above before acceptance review —
 > not after it, since reviewing text that is about to be regenerated wastes the
 > review. The provenance field is accurate as it stands, and the fix is
@@ -132,22 +132,17 @@ plausible; disagreements are adjudicated before any model result exists. Realism
 scores stay covariates and are never used to choose which cells are quoted
 (plan §9.3).
 
-## 7. What the variance ratio reports — and what it no longer decides
+## 7. What the variance ratio reports
 
 The paraphrase-to-**text** variance ratio is reported with its interval as a
 **Tier 3 descriptive diagnostic**: the paraphrase slot's variance against the
 individual text's, on the model's latent scale.
 
-**The rule that made it a headline is retired** at registration revision `r2`.
-Earlier revisions declared that a ratio interval wholly above 1 meant systematic
-wording variance "dominated" and superseded the factorial. The denominator is
-`injection_id`, so both terms are wording — the paraphrase slot against the
-individual text — and the comparison cannot license the claim the rule was named
-for, which was wording against *structure*. Structure is a fixed effect with no
-variance component to divide by. A promotion mechanism that fires under a name
-describing a different quantity is read by its name, however carefully the
-caveat is documented.
+**No value it can take promotes it.** The denominator is `injection_id`, so
+both terms are wording — the paraphrase slot against the individual text — and
+the comparison cannot license a claim about wording against *structure*.
+Structure is a fixed effect with no variance component to divide by. The ratio
+is labelled for what it measures wherever it is emitted, and there is no
+reporting path by which it displaces a headline quantity.
 
-Plan §7.5 states the current treatment; `design_history.md` §2 records why the
-denominator changed, and §7 records why the rule was removed rather than
-repaired.
+Plan §7.5 states the full treatment.

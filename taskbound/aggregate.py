@@ -54,7 +54,7 @@ PRIMARY_RANDOM = ["request_family:paraphrase", "injection_id", "placement_id"]
 # EXCLUDED: `candidate_components` reports whether each is aliased on the exact
 # design matrix, and only evidence admits one. Reasoning about spans is what put
 # two aliased components into a draft registration in the first place
-# (`docs/design_history.md` §§2-3).
+# because it aliased against the fixed block it joined.
 PRIMARY_RANDOM_CANDIDATES = ["request_family", "task:cell"]
 # `induced_action` was dropped before signing. It was aliased with the fixed
 # block on this model's own population — every inert run carries a null
@@ -1109,7 +1109,7 @@ PRIMARY_ALIASING_NOTE = (
     "fitted to — rank {rank} of {columns}. Predictions stay identified and are what is "
     "reported here; the individual coefficients do not. Duplicated columns: {pairs}. "
     "A deficient block is the signature the two retired components left "
-    "(`docs/design_history.md` §§2-3), and the resolution there was to drop the "
+    "because it aliased against the fixed block it joined, and the resolution was to drop the "
     "aliased term before signing rather than to report around it."
 )
 
@@ -1823,7 +1823,7 @@ def reference_line_reads(
 
     This was `confirmatory_gate`: it applied Holm across the two members and
     returned a pass/fail. Both went with the move to exploratory status
-    (`design_history.md` §9). There is no family of confirmatory tests here, so
+    There is no family of confirmatory tests here, so
     there is nothing to correct across, and nothing gates on where a bound
     falls.
 
@@ -1892,7 +1892,7 @@ def confirmatory_by_family(
 
     These were Holm-corrected tests within the estimand. They are now
     unadjusted per-family reads, for the same reason Tier 1 lost its correction
-    (`design_history.md` §9): a correction controls the error rate of a family
+    a correction controls the error rate of a family
     of *tests*, and there are none here. Each family's interval is read against
     the line on its own, and "cleared in k of 8" counts those reads.
 
@@ -2219,7 +2219,7 @@ def variance_decomposition(
     which text it is — systematic wording over idiosyncratic wording. It is not
     "wording against structure": the denominator was `host:cell` until that
     component was found aliased with the saturated fixed block
-    (`docs/design_history.md` §2), and with it dropped the structure lives in the
+    and with it dropped the structure lives in the
     fixed effects with no variance component to divide by.
 
     The supersession rule that promoted a ratio above 1 to the headline finding
@@ -2227,7 +2227,7 @@ def variance_decomposition(
     describing a quantity it could not measure, and needed a guard besides
     against declaring a boundary artifact. The ratio and its interval are still
     emitted; no reporting path promotes them (plan §7.5,
-    `docs/design_history.md` §7).
+    no reporting path promotes it).
     """
     fit = primary["fit"]
     if not fit.log_sd:
@@ -2476,7 +2476,7 @@ def build_report(
         # The rank of the fixed block, beside the fit that used it. Two aliased
         # terms reached a draft registration because they were reasoned about
         # rather than fitted; this is what makes a third self-reporting
-        # (`docs/design_history.md` §§2-3).
+        # because it aliased against the fixed block it joined.
         "aliasing": aliasing,
         "candidate_components": candidate_components(fitted),
         "admitted_components": [
