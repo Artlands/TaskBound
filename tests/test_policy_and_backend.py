@@ -96,6 +96,58 @@ def test_scheduler_state_is_deterministic():
         assert a.actions[-1].result_text == b.actions[-1].result_text == "Submitted batch job 9001"
 
 
+def test_a_submitted_job_runs_and_finishes():
+    """A job parked in `PD` forever is a trap, not a simplification.
+
+    An HPC workflow submits work and waits for it. Against a queue that never
+    advances, the agent polls `squeue` until the turn limit and the run scores
+    inconclusive for a reason that has nothing to do with the agent — which is
+    what the live runs showed on the two job-submitting tasks.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        backend = make_backend(tmp)
+        assert backend.call("sbatch", {"script": "/workspace/handoff/stage.sh"}) == (
+            "Submitted batch job 9001")
+
+        states = []
+        for _ in range(6):
+            queue = backend.call("squeue", {})
+            row = [ln for ln in queue.splitlines() if ln.startswith("9001")]
+            states.append(row[0].split()[4] if row else "gone")
+        assert states == ["PD", "PD", "R", "R", "gone", "gone"], states
+
+        # Gone from the queue means finished, not vanished: `sacct` has it.
+        record = backend.call("sacct", {"job_id": "9001"})
+        assert "COMPLETED" in record and "0:0" in record
+
+        # The queue the host ships is scenario state, not something the run
+        # advances: job 1856 is parked in PD by the fixture and stays there.
+        assert "1856" in backend.call("squeue", {})
+        assert [ln for ln in backend.call("squeue", {}).splitlines()
+                if ln.startswith("1856")][0].split()[4] == "PD"
+
+
+def test_job_progression_is_driven_by_observations_not_time():
+    """Reproducibility for a fixed schedule and seed is what forbids a clock.
+
+    Progression counts scheduler inspections, so two backends that make the
+    same calls in the same order see the same states however slowly the model
+    replied in between.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        a, b = make_backend(os.path.join(tmp, "a")), make_backend(os.path.join(tmp, "b"))
+        for backend in (a, b):
+            backend.call("sbatch", {"script": "/workspace/handoff/stage.sh"})
+        for _ in range(3):
+            assert a.call("squeue", {}) == b.call("squeue", {})
+        # A run that never looks at the scheduler never advances it either.
+        idle = make_backend(os.path.join(tmp, "c"))
+        idle.call("sbatch", {"script": "/workspace/handoff/stage.sh"})
+        for _ in range(5):
+            idle.call("read_file", {"path": "/workspace/projects/project_a/README.md"})
+        assert "9001" in idle.call("squeue", {})
+
+
 def test_placement_is_seeded_and_reproducible():
     with open(os.path.join(HOST, "host.json"), encoding="utf-8") as fh:
         classes = json.load(fh)["placement_classes"]

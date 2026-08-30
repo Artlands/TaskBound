@@ -131,6 +131,13 @@ class LocalSimBackend:
         self.scheduler = json.loads(json.dumps(scheduler_state))  # deep copy
         self.actions: list[Action] = []
         self._next_job_id = int(self.scheduler.get("next_job_id", 9000))
+        # Submitted jobs progress on scheduler *observations*, never on wall
+        # clock: a sweep's results have to be reproducible for a fixed schedule
+        # and seed, and a timer would make them depend on how fast the model
+        # replied. `_scheduler_ticks` counts inspections; `_submitted` maps a
+        # job id to the tick it was submitted at.
+        self._scheduler_ticks = 0
+        self._submitted: dict[int, int] = {}
 
     # --- lifecycle ------------------------------------------------------
     @classmethod
@@ -226,8 +233,60 @@ class LocalSimBackend:
         if not action.account_allowed:
             raise ToolRefusal(f"scheduler operation {verb!r} is not permitted for this account")
 
+    # A submitted job that never leaves `PD` is a trap rather than a
+    # simplification: an agent that submits work and waits for it — which is
+    # what an HPC workflow does — polls until the turn limit and the run is
+    # scored inconclusive for a reason that has nothing to do with the agent.
+    # Jobs therefore run and finish. Two observations pending, two running,
+    # then completed with an accounting record `sacct` can return.
+    PENDING_OBSERVATIONS = 2
+    RUNNING_OBSERVATIONS = 2
+
+    def _fixture_account(self) -> str:
+        for record in self.scheduler.get("accounting", {}).values():
+            if record.get("Account"):
+                return str(record["Account"])
+        return self.scheduler.get("account", "")
+
+    def _advance_scheduler(self) -> None:
+        """Move submitted jobs along one observation tick.
+
+        Only jobs this run submitted move. The queue the host ships is fixture
+        state — a job parked in `PD` is part of the scenario an agent reads —
+        and advancing it would change what every task sees.
+        """
+        self._scheduler_ticks += 1
+        queue = self.scheduler.setdefault("queue", [])
+        for job in list(queue):
+            submitted_at = self._submitted.get(job["job_id"])
+            if submitted_at is None:
+                continue
+            elapsed = self._scheduler_ticks - submitted_at
+            if elapsed <= self.PENDING_OBSERVATIONS:
+                continue
+            if elapsed <= self.PENDING_OBSERVATIONS + self.RUNNING_OBSERVATIONS:
+                seconds = (elapsed - self.PENDING_OBSERVATIONS) * 30
+                job["state"] = "R"
+                job["time"] = f"{seconds // 60}:{seconds % 60:02d}"
+                continue
+            queue.remove(job)
+            self.scheduler.setdefault("accounting", {})[str(job["job_id"])] = {
+                "JobID": str(job["job_id"]),
+                "JobName": job["name"],
+                # The account the host's own records carry, so a completed job
+                # reads like the rest of the accounting rather than like a
+                # fixture with a field missing.
+                "Account": self._fixture_account(),
+                "Partition": job["partition"],
+                "State": "COMPLETED",
+                "ExitCode": "0:0",
+                "Elapsed": f"00:0{self.RUNNING_OBSERVATIONS}:00",
+                "NNodes": job["nodes"],
+            }
+
     def _tool_squeue(self, action: Action, args: dict[str, Any]) -> str:
         self._check_verb(action, "inspect")
+        self._advance_scheduler()
         rows = ["JOBID  PARTITION  NAME        USER   ST  TIME    NODES"]
         for job in self.scheduler.get("queue", []):
             rows.append(
@@ -238,6 +297,7 @@ class LocalSimBackend:
 
     def _tool_sacct(self, action: Action, args: dict[str, Any]) -> str:
         self._check_verb(action, "inspect")
+        self._advance_scheduler()
         job_id = str(args["job_id"]).strip()
         record = self.scheduler.get("accounting", {}).get(job_id)
         if record is None:
@@ -262,6 +322,7 @@ class LocalSimBackend:
             }
         )
         self.scheduler.setdefault("submissions", []).append({"job_id": job_id, "script": script})
+        self._submitted[job_id] = self._scheduler_ticks
         action.args = {**args, "assigned_job_id": job_id}
         return f"Submitted batch job {job_id}"
 

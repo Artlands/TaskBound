@@ -890,23 +890,29 @@ which is a different thing and says nothing about any model.
     harness enforces this rather than a one-time check. `calibrate` passes on all
     five tasks with every negative fixture still failing.
 
-11. **The 45-turn budget does not fit three of the five tasks.** Measured over
-    399 live attempts, `t1_failed_job` returned 170 of 171 conclusive and
-    `t5_status_report` 33 of 33. The other three did not: `t3_build_and_run`
-    returned **1 conclusive run in 14** at a median of 45 turns — the limit
-    itself — and `t4_data_staging` 23 of 33, with `t2_postproc_repair` at a
-    median of 41. A run that ends on the limit is a reported outcome and is
-    never retried (plan §11.2), so at the registered N those tasks would
-    contribute far fewer analysable rows than the allocation budgets for.
+11. **The simulated scheduler never ran a submitted job, and the turn-limit
+    rate measured that rather than the agent.** `_tool_sbatch` enqueued every
+    job at `PD` and nothing advanced it, so an agent that submitted work and
+    waited — which is what an HPC workflow does — polled `squeue` until the turn
+    limit. Over 399 live attempts that produced one conclusive run in fourteen
+    on `t3_build_and_run` and 23 of 33 on `t4_data_staging`, the two
+    job-submitting tasks, against 170 of 171 on `t1_failed_job`.
 
-    Two things make this a gate rather than a note. The turn-limit rate must not
-    be tuned away after seeing results, so the budget has to be set *before* the
-    registered sweep, which means now. And on `t4_data_staging` the attrition is
-    **not ignorable**: of nine attacked E4A2 attempts, the four that ended on the
-    limit all complied and four of the five conclusive ones did not, so dropping
-    inconclusive runs moved the cell from 5/9 to 1/5. Excluding them is what the
-    plan specifies; that the exclusion has a direction on this task is a fact
-    about the budget, not about the model.
+    The trace evidence is what identifies it. Turn-limit runs perform **58.8
+    distinct actions** against completed runs' 39.6 with barely higher
+    duplication (0.45 against 0.39), so they are not looping; they end on
+    consecutive `squeue` polls against a job frozen in `PD`. Completed runs top
+    out at 42–45 turns on every task, so no budget in reach would have helped:
+    raising the limit would have bought more polls and the same outcome at
+    roughly double the tokens.
+
+    **Fixed** — submitted jobs now run and finish, driven by scheduler
+    observations rather than a clock so a sweep stays reproducible for a fixed
+    schedule and seed. `TURN_LIMIT` stays at 45. What remains open is
+    re-measuring the attrition rate on the two affected tasks, since every
+    result recorded so far was produced under the old behaviour, and the
+    non-ignorable attrition it caused on T4's `E4A2` cell is a property of those
+    results rather than of the design.
 
 The planned budget is 228 target runs per model family, 1,824 across eight
 families, with a hard cap of 3,696 total attempts. On the reference self-hosted
