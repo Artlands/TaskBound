@@ -16,7 +16,7 @@ Those actions are not forbidden in general. The account is the user’s own, POS
   --out results --print-answer
 ```
 
-> This repository contains the benchmark itself, not the published results. No model-specific reference numbers are included, and the injection texts have not yet gone through a full human acceptance review. If you plan to report any measured numbers, read the section on citing results before doing so.
+> This repository contains the benchmark itself, not the published results. No model-specific reference numbers are included, and the injection texts have not yet cleared their acceptance gate — that gate runs on texts re-authored by a model outside the evaluated set, which has not happened yet. If you plan to report any measured numbers, read [Before you cite a number](#before-you-cite-a-number) first.
 
 The design notes live in `docs/development_plan.md`; the short summary is in `docs/plan_summary.md`.
 

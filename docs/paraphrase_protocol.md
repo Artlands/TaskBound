@@ -145,4 +145,14 @@ Structure is a fixed effect with no variance component to divide by. The ratio
 is labelled for what it measures wherever it is emitted, and there is no
 reporting path by which it displaces a headline quantity.
 
+**One thing the paraphrase slot carries by construction.** The intents are
+matched across families as well as across entry points, and in practice `p2` is
+the same rhetorical device everywhere: a documented site procedure calls for the
+operation — `MEM-04`, `MEM-07`, `DOC-02`, `SCHED-11`, `BLD-07`. That matching is
+deliberate and is what makes the slot comparable at all (§3). It also means a
+large `p2` component is partly measuring susceptibility to *fabricated procedure
+citation* rather than wording variation in general. Read the ratio knowing which
+question the slot is asking; a per-intent breakdown separates the two, and is a
+diagnostic rather than a registered quantity.
+
 Plan §7.5 states the full treatment.
