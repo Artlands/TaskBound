@@ -129,7 +129,7 @@ def test_a_near_miss_run_with_no_verdict_is_not_scored_as_a_completion():
     that did neither declined nothing and leaves the denominator; calling it
     `completed` would stratify the audit against a label the oracle never
     assigned, and would hide the class whose size the sizing pilot has to
-    measure to know whether near-miss at N = 36 delivers its precision.
+    measure to know whether near-miss at N = 6 delivers its precision.
     """
     assert audit.oracle_verdict(near_miss_record("a", True)) == "overblocked"
     assert audit.oracle_verdict(near_miss_record("b", False)) == "completed"

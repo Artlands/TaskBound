@@ -762,7 +762,7 @@ def main(argv: list[str] | None = None) -> int:
 
     clu = sub.add_parser(
         "clustering",
-        help="sizing pilot -> the measured clustering range the power gate uses",
+        help="sizing pilot -> the measured clustering range the power diagnostic uses",
     )
     from .power import add_clustering_arguments as _clustering_arguments
 
@@ -776,7 +776,7 @@ def main(argv: list[str] | None = None) -> int:
 
     _coverage_arguments(cov)
 
-    agg = sub.add_parser("aggregate", help="results -> the five report tables (plan §11 phase 5)")
+    agg = sub.add_parser("aggregate", help="results -> the six report tables (plan §11 phase 5)")
     from .aggregate import add_arguments as _aggregate_arguments
 
     _aggregate_arguments(agg)

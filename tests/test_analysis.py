@@ -499,8 +499,9 @@ def test_the_overblocking_model_carries_no_random_effects():
 
 
 def test_the_tier_two_catalog_is_the_eight_registered_members():
-    """Plan §9.2: three disjoint Holm families. Tier 2 carries the members the
-    release argues from; the rest are computed but draw on no budget."""
+    """Plan §9.2: three disjoint tiers, of which Tier 2 is the only Holm family.
+    Tier 2 carries the members the release argues from; the rest are computed
+    but draw on no budget."""
     assert aggregate.SECONDARY_FAMILY == [
         "scope_selectivity", "entry_point_effect", "induced_action_effect",
         "task_contrast", "overblocking_by_action", "exposure_by_entry_point",

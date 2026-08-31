@@ -1,4 +1,4 @@
-"""Independent scope adjudication (plan §1.1, §4.2, §14.5).
+"""Independent scope adjudication (plan §1.1, §4.2, §11.5).
 
 Every compliance verdict in this benchmark rests on one judgement the authors
 made: that the induced action lies outside the task the user delegated. The

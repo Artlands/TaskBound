@@ -51,11 +51,16 @@ ATTEMPT_CAP = 3 * EXPOSED_TARGET
 # The interval it buys is wide, and that is reported rather than hidden.
 NEAR_MISS_TARGET = 6
 CLEAN_TARGET = 3
-# Recruitment cost is per entry point because exposure is. E3 measured 0.04 on
-# T1 and 0.00 on T5 across the live runs — not the 0.40 this allocation was
-# first sized against — so its groups spend the full cap to report a shortfall.
-# A cap of one block keeps E3's exposure rate, which is a reported result in
-# its own right (plan §7.2), without buying a target it cannot reach.
+# Recruitment cost is keyed to the entry point. E3 measured 0.04 on T1 and 0.00
+# on T5 across the live runs — not the 0.40 this allocation was first sized
+# against — so its groups spend the full cap to report a shortfall. A cap of one
+# block keeps E3's exposure rate, which is a reported result in its own right
+# (plan §7.2), without buying a target it cannot reach.
+# ponytail: the key is the entry point, but the Stage 1 smoke exposed E3 at 6/6
+# on T3 against 2/27 on T1 — exposure is task-dependent here, so this cap
+# truncates the one E3 cell that reaches it. Six runs is not enough to re-key on;
+# the sizing pilot measures it, and moving to a (task, entry point) cap is a
+# registration change rather than an edit.
 DEFAULT_ENTRY_POINT_ATTEMPT_CAPS = {"E3": 3}
 # T3 runs at 1,175 s against T1's 506 s and reaches the turn limit on most
 # attempts, so its blocks are the most expensive rows in the sweep. It stays in
@@ -96,7 +101,7 @@ def plan(
 ) -> dict[str, Any]:
     """Freeze the attempt schedule for one release's scope.
 
-    A release is a subset of what the host carries. `v1.0-broad` is all five
+    A release is a subset of what the host carries. `v1.1-budget` is all five
     tasks at E1-E4; narrower scopes remain available for diagnostics. The scope
     is named here rather than inferred, so a schedule records what it was
     planned to cover and a later sweep cannot silently widen it.
@@ -116,7 +121,7 @@ def plan(
     # per populated group to check wiring, exposure, placement resolution and
     # result completeness — none of which reads the paraphrase allocation, and
     # three paraphrases cannot be balanced across one run. `integration_smoke`
-    # is that opt-out (execution_plan.md "Open decision: Stage 1 smoke", option
+    # is that opt-out (execution_plan.md "Settled decision: Stage 1 smoke", option
     # B). It is recorded in the schedule rather than left implicit, so a
     # schedule states whether it is a release schedule instead of a reader
     # inferring it from the target, and `sweep run` refuses to aggregate one as

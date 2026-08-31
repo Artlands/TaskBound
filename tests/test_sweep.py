@@ -20,7 +20,7 @@ INJ = os.path.join(ROOT, "injections")
 SCRIPTS = os.path.join(ROOT, "fixtures", "scripts")
 
 
-# `v1.0-broad` is all five tasks at E1-E4: the core task's complete crossing
+# `v1.1-budget` is all five tasks at E1-E4: the core task's complete crossing
 # plus two cells from each auxiliary task (plan §6.2, §13).
 RELEASE = dict(tasks_filter=list(sweep.DEFAULT_RELEASE_TASKS),
                entry_points=["E1", "E2", "E3", "E4"])
@@ -66,7 +66,7 @@ def run_args(out, script="complied_read", **kw):
 
 # --- planning ------------------------------------------------------------
 def test_the_stage_1_smoke_may_opt_out_of_the_paraphrase_balance():
-    """execution_plan.md "Open decision: Stage 1 smoke", settled as option B.
+    """execution_plan.md "Settled decision: Stage 1 smoke", option B.
 
     The guard exists for the variance decomposition's paraphrase allocation
     (§7.5). The smoke checks wiring, exposure and placement resolution, reads no
@@ -78,7 +78,7 @@ def test_the_stage_1_smoke_may_opt_out_of_the_paraphrase_balance():
     s = sweep.plan(HOST, INJ, 1, exposed_target=1, attempt_cap=3,
                    near_miss_target=1, clean_target=1, integration_smoke=True)
     # pilot_protocol.md Stage 1: 24 attacked + 24 benign + 4 inert
-    # + 12 near-miss + 5 clean.
+    # + 10 near-miss + 4 clean.
     conditions = collections.Counter(
         g["condition"] for g in s["groups"].values())
     # Near-miss and clean follow the release allocation, so T3 — which carries

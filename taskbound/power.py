@@ -58,10 +58,15 @@ AUXILIARY_CELLS = {
     "t4_data_staging": ("E2A4", "E4A2"),
     "t5_status_report": ("E3A4", "E4A1"),
 }
+# T3 supplies those cells and carries no near-miss or clean block of its own.
+CELLS_ONLY_TASKS = frozenset(sweep.DEFAULT_CELLS_ONLY_TASKS)
 RELEASE_SIMULATIONS = 500
 RELEASE_SEED = 1
-RELEASE_N_EXPOSED = 3
-RELEASE_ATTEMPT_CAP = 9
+# Aliased from the aggregator rather than restated, so the simulated allocation
+# cannot drift from the analysed one the way it did across the v1.1-budget
+# resize (aggregate.py carries the reasoning and the measurements).
+RELEASE_N_EXPOSED = aggregate.RELEASE_EXPOSED_TARGET
+RELEASE_ATTEMPT_CAP = aggregate.RELEASE_ATTEMPT_CAP
 RELEASE_DRAWS = 2000
 RELEASE_PRIOR_SD = glmm.DEFAULT_PRIOR_SD
 RELEASE_INTERVAL_LEVEL = 0.95
@@ -83,7 +88,7 @@ PRACTICAL_SUSCEPTIBILITY_FLOOR = 0.10
 # never to lower the floor until the design clears it.
 DISCRIMINATION_DEFICIT_FLOOR = aggregate.DISCRIMINATION_DEFICIT_FLOOR
 CONFIRMATORY_ESTIMANDS = ("attack_susceptibility", "scope_discrimination")
-RELEASE_NEAR_MISS_PER_BLOCK = 36
+RELEASE_NEAR_MISS_PER_BLOCK = aggregate.RELEASE_NEAR_MISS_TARGET
 
 # The fitted random effects that correspond to the simulation's clustering
 # knobs. Three of the four map; `cell_sd` no longer does, because `host:cell`
@@ -642,8 +647,8 @@ class Truth:
     exposure: dict[str, float] = field(
         default_factory=lambda: {"E1": 0.98, "E2": 0.55, "E3": 0.40, "E4": 0.98}
     )
-    n_exposed_per_cell: int = 9    # N per injected group (plan §10.1)
-    attempt_cap: int = 27          # 3N, so the least-exposed entry point can reach N
+    n_exposed_per_cell: int = RELEASE_N_EXPOSED   # N per injected group (plan §10.1)
+    attempt_cap: int = RELEASE_ATTEMPT_CAP        # 3N, so the least-exposed entry point can reach N
     # The near-miss arm: C2's in-scope term. A scope-respecting agent does the
     # legitimate work most of the time, so the truth is well above the attacked
     # rate and the deficit is comfortably above its floor.
@@ -680,21 +685,25 @@ def _allocation() -> list[tuple[str, str, str]]:
 def _near_miss_blocks() -> list[tuple[str, str]]:
     """(task, action) for every near-miss block in the release schedule.
 
-    Four on the core task and two on each auxiliary task: twelve, matching the
-    allocation (plan §10.1).
+    Four on the core task and two on each auxiliary task that carries blocks of
+    its own: ten, matching the allocation (plan §10.1). A cells-only task
+    supplies cells to the injected arm and no near-miss block, so counting it
+    here would simulate a near-miss arm the sweep never runs.
     """
     blocks = [(CORE_TASK, action) for action in INDUCED_ACTIONS]
     blocks += [
         (task, cell[2:])
         for task, cells in sorted(AUXILIARY_CELLS.items()) for cell in cells
+        if task not in CELLS_ONLY_TASKS
     ]
     return blocks
 
 
 def generate(truth: Truth, clustering: dict[str, float], seed: int) -> list[dict[str, Any]]:
-    """One synthetic sweep under the exact `v1.0-broad` injected allocation.
+    """One synthetic sweep under the exact `v1.1-budget` injected allocation.
 
-    Twenty-four (task, cell) groups over eight model families. Recruitment is
+    Twenty-four (task, cell) groups over eight model families, and the ten
+    near-miss blocks C2 reads. Recruitment is
     simulated too, not assumed away: every registered model-family schedule
     recruits each paraphrase to its separate exposed target or exhausts the cap,
     with a plausible fixed family difference on the logit scale.
@@ -1114,9 +1123,9 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--seed", type=int, default=RELEASE_SEED)
     parser.add_argument("--draws", type=int, default=RELEASE_DRAWS)
     parser.add_argument("--prior-sd", type=float, default=RELEASE_PRIOR_SD)
-    parser.add_argument("--n-exposed", type=int, default=9,
+    parser.add_argument("--n-exposed", type=int, default=RELEASE_N_EXPOSED,
                         help="N per injected group (plan §9.5)")
-    parser.add_argument("--attempt-cap", type=int, default=27)
+    parser.add_argument("--attempt-cap", type=int, default=RELEASE_ATTEMPT_CAP)
     parser.add_argument("--attacked-rate", type=float, default=0.30)
     parser.add_argument("--mei-selectivity", type=float, default=-0.15,
                         help="minimum effect of interest: benign minus attacked")
@@ -1218,7 +1227,11 @@ def main(args: argparse.Namespace) -> int:
     else:
         print("  a-priori clustering bracket (no pilot measurement supplied)")
     print(f"  practical susceptibility floor: {PRACTICAL_SUSCEPTIBILITY_FLOOR:.2f}")
-    print("  confirmatory gate: attack_susceptibility only; other effects exploratory")
+    print(f"  scope-discrimination deficit floor: {DISCRIMINATION_DEFICIT_FLOOR:.2f}")
+    # Both headline estimands are simulated and both are printed. There is no
+    # gate behind either: this reports what the allocation could resolve.
+    print("  reference lines only: "
+          f"{', '.join(CONFIRMATORY_ESTIMANDS)}; nothing here gates the release")
     print(f"  minimum effects of interest: selectivity {args.mei_selectivity:+.2f}  "
           f"entry point {args.mei_entry_point:+.2f}  action {args.mei_induced_action:+.2f}")
     # Measured rung labels are longer than the a-priori ones, so the column is

@@ -19,16 +19,21 @@ nominal target — 462 per family, 3,696 across the eight. On a self-hosted
 endpoint the binding constraint is wall clock rather than spend: about 11 hours
 per family at the throughput 399 live attempts measured (plan §10.1).
 
-> **Schedule status.** `pilot/smoke_schedule.json` is current against the
-> release scope. `pilot/sizing_schedule.json` is stale and must be regenerated
+> **Schedule status.** `pilot/smoke_schedule.json` was regenerated against
+> `v1.1-budget` — `sweep_b2f0f31679c7`, 66 groups, 66 target runs, 170 maximum
+> attempts — and Stage 1 has been re-run against it: 160 attempts in 5.9 hours,
+> 113 exposed, 137 of 160 conclusive. The three T3 near-miss and clean blocks
+> the cells-only rule dropped are gone with it. The previous schedule's 162
+> results are kept under `pilot/smoke_sweep_6963280d2c30/` as the record of that
+> run. `pilot/sizing_schedule.json` is still stale and must be regenerated
 > before Stage 2 runs.
 
 ---
 
 ## 0. Operating rules that bind everything
 
-- **Every registered N is fixed**: 9 exposed per injected group, 36 per near-miss
-  block, 9 per clean block. The pilot may measure exposure, cost, and the
+- **Every registered N is fixed**: 3 exposed per injected group, 6 per near-miss
+  block, 3 per clean block. The pilot may measure exposure, cost, and the
   overblocking null-denominator drop rate; it may never silently raise or lower an
   N, change an estimand, or restore an excluded axis (plan §9.3; pilot protocol,
   "What the pilot may and may not change").
@@ -47,7 +52,7 @@ per family at the throughput 399 live attempts measured (plan §10.1).
   cannot reach a released number whichever model produced it. See
   `pilot_protocol.md`, "The pilot model is unconstrained".
 - **The generator that re-authors the texts is still excluded** from all eight
-  evaluated families (plan §12, enforced at `validate.py:675`). That rule is
+  evaluated families (plan §12, enforced at `validate.py:689`). That rule is
   about who authors the injection texts, not about who runs a pilot, and
   dropping the pilot constraint leaves it untouched.
 
@@ -58,14 +63,14 @@ per family at the throughput 399 live attempts measured (plan §10.1).
 Plan milestone 7c, itemised there: per-condition exposed targets, the five-task
 release preset, `task` in both registered models with its rank check, the
 overblocking fit on its realized denominator, and power simulation over the exact
-broad allocation.
+release allocation.
 
 Exit criterion, met: `sweep plan` reports **66 groups, 228 target runs, 462
 maximum attempts** per model family.
 
 > **Two costs this exposed.** First, one fit over the full allocation takes
 > ~23 s against a 43-column fixed block. That makes the 500-simulation power
-> gate hours of compute rather than minutes — budget it as a run, not a command.
+> diagnostic hours of compute rather than minutes — budget it as a run, not a command.
 > Second, `injection_sd` separates from `request_family:paraphrase` only across
 > the cells that share a paraphrase slot, and the auxiliary tasks supply two of
 > those instead of eight. A small true value now sits close enough to zero that
@@ -91,8 +96,8 @@ for all three cases (action performed, action declined while doing the job, and
 neither — `overblocked: null`, which still counts in the in-scope denominator);
 and **C2's draw-wise difference** recovers a known simulated gap.
 
-Exit criterion, met: `runner power` simulates both gates over the exact broad
-allocation, and the aggregator emits all six tables with tier labels.
+Exit criterion, met: `runner power` simulates both estimands over the exact
+release allocation, and the aggregator emits all six tables with tier labels.
 
 **What remains is external.** The §11.3 inference cross-check needs `lme4` or
 `glmmTMB`, which this standard-library-only repository does not depend on.
@@ -118,13 +123,13 @@ re-derived.
    Expect **66 groups, 396 target runs, 825 maximum attempts**. The sizing
    pilot runs every group at six — it is measuring exposure, clustering, cost,
    and the overblocking drop rate, none of which need the release's N. Smoke —
-   see the open decision below.
+   see the settled decision below.
 
 2. **Criterion calibration gate** (utility ceiling; overblocking denominator):
    ```sh
    .venv/bin/python -m taskbound.runner calibrate --host hosts/site_a
    ```
-   Across the five tasks, all 25 positive references must pass and all 25
+   Across the five tasks, all 31 positive references must pass and all 25
    negative fixtures must fail. This is what makes the overblocking metric
    interpretable (plan §8.3), and overblocking carries 60 runs per family.
 
@@ -153,10 +158,10 @@ re-derived.
 
 ---
 
-## Phase 1 — Integration smoke (69 runs, any model)
+## Phase 1 — Integration smoke (66 runs, any model)
 
 One run per applicable condition and populated group across all five tasks —
-24 attacked + 24 benign + 4 inert + 12 near-miss + 5 clean — under two-agent
+24 attacked + 24 benign + 4 inert + 10 near-miss + 4 clean — under two-agent
 execution.
 
 ```sh
@@ -198,7 +203,7 @@ the cost gate.
 It answers one question before anyone spends reviewer-months: **which rung of
 plan §10.4's ladder is this project actually running?** If rung 0 looks
 implausible, the rung is chosen now and Phase 1b reviews only what it schedules.
-Choosing after 236 artifacts have been reviewed and 156 texts re-authored wastes
+Choosing after 242 artifacts have been reviewed and 156 texts re-authored wastes
 whichever of them the rung drops. The formal cost gate still runs at Phase 3b on
 the sizing pilot's measured usage.
 
@@ -219,7 +224,7 @@ changed after either review re-enters both.
    re-authored texts. Two independent non-author HPC practitioners, 214 blocks
    and 319 ratings each; `realism_rubric.md` holds the gate.
 
-3. **Acceptance review** of the 236 authored artifacts, per
+3. **Acceptance review** of the 242 authored artifacts, per
    `paraphrase_protocol.md` §6 and plan §10.3.
 
 Scope this phase to the ladder rung the Phase 1 projection selected.
@@ -275,7 +280,7 @@ is run at all:
 ```
 
 It answers what this allocation could resolve under a given clustering range —
-useful before committing 7,560 runs, and the honest place to discover that C1 or
+useful before committing 1,824 runs, and the honest place to discover that C1 or
 C2 will come back too wide to say much. What it no longer does is license or
 block anything, and no `result_sha256` is frozen into the pre-registration.
 
@@ -346,8 +351,8 @@ cost = uncached_input*rate_in + cached_input*rate_cached + output*rate_out
    ```sh
    .venv/bin/python -m taskbound.runner sweep plan \
      --host hosts/site_a --out schedules/v1_sweep.json --seed <release seed> \
-     --exposed-target 9 --attempt-cap 27 \
-     --near-miss-target 36 --clean-target 9
+     --exposed-target 3 --attempt-cap 9 \
+     --near-miss-target 6 --clean-target 3
    ```
    These are the planner's defaults; passing them explicitly is what puts every
    registered N in the command that froze the schedule. Confirm it reports
@@ -399,18 +404,20 @@ export TB_CANARY_SEED=<release_seed>
    is not the operative number. The sampler instead applies a floor of 20 per
    gated `condition|action|verdict` stratum, so a full sweep can put many
    hundreds of runs in front of a human, with 20% of them double-scored. On the
-   143 development results the sampler selected 110 (77%). Across 7,560 runs the
-   percentage falls but the absolute count does not — estimate it from a dry run
-   of `audit sample` against the pilot before Phase 5 starts, not after.
+   143 development results the sampler selected 110 (77%), and on the 160-run
+   Stage 1 smoke it selected 143 (89.4%) across 22 strata with 29 marked for a
+   second review. Across 1,824 runs the percentage falls but the absolute count
+   does not — re-estimate it from a dry run of `audit sample` against the sizing
+   pilot before Phase 5 starts, not after.
 2. **Signed aggregation** from the immutable release manifest:
    ```sh
    .venv/bin/python -m taskbound.runner aggregate \
      --results results --preregistration preregistration.json \
-     --out reports/v1_broad.json
+     --out reports/v11_budget.json
    ```
    It requires the registered sweep id, membership in its manifest, one result
-   per configuration/attempt pair, and the two frozen model-configuration hashes;
-   it rejects dirty-worktree executions.
+   per configuration/attempt pair, and the eight frozen model-configuration
+   hashes; it rejects dirty-worktree executions.
 3. Record `release_manifest_sha256_by_model_family` — eight entries — in
    independently signed release metadata **outside** the result directories;
    confirm every analyzed raw result and control-profile hash matches the
@@ -420,21 +427,21 @@ export TB_CANARY_SEED=<release_seed>
 
 ---
 
-## Open decision: Stage 1 smoke
+## Settled decision: Stage 1 smoke
 
 `pilot_protocol.md` Stage 1 asks for **one run per applicable condition and
-populated group** — 24 attacked + 24 benign + 4 inert + 12 near-miss + 5 clean =
-**69 runs** — and gives the command `--exposed-target 1 --attempt-cap 3`. But
+populated group** — 24 attacked + 24 benign + 4 inert + 10 near-miss + 4 clean =
+**66 runs** — and gives the command `--exposed-target 1 --attempt-cap 3`. But
 `sweep plan` rejects any target that is not a multiple of three
-(`taskbound/sweep.py:67`). That guard keeps the paraphrase allocation balanced
+(`taskbound/sweep.py:129`). That guard keeps the paraphrase allocation balanced
 for the variance decomposition (plan §7.5), which the smoke stage does not
 compute and never reports. It is correct for the release schedule and
 over-broad for this one.
 
 | Option | Effect | Cost |
 |--------|--------|------|
-| **A. Raise the smoke target to 3** (`--exposed-target 3 --attempt-cap 9`) | No extra code; every group still exercised | Smoke grows from 69 to 207 target runs (531 max attempts) of real model spend, and `pilot_protocol.md`'s stated 69 must be amended |
-| **B. Scope the guard to recruitment, not integration** — allow a non-multiple target when the schedule is not a release schedule | Keeps the 69-run figure and its spend | A change to `plan_sweep` plus a test |
+| **A. Raise the smoke target to 3** (`--exposed-target 3 --attempt-cap 9`) | No extra code; every group still exercised | Smoke grows from 66 to 170 target runs (404 max attempts) of real model spend, and `pilot_protocol.md`'s stated 66 must be amended |
+| **B. Scope the guard to recruitment, not integration** — allow a non-multiple target when the schedule is not a release schedule | Keeps the 66-run figure and its spend | A change to `plan_sweep` plus a test |
 
 **B fits what the stage is for** — the smoke test checks wiring, exposure,
 placement resolution, and result completeness, none of which depend on paraphrase
@@ -445,11 +452,11 @@ balance.
 "whether a non-release schedule may opt out entirely" is that it may, provided
 it says so on the artifact: the flag is recorded in the schedule and stamped on
 every result, and `aggregate.validate_release_scope` refuses a marked row. That
-keeps the stage at its stated 69 runs and its stated spend, and makes the
+keeps the stage at its stated 66 runs and its stated spend, and makes the
 protocol's "never pool pilot runs with the sweep they precede" a check rather
 than an instruction. With `--near-miss-target 1 --clean-target 1` the schedule
 plans exactly the composition Stage 1 names: 24 attacked + 24 benign + 4 inert
-+ 12 near-miss + 5 clean.
++ 10 near-miss + 4 clean.
 
 ---
 
@@ -460,15 +467,15 @@ plans exactly the composition Stage 1 names: 24 attacked + 24 benign + 4 inert
 2. **Who writes the twelve request-family seeds, which out-of-set open-weight
    model renders them, and who accepts each text** (plan §12). This gates Phase
    1b and therefore everything after it.
-3. **Compute budget at near-cap across eight families** (15,048 attempts). The
+3. **Compute budget at near-cap across eight families** (3,696 attempts). The
    Phase 1 projection gives an early read and the Phase 3b gate gives the number.
    Decide which §10.4 rung applies **before** Phase 1b commits reviewer-months.
 4. **Two HPC practitioners** for realism review — arrange before Phase 1b, and
    brief them that one item is whether a single allocation plausibly carries all
    five task situations at once.
 5. **Oracle-audit staffing** at eight families' volume — a 5% stratified sample
-   of 7,560 runs is roughly 378 runs hand-scored, with two reviewers on an
-   overlapping 20%.
+   of 1,824 runs is roughly 91 runs hand-scored, with two reviewers on an
+   overlapping 20%. The 5% floor is not the operative number; see Phase 5.
 6. ~~**Stage 1 smoke**: option A or B above.~~ **Settled as B** —
    `--integration-smoke`, marked on the schedule and every result, refused by
    the aggregator.
@@ -521,10 +528,11 @@ exist (recorded in release metadata, not a signing item).
 |-------|-----------|-------|
 | `sweep_id` | `schedules/v1_sweep.json` → `sweep_id` | `[SIG]` |
 
-All other allocation fields (`n_exposed_per_cell=9`, `attempt_cap_per_cell=27`,
-`n_near_miss_per_block=36`, `n_clean_per_task=9`, `recruitment_block=3`,
-`paraphrases_per_cell=3`, the five tasks, the 24 groups, targets and caps) are
-already frozen and must **not** change.
+All other allocation fields (`n_exposed_per_injected_group=3`,
+`attempt_cap_per_injected_group=9`, `n_near_miss_per_block=6`,
+`n_clean_per_task=3`, `recruitment_block=3`, `paraphrases_per_cell=3`, the five
+tasks, the 24 injected groups, targets and caps) are already frozen and must
+**not** change.
 
 ## `model_families`
 
@@ -553,7 +561,7 @@ Re-affirm at signing: `selected_before_attacked_pilot_results=true`, and every
 | `cost.price_table_date` | Provider price-table date used by the cost manifest | `[P2]` |
 | `cost.status` | `PASS` only after near-cap cost + 20% contingency is approved | `[P2]` |
 | `realism_review.status` | `PASS` when `runner realism report` accepts both reviewers, on the re-authored texts | `[P1b]` |
-| `acceptance_review.status` | `PASS` after the 236-artifact acceptance review, run on the re-authored texts | `[P1b]` |
+| `acceptance_review.status` | `PASS` after the 242-artifact acceptance review, run on the re-authored texts | `[P1b]` |
 | `generator_provenance.generator` | The out-of-set open-weight model that rendered all 156 texts, checkable against the eight evaluated families | `[P2]` |
 | `generator_provenance.seed_author` | The human who wrote the twelve request-family seeds and paraphrase intents (plan §12) | `[P2]` |
 | `inference_cross_check` | The reference implementation used, the fit compared, and the agreement figures (plan §11.3) | `[P2]` |
@@ -594,13 +602,14 @@ signing:
 ## Signing gate — every box green
 
 1. `runner validate` — 0 errors on the release scope, all five tasks.
-2. Calibration: 25 positive pass, 25 negative fail.
+2. Calibration: 31 positive pass, 25 negative fail.
 3. Texts re-authored by an out-of-set generator; realism and acceptance review
    PASS on the re-authored material, with named non-author reviewers.
 4. Model-matrix rank check recorded, with every candidate component admitted or
    excluded on evidence.
-5. Power: 500 simulations over the broad allocation, ≥80%, `result_sha256`
-   recorded.
+5. ~~Power: 500 simulations, ≥80%, `result_sha256` recorded.~~ **Retired.**
+   Power is a diagnostic (Phase 3a); no power result is frozen into the
+   registration and nothing here blocks signing.
 6. Cost: near-cap + 20% approved across all eight families, `price_table_date`
    recorded.
 7. All eight families pinned, every `configuration_sha256` frozen, families and

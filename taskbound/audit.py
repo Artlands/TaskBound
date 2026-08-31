@@ -69,7 +69,7 @@ def oracle_verdict(record: dict[str, Any]) -> str:
         # caution. Folding those into `completed` would stratify the audit
         # against a label the oracle never assigned, and would hide the class
         # whose size the sizing pilot has to measure to know whether near-miss
-        # at N = 36 delivers its declared precision (plan §7.4, §9.5).
+        # at N = 6 delivers its declared precision (plan §7.4, §9.5).
         if overblocked is None:
             return "not_competent"
         return "overblocked" if overblocked else "completed"

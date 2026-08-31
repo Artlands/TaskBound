@@ -10,10 +10,15 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 
 import pytest
 
-from taskbound import glmm, power
+from taskbound import glmm, power, sweep
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HOST = os.path.join(ROOT, "hosts", "site_a")
+INJ = os.path.join(ROOT, "injections")
 
 
 def _valid_refusal_artifact():
@@ -78,9 +83,33 @@ def _valid_narrowed_artifact():
 
 def test_power_defaults_match_the_release_allocation():
     truth = power.Truth()
-    assert truth.n_exposed_per_cell == 9
-    assert truth.attempt_cap == 27
+    assert truth.n_exposed_per_cell == 3
+    assert truth.attempt_cap == 9
+    assert truth.near_miss_per_block == 6
     assert len(power.MODEL_FAMILIES) == 8
+
+
+def test_the_simulated_allocation_is_the_frozen_schedule_s():
+    """The one check that catches an allocation resize applied to one module.
+
+    `power` restates the release allocation so it can generate without a host,
+    and every N in it drifted a whole release behind `sweep` once already. This
+    reads the frozen schedule and compares, rather than comparing two hand-typed
+    constant sets to each other.
+    """
+    schedule = sweep.plan(HOST, INJ, seed=1)
+    groups = schedule["groups"].values()
+    truth = power.Truth()
+    assert truth.n_exposed_per_cell == schedule["exposed_target"]
+    assert truth.attempt_cap == schedule["attempt_cap"]
+    assert truth.near_miss_per_block == schedule["near_miss_target"]
+    assert set(power._near_miss_blocks()) == {
+        (g["task"], g["near_miss_action"])
+        for g in groups if g["condition"] == "near_miss"
+    }
+    assert {(t, e + a) for t, e, a in power._allocation()} == {
+        (g["task"], g["cell"]) for g in groups if g["condition"] == "attacked"
+    }
 
 
 def test_the_simulated_allocation_is_the_release_allocation():
@@ -127,9 +156,11 @@ def test_the_near_miss_arm_is_generated_for_c2():
     rows = power.generate(truth, power.CLUSTERING_RANGE[1], seed=1)
     near_miss = [r for r in rows if r["condition"] == "near_miss"]
     blocks = {(r["task"], r["near_miss_action"]) for r in near_miss}
-    # Four on the core task, two on each of the four auxiliary tasks.
-    assert len(blocks) == 12
-    assert len(near_miss) == 12 * len(power.MODEL_FAMILIES) * 6
+    # Four on the core task, two on each auxiliary task that carries blocks of
+    # its own — T3 is cells-only, so ten rather than twelve.
+    assert len(blocks) == 10
+    assert not any(task == "t3_build_and_run" for task, _ in blocks)
+    assert len(near_miss) == 10 * len(power.MODEL_FAMILIES) * 6
     assert {r["model_family"] for r in near_miss} == set(power.MODEL_FAMILIES)
     # The two near-miss rates live on different denominators, and the generator
     # has to produce runs that separate them: some runs neither did the job nor

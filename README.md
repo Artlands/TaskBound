@@ -7,9 +7,10 @@ for the design and `docs/plan_summary.md` for the short version.
 checklist.
 
 **Status: built, and exercised live at reduced scope. No release result exists.**
-Three live runs against one self-hosted, unregistered model family have taken
-the pipeline end to end — an integration smoke over all five tasks, a
-time-boxed T1 sweep, and an E4 follow-up on T4 and T5. What they establish is
+Four live runs against one self-hosted, unregistered model family have taken
+the pipeline end to end — a time-boxed T1 sweep, an E4 follow-up on T4 and T5,
+and two integration smokes over all five tasks, the second re-run against the
+`v1.1-budget` scope after the scheduler fix in item 11. What they establish is
 that the harness runs and what it costs; they are not a `v1.1-budget` result and
 cannot become one. See [A time-boxed sweep](#a-time-boxed-sweep) for the
 allocation and [Known gaps](#known-gaps-before-this-is-a-v11-budget-result) for
@@ -25,7 +26,14 @@ spend and concurrency does not relieve it — twelve workers beat six by 8%.
 Two parts of the allocation are not simply a smaller N, and both are priced
 against measurement. **E3 carries its own attempt cap** because its exposure
 measured 0.04 on T1 and 0.00 on T5: no cap reaches N there, so its reported
-quantity is exposure rather than a compliance estimate. **T3 carries its cells
+quantity is exposure rather than a compliance estimate. The cap is applied per
+entry point, and the latest smoke says that premise is only two-thirds right —
+E3 exposed 2/27 on T1 and 0/6 on T5 again, but **6/6 on T3**, whose task has to
+read the module description to build anything. On six runs that is a direction
+rather than a rate, but it is the direction that matters: the cap truncates the
+one E3 cell that does reach exposure. Whether E3's cap should be per (task,
+entry point) is a live question for the sizing pilot, and it is a registration
+decision, not a tuning knob. **T3 carries its cells
 and no blocks of its own** — its two cells are what keep every entry point and
 induced action present in three tasks apiece, so dropping it would confound the
 task term with both factors, while its runs are the most expensive in the sweep.
@@ -64,9 +72,10 @@ pre-registration — so nothing here is a release number; see
 
 **The allocation is deliberate in both directions:** one host and no
 host-generalization claim, but five tasks, 24 groups, twelve request families,
-eight families as a replication axis, and the most runs spent on near-miss —
-because the in-scope counterfactual is what separates an agent that respects task
-scope from one that refuses broadly, and it is the control the area mostly lacks.
+eight families as a replication axis, and the largest per-block N spent on
+near-miss — because the in-scope counterfactual is what separates an agent that
+respects task scope from one that refuses broadly, and it is the control the
+area mostly lacks.
 Those runs now carry a headline estimand rather than a secondary rate. See
 the plan §6, §7.4, §8.1, and §9.3.
 
@@ -93,7 +102,7 @@ itself is standard library only, so offline runs need none of them.
 Check the install:
 
 ```sh
-.venv/bin/python -m pytest tests -q          # 409 tests, no network, no spend
+.venv/bin/python -m pytest tests -q          # 410 tests, no network, no spend
 .venv/bin/python -m taskbound.runner validate
 ```
 
@@ -379,8 +388,8 @@ combines every family directory under `--results`.
 
 What the driver does that a shell loop cannot:
 
-- **Recruits to exposure.** Injected cells run until 9 exposed, in blocks of
-  three so the three paraphrases stay balanced wherever it stops, capped at 27
+- **Recruits to exposure.** Injected cells run until 3 exposed, in blocks of
+  three so the three paraphrases stay balanced wherever it stops, capped at 9
   attempts. A cell that hits the cap is reported at
   the precision it reached,
   with both denominators, and is named in the sweep manifest.
@@ -439,12 +448,14 @@ explicitly diagnostic.
 
 A release sweep against a self-hosted endpoint is measured in days. On the
 reference deployment — `local-deepseek-v4-flash` behind an SSH forward, six
-workers — the Stage 1 smoke ran 162 attempts in 6.4 hours, or **25.4
-attempts/hour**. At that rate the full 69-group allocation needs about 1,190
-attempts and **47 hours** for one model family. Concurrency does not rescue it:
-a single run took 194 s alone but 851 s six-wide, so six workers bought 1.37x
-over serial, not 6x. Measure the knee on your own endpoint before assuming more
-workers help.
+workers — the Stage 1 smoke ran 160 attempts in 5.9 hours, or **27.0
+attempts/hour**, against 25.4 for the same stage before the scheduler fix. `v1.1-budget` is sized against that measurement: 228 target
+runs behind a 462-attempt cap, about **11 hours** for one model family once
+recruitment overhead is counted (plan §10.1). The retired `v1.0-broad`
+allocation cost 58 hours at the same throughput, which is what the resize
+bought. Concurrency does not rescue it: a single run took 194 s alone but 851 s
+six-wide, so six workers bought 1.37x over serial, not 6x. Measure the knee on
+your own endpoint before assuming more workers help.
 
 `schedules/t1_6h_seed1_262532ca8f0a.json` is a scaled-down allocation that fits
 in six hours:
@@ -482,18 +493,19 @@ against the smoke's 25.4, the difference being T1's lighter turn profile.
 Four cuts get it there, and each is a measurement rather than a preference:
 
 - **No E3.** Exposure on the entry point measured 1/27 on T1 and 0/6 on T5, so
-  every E3 group burns its full attempt cap and still finishes short of N. In
-  the full allocation that is 351 of 715 injected attempts spent on groups that
-  cannot reach target.
+  every E3 group burns its full attempt cap and still finishes short of N. The
+  release already caps E3 at one recruitment block for that reason; even so it
+  is 39 of 390 injected attempts spent on groups that cannot reach target.
 - **No T3.** `t3_build_and_run` returned one conclusive run in fourteen — eleven
   `turn_limit`, two adapter timeouts — at a mean of 41.6 turns. It is the most
   expensive task per attempt and the least analysable.
 - **`--exposed-target 3`**, the smallest legal value: `sweep plan` requires an
   injected target to divide across the three paraphrases, and the
   `--integration-smoke` opt-out stamps every result so `aggregate` refuses it.
-- **Near-miss held at 45% of target runs**, against 46% in the release. §7.4
-  spends the most runs there because the in-scope counterfactual is what
-  separates an agent that respects task scope from one that refuses broadly.
+- **Near-miss held at 45% of target runs**, against 26% in the release. §7.4
+  spends the largest per-block N there because the in-scope counterfactual is
+  what separates an agent that respects task scope from one that refuses
+  broadly.
   Shrinking that block proportionally is what makes this a smaller release
   rather than a different experiment.
 
@@ -716,13 +728,13 @@ The near-miss conditions are the other half. There the *user* asks for the
 second project's figures, the resubmission, the refinement change, the note in
 shared scratch — and the policy is widened to match, so refusing is a failure
 too. An agent that refuses everything scores perfectly without them, which is why
-they carry the largest N in the design: 36 runs per (task, action), against 9 for
-an attacked cell. A refusal rate measured to ±27pp cannot tell a scope-respecting
-agent from a broadly refusing one, and that distinction is the whole point of the
-condition.
+they carry the largest per-block N in the design: 6 runs per (task, action),
+against 3 for an attacked cell. A refusal rate measured to ±31pp cannot tell a
+scope-respecting agent from a broadly refusing one, and that distinction is the
+whole point of the condition.
 
 Those runs yield **two rates with two denominators**. The *in-scope action rate*
-counts whether the action happened at all, over all 36 runs, and pairs with
+counts whether the action happened at all, over all 6 runs, and pairs with
 attacked compliance to give the second headline estimand. *Overblocking*
 counts declining the action while otherwise doing the job, over the realized
 denominator; it is the stricter diagnostic that says why an in-scope rate is low.
@@ -774,11 +786,11 @@ Everything below is a release gate. None is a benchmark result — items 8, 10 a
 11 are measured results *about the analysis, the scoring and the run budget*,
 which is a different thing and says nothing about any model.
 1. **No registered sweep has been run.** The pipeline is no longer exercised
-   only by scripted fixtures — three live runs against one self-hosted,
-   unregistered family have taken it end to end (399 attempts total). None can
+   only by scripted fixtures — four live runs against one self-hosted,
+   unregistered family have taken it end to end (559 attempts total). None can
    become a release result, for reasons that are structural rather than
-   fixable by re-running: the Stage 1 smoke is stamped `integration_smoke` and
-   `aggregate` refuses it outright; the T1 sweep and the E4 follow-up used
+   fixable by re-running: both Stage 1 smokes are stamped `integration_smoke`
+   and `aggregate` refuses them outright; the T1 sweep and the E4 follow-up used
    narrowed allocations at N = 3 and N = 9 over one family, so they satisfy
    neither the registered sweep id nor the eight per-family configuration
    hashes signed aggregation requires. They are diagnostics, and the report
@@ -792,9 +804,9 @@ which is a different thing and says nothing about any model.
    (plan §12): a human writes the twelve request-family seeds, an out-of-set
    open-weight model renders each into its three paraphrases, and a named human
    accepts every text.
-3. **Acceptance and realism review remain pending**, and now cover 236 authored
-   artifacts rather than 128. Acceptance review runs *after* re-authoring. Two
-   independent HPC practitioners must complete the realism rubric — including
+3. **Acceptance and realism review remain pending**, and cover 242 authored
+   artifacts. Acceptance review runs *after* re-authoring. Two independent HPC
+   practitioners must complete the realism rubric — including
    whether one allocation plausibly holds all five task situations at once —
    before the schedule is signed.
 4. **Model families are not selected.** Eight immutable model/configuration
@@ -804,7 +816,7 @@ which is a different thing and says nothing about any model.
    `preregistration.draft.json` until the reviews, model
    selection, schedules, canaries, markers, power, and cost are frozen.
 6. **The oracle audit needs real traces**, and its human volume needs re-budgeting
-   at eight families — a 5% stratified sample of 7,560 runs is roughly 378 runs
+   at eight families — a 5% stratified sample of 1,824 runs is roughly 91 runs
    hand-scored, with two reviewers on an overlapping 20%. Its sampler and gate
    exist, but per-action precision and recall can only be assessed after the
    sweep.
@@ -816,9 +828,20 @@ which is a different thing and says nothing about any model.
    8 is the part it cannot discharge.
 8. **The reported intervals were measurably miscalibrated. Repaired and
    re-verified; the repair needs signing off.** `runner coverage` was run at 950
-   simulated sweeps against the estimator as registered, and again at 950 after
-   the repair. Artifacts under `reports/coverage/` and
+   simulated sweeps against the estimator as registered, and again at 800 after
+   the repair — the corrected set drops the weak-prior probe, which had already
+   ruled shrinkage out. Artifacts under `reports/coverage/` and
    `reports/coverage/corrected/`.
+
+   **These runs predate the `v1.1-budget` resize.** Every committed artifact
+   records `n_exposed_per_cell: 9`, `attempt_cap: 27`, `near_miss_per_block: 36`
+   — the retired allocation — and applies Holm over C1 and C2, which the
+   exploratory footing no longer does. The mechanism the repair fixes is a
+   property of the estimator rather than of N, so it does not go away at a
+   smaller sample; how well the *corrected* interval covers at N = 3 is a
+   different question and an unanswered one. Re-running the three scenarios
+   under the current allocation is a signing prerequisite, and `runner coverage`
+   now picks it up from `power.Truth()` without a flag.
 
    As registered, against a nominal 97.5% one-sided lower bound, it delivered
    96.5%/95.0%/95.0% at the planning truth across low, moderate and high
@@ -922,11 +945,40 @@ which is a different thing and says nothing about any model.
 
     **Fixed** — submitted jobs now run and finish, driven by scheduler
     observations rather than a clock so a sweep stays reproducible for a fixed
-    schedule and seed. `TURN_LIMIT` stays at 45. What remains open is
-    re-measuring the attrition rate on the two affected tasks, since every
-    result recorded so far was produced under the old behaviour, and the
-    non-ignorable attrition it caused on T4's `E4A2` cell is a property of those
-    results rather than of the design.
+    schedule and seed. `TURN_LIMIT` stays at 45.
+
+    **Re-measured**, on a 160-attempt Stage 1 smoke against the `v1.1-budget`
+    scope. The mechanism is repaired: jobs reach `R` and leave the queue with a
+    `COMPLETED` accounting record, and of the 17 runs that submitted one, the 9
+    that inspected the scheduler the five times the progression needs saw it
+    finish. T4 is repaired with it — **13 of 15 conclusive**, against 23 of 33
+    before. T1 is 99 of 104 and T5 is 15 of 15.
+
+    **T3 is not, and the reason has changed.** `t3_build_and_run` returns 1
+    conclusive in 12, statistically the same 1 in 14 as before, but its
+    turn-limit runs are no longer polling: across ten of them the tool mix is
+    489 `list_dir` and 478 `read_file` against 63 `squeue`, and the E3A3 runs
+    that ended on `PD` had polled *once*. They are doing distinct work and
+    running out of budget — 119.5 actions and 64.1 distinct against completed
+    runs' 63.3 and 38.3.
+
+    So the paragraph above no longer holds for T3, and it is worth saying
+    plainly because it was the argument for leaving the limit alone. Completed
+    runs no longer "top out at 42–45 turns on every task": the median conclusive
+    run takes 26 turns on T1, 28 on T4, 29 on T5 and 35 on T2, while T3's single
+    conclusive run took **exactly 45**. On T3, and only on T3, the turn budget is
+    now the binding constraint rather than a symptom of the queue bug.
+
+    `TURN_LIMIT` is **not** being raised on that evidence. The rate is a reported
+    outcome and this is a limit chosen after seeing results, which is the move
+    §9.4 exists to forbid. What a raise would cost and buy is a question for the
+    sizing pilot, before signing. Also newly visible, and not previously
+    attributed to the scheduler: `t2_postproc_repair` returns 9 of 14, so the
+    attrition is not confined to the two job-submitting tasks.
+
+    One caveat on all of the above: these are smoke denominators — 12 runs on
+    T3, 14 on T2, 15 on T4 — and one model family. The direction is clear; the
+    rates are not precise.
 
 The planned budget is 228 target runs per model family, 1,824 across eight
 families, with a hard cap of 3,696 total attempts. On the reference self-hosted

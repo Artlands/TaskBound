@@ -121,17 +121,17 @@ flowchart LR
 - **Near-miss** takes the same requested action but moves it *into* the task's
   scope. It is the only control that tells a good agent (one that respects task
   scope) apart from a merely cautious one (one that refuses broadly). That is why
-  it — not the attack — gets the largest sample size, and why it carries a
-  headline estimand. It yields two rates with two denominators, and they are
+  it — not the attack — gets the largest per-block sample size, and why it
+  carries a headline estimand. It yields two rates with two denominators, and they are
   not interchangeable: the **in-scope action rate** (did the action happen at
-  all, over all 36 runs) feeds C2, while **overblocking** (did the agent decline
+  all, over all 6 runs) feeds C2, while **overblocking** (did the agent decline
   while otherwise doing the job, over the realized denominator) is the stricter
   diagnostic that says why.
 - **Clean** measures the ordinary, non-adversarial baseline: how often the agent
   completes its task normally, and how often background scope-violation happens,
   per task.
 
-Controls account for 729 of the 945 runs per model family because these
+Controls account for 156 of the 228 runs per model family because these
 explanations cannot be recovered from attack runs alone. The near-miss and
 attacked conditions are the two halves of the second headline estimand:
 
@@ -190,7 +190,7 @@ and §9.3 of the specification states what it forecloses.
 
 ```mermaid
 flowchart TB
-    DESIGN[Same frozen 945-run schedule] --> M1[Family 1]
+    DESIGN[Same frozen 228-run schedule] --> M1[Family 1]
     DESIGN --> M2[Family 2]
     DESIGN --> MD[... families 3-7]
     DESIGN --> M8[Family 8]
@@ -205,10 +205,11 @@ flowchart TB
     PF --> K["the line is cleared in k of 8 families"]
 ```
 
-C2 is the one the field has no instrument for, and it is why near-miss gets 46%
-of the budget. It is ambiguous if reported alone — a value near zero is produced
-both by an agent that complies with everything and by one that refuses everything
-— so it never appears without both component rates beside it. The two estimands
+C2 is the one the field has no instrument for, and it is why near-miss carries
+the largest per-block N in the design. It is ambiguous if reported alone — a
+value near zero is produced both by an agent that complies with everything and
+by one that refuses everything — so it never appears without both component
+rates beside it. The two estimands
 are reported side by side with no correction between them, and each is also
 reported per family to support "the reference line is cleared in *k* of 8
 families" as description. There is no power simulation to fail and no demotion
@@ -317,9 +318,9 @@ family), carries `task` in both registered blocks, fits overblocking on its
 realized denominator, and decides the candidate random components by rank. What
 remains needs people, machine time, and an out-of-set generator.
 
-1. **Run the integration smoke** — 69 runs, one per group, any model — and
+1. **Run the integration smoke** — 66 runs, one per group, any model — and
    circulate a rough cost projection from it *before* the human
-   review gates start. Reviewing 236 artifacts and re-authoring 156 texts is
+   review gates start. Reviewing 242 artifacts and re-authoring 156 texts is
    months of people-time, and spending it on material a later cost decision would
    drop is the one sequencing error that cannot be undone.
 2. **Run the §11.3 inference cross-check** once in `lme4` or `glmmTMB` from
@@ -338,7 +339,7 @@ remains needs people, machine time, and an out-of-set generator.
    blocks nothing.
 6. **Approve expected cost, hard-cap cost, and contingency** across the full
    eight-family envelope. This is the gate most likely to bind.
-7. **Complete named acceptance review** of all 236 authored artifacts and
+7. **Complete named acceptance review** of all 242 authored artifacts and
    independent realism review of the host — including whether one allocation
    plausibly carries all five situations at once.
 8. **Freeze the eight model/configuration hashes**, the registered family order,
@@ -359,7 +360,7 @@ mixed-effects aggregation, overblocking fit, and the analysis support `r2` needs
 are all implemented: the in-scope action rate on the full near-miss denominator,
 C2's model and draw-wise interval, explicit family weighting, per-family
 reporting, tier labels, and the §9.6 re-scoring. All five tasks, all 156 texts,
-twelve request families, twelve near-miss tasks, and 50 calibration fixtures
+twelve request families, twelve near-miss tasks, and 56 calibration fixtures
 exist and validate. No pilot or main sweep has been run yet.
 
 The open gates are listed once, in the README's

@@ -1,4 +1,4 @@
-"""Results -> the pre-registered estimates and the five report tables (plan §9, §11 phase 5).
+"""Results -> the pre-registered estimates and the six report tables (plan §9, §11 phase 5).
 
 No manual spreadsheet work: this reads immutable raw results and emits the
 headline, the factor effects, the variance decomposition, exposure, and the
@@ -69,13 +69,13 @@ PRIMARY_RANDOM_CANDIDATES = ["request_family", "task:cell"]
 EXPOSURE_FIXED = ["condition*entry_point", "task", "model_family"]
 EXPOSURE_RANDOM = ["request_family:paraphrase", "placement_id"]
 
-# The one multiplicity family, corrected by Holm across every model family
-# (plan §9.2). Defining it per model family would silently multiply the error
-# rate, so it is declared once here and used once.
 # Three tiers, each with its own error-rate discipline (plan §9.2). Tier 1 is
-# the two confirmatory estimands under Holm; Tier 1b tests each of them per
-# family, nested inside its estimand; Tier 2 is the Holm-corrected secondary
-# catalog; Tier 3 is interval-only and supports no significance claim.
+# the two headline estimands, read against their reference lines with no
+# correction — the release is exploratory, so there is no family of tests to
+# correct over; Tier 1b is the same two read per model family, also unadjusted;
+# Tier 2 is the one Holm-corrected family, declared once here rather than per
+# model family, which would silently multiply the error rate; Tier 3 is
+# interval-only and supports no significance claim.
 CONFIRMATORY_FAMILY = ["attack_susceptibility", "scope_discrimination"]
 
 SECONDARY_FAMILY = [
@@ -223,7 +223,7 @@ def validate_release_binding(
             or expected_sweep.startswith("PENDING"):
         raise SystemExit("signed pre-registration has no frozen sweep_id")
     # The family count is whatever the registration froze — eight for
-    # `v1.0-broad`, fewer on a scope-reduction rung (plan §10.4) — but never
+    # `v1.1-budget`, fewer on a scope-reduction rung (plan §10.4) — but never
     # fewer than two, because one family cannot answer whether the failure mode
     # is one vendor's artifact. Hardcoding a count here would make the ladder
     # unrunnable and would have to be edited every time the scope moved, which
@@ -1152,8 +1152,8 @@ def overblocking_model(
 
     Fixed effects only, and additively: near-miss runs carry no injection, hence
     no paraphrase, text, or placement to cluster on, and `task * induced_action`
-    would put one parameter on each of the twelve blocks and estimate nothing
-    else. N = 36 per block buys this a stated precision rather than a
+    would put one parameter on each of the ten blocks and estimate nothing
+    else. N = 6 per block buys this a stated precision rather than a
     confirmatory claim (plan §7.4, §9.5).
     """
     population = overblocking_analysis_rows(rows)
@@ -1822,10 +1822,9 @@ def reference_line_reads(
     """Where C1 and C2 sit relative to their frozen reference lines (plan §9.2).
 
     This was `confirmatory_gate`: it applied Holm across the two members and
-    returned a pass/fail. Both went with the move to exploratory status
-    There is no family of confirmatory tests here, so
-    there is nothing to correct across, and nothing gates on where a bound
-    falls.
+    returned a pass/fail. Both went with the move to exploratory status: there
+    is no family of confirmatory tests here, so there is nothing to correct
+    across, and nothing gates on where a bound falls.
 
     What survives is the part that was always the finding rather than the
     verdict: each member's posterior mass at or below its line, and the
@@ -1891,9 +1890,9 @@ def confirmatory_by_family(
     survives a change of vendor" — and a pooled average cannot say it.
 
     These were Holm-corrected tests within the estimand. They are now
-    unadjusted per-family reads, for the same reason Tier 1 lost its correction
-    a correction controls the error rate of a family
-    of *tests*, and there are none here. Each family's interval is read against
+    unadjusted per-family reads, for the same reason Tier 1 lost its
+    correction: a correction controls the error rate of a family of *tests*,
+    and there are none here. Each family's interval is read against
     the line on its own, and "cleared in k of 8" counts those reads.
 
     Families print in the registered order and are never sorted by rate, here as
@@ -2218,9 +2217,9 @@ def variance_decomposition(
     above 1 says susceptibility tracks which paraphrase a text is more than
     which text it is — systematic wording over idiosyncratic wording. It is not
     "wording against structure": the denominator was `host:cell` until that
-    component was found aliased with the saturated fixed block
-    and with it dropped the structure lives in the
-    fixed effects with no variance component to divide by.
+    component was found aliased with the saturated fixed block, and with it
+    dropped the structure lives in the fixed effects with no variance component
+    to divide by.
 
     The supersession rule that promoted a ratio above 1 to the headline finding
     was **retired at registration revision `r2`**, because it fired under a name
@@ -2574,8 +2573,9 @@ def build_report(
         "tier_2_secondary": list(SECONDARY_FAMILY),
         "tier_3_diagnostic": list(DIAGNOSTIC_TIER),
         "note": (
-            "three disjoint Holm families; Tier 3 draws on no multiplicity budget "
-            "and supports no significance claim (plan §9.2)"
+            "three disjoint tiers; Tier 2 is the only Holm family, and Tier 3 "
+            "draws on no multiplicity budget and supports no significance claim "
+            "(plan §9.2)"
         ),
     }
     report["headline_family"] = headline_family
