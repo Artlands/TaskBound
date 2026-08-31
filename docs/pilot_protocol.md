@@ -59,7 +59,7 @@ it has no near-miss or clean block for the smoke to check either.
 > `--integration-smoke` is the scoped opt-out. It is stamped on the schedule and
 > on every result it produces, and `aggregate` refuses a marked run, so the
 > "never pool pilot runs with the sweep they precede" rule above is enforced by
-> the harness rather than by the reader. See `execution_plan.md`, "Open
+> the harness rather than by the reader. See `execution_plan.md`, "Settled
 > decision: Stage 1 smoke".
 
 ```sh

@@ -147,7 +147,7 @@ attacked conditions are the two halves of the second headline estimand:
 
 ```mermaid
 flowchart LR
-    NEARM[Near-miss: the USER asks<br/>in-scope action rate<br/>full 36-run denominator] --> D{{"D = in-scope − attacked"}}
+    NEARM[Near-miss: the USER asks<br/>in-scope action rate<br/>full 24-run denominator] --> D{{"D = in-scope − attacked"}}
     ATT[Attacked: a FILE asks<br/>compliance among exposed] --> D
     D --> GOOD[D near 1:<br/>does the work, declines the diversion]
     D --> AMB[D near 0:<br/>ambiguous alone — read the two rates]
@@ -317,7 +317,7 @@ per family per arm, 2,862 runs across a registered two-family subset, with a
 ```mermaid
 flowchart LR
     BUILD[Harness + full 156-text library] --> SUPPORT[7c broad-scope scheduling]
-    SUPPORT --> SMOKE[69-run integration smoke<br/>+ early cost projection]
+    SUPPORT --> SMOKE[66-run integration smoke<br/>+ early cost projection]
     SMOKE --> D7[7d analysis support for r2]
     SMOKE --> REAUTH[Re-author texts:<br/>human seeds, out-of-set renderer]
     D7 --> PILOT[Sizing pilot]
@@ -380,7 +380,7 @@ twelve request families, twelve near-miss tasks, and 56 calibration fixtures
 exist and validate. No pilot or main sweep has been run yet.
 
 The open gates are listed once, in the README's
-[Known gaps](../README.md#known-gaps-before-this-is-a-v11-budget-result), rather
+[Before you cite a number](../README.md#before-you-cite-a-number), rather
 than restated here where the two would drift apart.
 
 One remainder is external rather than pending: the §11.3 inference cross-check

@@ -35,8 +35,15 @@ per family at the throughput 399 live attempts measured (plan §10.1).
 > 113 exposed, 137 of 160 conclusive. The three T3 near-miss and clean blocks
 > the cells-only rule dropped are gone with it. The previous schedule's 162
 > results are kept under `pilot/smoke_sweep_6963280d2c30/` as the record of that
-> run. `pilot/sizing_schedule.json` is still stale and must be regenerated
-> before Stage 2 runs.
+> run.
+>
+> Both committed schedules are now stale again, for different reasons.
+> `pilot/sizing_schedule.json` never matched the five-task scope. And the
+> acceptance stamp applied to all 156 texts changed every `injection_hash`, so
+> replanning the smoke command below yields `sweep_53226843e67f` rather than the
+> committed `sweep_b2f0f31679c7` — the Stage 1 results above stand as the record
+> of a run against the earlier texts, and the schedule must be regenerated
+> before Stage 1 is re-run. Phase 0 step 1 regenerates both.
 
 ---
 
@@ -189,7 +196,7 @@ execution.
 `--integration-smoke` is what lets one run per injected group past the
 paraphrase-balance guard, and `--near-miss-target 1 --clean-target 1` is what
 brings the near-miss and clean blocks down from their release N to the one run
-per group this stage asks for. Together they plan exactly 69 target runs.
+per group this stage asks for. Together they plan exactly 66 target runs.
 
 **Hard stops** — each is a defect, not a result (pilot protocol Stage 1):
 
@@ -451,7 +458,7 @@ over-broad for this one.
 | Option | Effect | Cost |
 |--------|--------|------|
 | **A. Raise the smoke target to 3** (`--exposed-target 3 --attempt-cap 9`) | No extra code; every group still exercised | Smoke grows from 66 to 170 target runs (404 max attempts) of real model spend, and `pilot_protocol.md`'s stated 66 must be amended |
-| **B. Scope the guard to recruitment, not integration** — allow a non-multiple target when the schedule is not a release schedule | Keeps the 66-run figure and its spend | A change to `plan_sweep` plus a test |
+| **B. Scope the guard to recruitment, not integration** — allow a non-multiple target when the schedule is not a release schedule | Keeps the 66-run figure and its spend | A change to `sweep.plan` plus a test |
 
 **B fits what the stage is for** — the smoke test checks wiring, exposure,
 placement resolution, and result completeness, none of which depend on paraphrase

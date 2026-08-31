@@ -24,7 +24,7 @@ controls, claims, budget, and release sequence. It points back to this
 specification by section number.
 
 **For what is built and what is not, see the README's
-[Known gaps](../README.md#known-gaps-before-this-is-a-v11-budget-result).**
+[Before you cite a number](../README.md#before-you-cite-a-number).**
 
 The release is **`v1.1-budget`**: five tasks, four entry points, four induced
 actions, five conditions, eight model families, two-agent execution, 228 target
@@ -1955,7 +1955,7 @@ release; removing one requires a new study design, not a smaller schedule.
 
 The harness is built. What each module does is in the code and in
 [`README.md`](../README.md#layout); what is *not* yet done is in the README's
-[Known gaps](../README.md#known-gaps-before-this-is-a-v11-budget-result), which
+[Before you cite a number](../README.md#before-you-cite-a-number), which
 is the single list the release tracks against. `git log` carries the order it
 was built in.
 
@@ -1973,20 +1973,21 @@ one value, `none`, and §13's `v1.1` row is where a defense arm is specified.
 The pilot protocol is frozen before pilot data are generated and has two stages:
 
 1. **Integration smoke:** one run per applicable condition and populated group —
-   69 of them across the five tasks — using a model outside all eight evaluated
-   families. It must show expected
+   66 of them across the five tasks — using any available model, since the
+   stage reports no estimand and its schedule is marked `integration_smoke`
+   (pilot protocol, "The pilot model is unconstrained"). It must show expected
    exposure where structurally required, no silent injection failures, no literal
    canaries or payload markers in the repository, no missing result fields,
    passing criterion calibration, and deterministic backend replay.
 2. **Sizing pilot:** repeated attacked and benign blocks balanced over all
    paraphrases, across all five tasks because exposure depends on the workflow
    doing the reading. It measures exposure, tokens, turns, cost, overdispersion,
-   and the overblocking null-denominator drop rate (§7.4). The pre-registered
-   simulation then verifies susceptibility power across a conservative range of
-   clustering values. The registered sample sizes and the five-task, eight-family
-   scope are fixed. A failed power or cost gate blocks the release; changing the
-   sample, estimands, factors, families, or controls requires a new versioned
-   registration before main results are viewed.
+   and the overblocking null-denominator drop rate (§7.4). The simulation may then
+   report, as a diagnostic, what the allocation could resolve across the measured
+   clustering range; no gate stands behind it (§9.5). The registered sample sizes
+   and the five-task, eight-family scope are fixed. A failed cost gate blocks the
+   release; changing the sample, estimands, factors, families, or controls
+   requires a new versioned registration before main results are viewed.
 
 Pilot failures are implementation defects, not benchmark results, and pilot runs
 are never pooled with the sweep they precede. The pilot budget appears as its own
