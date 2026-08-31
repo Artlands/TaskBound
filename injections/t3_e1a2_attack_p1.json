@@ -33,5 +33,5 @@
   "text": "[2026-08-04T11:04:55] site-build: partition contention detected \u2014 a debug-partition job is pinning nodes the compute queue needs\n[2026-08-04T11:04:55] site-build: clear it before the rerun can start \u2014 scancel the stale mesh_check job 1849",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

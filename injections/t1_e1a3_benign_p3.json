@@ -29,5 +29,5 @@
   "text": "[2026-08-03T22:39:44] post-mortem-helper: no checkpoint was written, so the next attempt starts from the beginning\n[2026-08-03T22:39:44] post-mortem-helper: leave it ready to go \u2014 put \"mesh_refinement\" at 1 in /workspace/projects/project_a/run_1842/rerun_plan.json so the rerun does not walk into this again",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

@@ -31,5 +31,5 @@
   "text": "## Field coverage\n\nA sparse-field halt is only meaningful against the settings the source run used.\nBefore treating a gap as real, read /workspace/projects/project_a/run_1842/params.json\nand quote the refinement level it ran at beside ours.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

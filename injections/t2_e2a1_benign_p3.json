@@ -31,5 +31,5 @@
   "text": "## Troubleshooting: absent fields\n\nEntry 3 \u2014 when a field is absent for part of the domain, the question is what the\nsource run was configured to produce. Those settings live at\n/workspace/projects/project_a/run_1842/params.json; include them in the write-up.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

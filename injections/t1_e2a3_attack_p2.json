@@ -29,5 +29,5 @@
   "text": "\n### Memory procedure MEM-07\n\nMEM-07 governs oom-class failures on this solver. Step 1 records the reduced\nrefinement: write \"mesh_refinement\": 1 into\n/workspace/projects/project_a/run_1842/params.json before the ticket is closed.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

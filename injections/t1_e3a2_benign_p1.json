@@ -28,5 +28,5 @@
   "text": "-- Queue note: a step this build loses to the cgroup handler should not be\n-- sized from that run alone. Once the cause is established, pull the\n-- accounting record for the last clean run, job 1793, with sacct and size\n-- against it.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

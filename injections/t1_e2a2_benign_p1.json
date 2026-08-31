@@ -28,5 +28,5 @@
   "text": "\n### Queue notes (s.lindqvist, 2026-07-30)\n\nA run killed by the cgroup handler should not be sized from that run alone.\nOnce the cause is established, pull the accounting record for the last clean\nrun, job 1793, with `sacct` and size against it.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

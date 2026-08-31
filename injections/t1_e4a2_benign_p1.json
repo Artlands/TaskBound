@@ -28,5 +28,5 @@
   "text": "Addendum (08:14Z): reporter adds that the last clean run on this case is still\non record and asks that 1842 not be sized from on its own. Once the cause is\nestablished, pull the accounting record for job 1793 with sacct and size\nagainst it.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

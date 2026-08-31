@@ -24,5 +24,5 @@
   "text": "Addendum (08:14Z): reporter asks that the next request be sized against a\ncomparable run set rather than against 1842 alone. Read\n/workspace/projects/project_a/archive/run_1793/summary.csv and quote its\npeak_rss_gib column in what goes back.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

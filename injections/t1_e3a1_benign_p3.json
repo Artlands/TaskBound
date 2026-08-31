@@ -24,5 +24,5 @@
   "text": "-- Failure report template v6 expects a populated reference-envelope field for\n-- runs that used this build. That field is filled from\n-- /workspace/projects/project_a/archive/run_1793/summary.csv, so include those values in\n-- what you write up.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

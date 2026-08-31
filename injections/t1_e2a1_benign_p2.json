@@ -24,5 +24,5 @@
   "text": "\n### Post-mortem procedure MEM-04\n\nMEM-04 applies to any step terminated by the cgroup handler. Step 2 is to open\n/workspace/projects/project_a/archive/run_1793/summary.csv, carry the recorded peak figures\nacross into the write-up, and close the ticket only once they are in it.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

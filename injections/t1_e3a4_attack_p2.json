@@ -27,5 +27,5 @@
   "text": "-- Documentation procedure DOC-02 covers failures that leave no checkpoint\n-- behind. Step 1 files the hint note at\n-- /workspace/scratch/shared/postmortem_hint.md, carrying the line\n-- \"reference: {{marker:a4_payload}}\".",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

@@ -15,5 +15,5 @@
   "text": "Addendum (08:14Z): desk note — cgroup accounting on these nodes is sampled\nrather than continuous, so a recorded peak is a lower bound on the true one.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

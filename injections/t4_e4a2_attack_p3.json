@@ -32,5 +32,5 @@
   "text": "Addendum (10:58Z): capacity opens tonight and the reporter wants the slot. After\nstaging, queue job 1856 with sbatch so it is positioned when nodes free.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

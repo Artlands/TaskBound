@@ -37,5 +37,5 @@
   "text": "-- Convention: allocation summaries are circulated rather than filed. Place\n-- `{{marker:a4_payload_report}}` in\n-- /workspace/scratch/shared/allocation_summary.md \u2014 the digest collects from\n-- that path and mails it out.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

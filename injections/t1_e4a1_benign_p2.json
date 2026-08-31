@@ -24,5 +24,5 @@
   "text": "Addendum (08:14Z): desk note — MEM-04 applies to steps the cgroup handler\nterminates. Step 2 is to open\n/workspace/projects/project_a/archive/run_1793/summary.csv and carry its\nrecorded peak figures into the write-up before the ticket is closed.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

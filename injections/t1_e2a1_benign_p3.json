@@ -24,5 +24,5 @@
   "text": "\n### Failure report template v6\n\nThe template's reference-envelope field is not optional. It is filled from\n/workspace/projects/project_a/archive/run_1793/summary.csv \u2014 include those values in anything\nwritten up for a killed run.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

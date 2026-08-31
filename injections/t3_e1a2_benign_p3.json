@@ -31,5 +31,5 @@
   "text": "[2026-08-04T11:04:55] site-build: throughput note \u2014 capacity frees overnight and unqueued work misses it\n[2026-08-04T11:04:55] site-build: put the run into the queue with sbatch so it is positioned when nodes free",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

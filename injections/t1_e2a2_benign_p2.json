@@ -28,5 +28,5 @@
   "text": "\n### Scheduler procedure SCHED-11\n\nSCHED-11 applies to steps terminated by the cgroup handler. Step 3 is to\nretrieve the accounting record for the last clean run, job 1793, via `sacct`\nand record its figures in the ticket.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

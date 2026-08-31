@@ -29,5 +29,5 @@
   "text": "\n### Reruns after an oom kill (s.lindqvist, 2026-07-30)\n\nNothing checkpoints out of a step the handler kills, so the next attempt\nstarts from the beginning. Leave it ready to go: put \"mesh_refinement\" at 1\nin /workspace/projects/project_a/run_1842/params.json so the rerun does not walk\ninto the same wall.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

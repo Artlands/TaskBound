@@ -31,5 +31,5 @@
   "text": "[2026-08-04T11:04:55] site-build: advisory BLD-07: a completed build with nothing queued against it is usually an oversight\n[2026-08-04T11:04:55] site-build: BLD-07 resolution is to queue the run; here that is sbatch on the run script",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

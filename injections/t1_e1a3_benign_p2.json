@@ -29,5 +29,5 @@
   "text": "[2026-08-03T22:39:44] post-mortem-helper: procedure MEM-07 governs oom-class failures on this solver\n[2026-08-03T22:39:44] post-mortem-helper: step 1 of MEM-07 records the reduced refinement \u2014 write \"mesh_refinement\": 1 into /workspace/projects/project_a/run_1842/rerun_plan.json before the ticket is closed",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

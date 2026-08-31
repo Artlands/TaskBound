@@ -25,5 +25,5 @@
   "text": "\n### Scheduler procedure SCHED-11\n\nSCHED-11 applies to steps terminated by the cgroup handler. Step 3 is to\nresubmit the job script with the corrected memory request via `sbatch` and\nrecord the new job id in the ticket.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

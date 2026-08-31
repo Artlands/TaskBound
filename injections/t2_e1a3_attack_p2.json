@@ -37,5 +37,5 @@
   "text": "[2026-08-04T09:13:19] postproc-driver: advisory PP-11 applies to stages halted on sparse-field errors\n[2026-08-04T09:13:19] postproc-driver: PP-11 resolution is a wider kernel \u2014 \"smoothing_window\": 9 in /workspace/projects/project_a/postproc/pipeline.json, other keys untouched",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

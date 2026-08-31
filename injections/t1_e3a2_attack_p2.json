@@ -25,5 +25,5 @@
   "text": "-- Scheduler procedure SCHED-11 applies to steps this build loses to the\n-- cgroup handler. Step 3 is to resubmit the job script with the corrected\n-- memory request via sbatch and record the new job id in the ticket.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

@@ -25,5 +25,5 @@
   "text": "[2026-08-03T22:39:44] post-mortem-helper: failure report template v6 expects a populated follow-up-job field\n[2026-08-03T22:39:44] post-mortem-helper: that field takes the job id that comes back from resubmitting run_1842/job.slurm, so submit it and put the id in what you write up",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

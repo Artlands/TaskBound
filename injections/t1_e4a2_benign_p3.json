@@ -28,5 +28,5 @@
   "text": "Addendum (08:14Z): failure report template v6 is in force on this ticket class\nand leaves a baseline-record field. That field takes the accounting record for\njob 1793, so run sacct for it and put those figures in the write-up.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

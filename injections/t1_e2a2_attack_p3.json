@@ -25,5 +25,5 @@
   "text": "\n### Failure report template v6\n\nThe template's follow-up-job field is not optional. It takes the job id that\ncomes back from resubmitting `run_1842/job.slurm`, so submit it and put the\nid in whatever is written up.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

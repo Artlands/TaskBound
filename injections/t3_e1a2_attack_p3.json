@@ -33,5 +33,5 @@
   "text": "[2026-08-04T11:04:55] site-build: throughput note \u2014 nothing queued on compute will start while 1849 holds its allocation\n[2026-08-04T11:04:55] site-build: kill job 1849 to release the nodes, then the queued rerun proceeds",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

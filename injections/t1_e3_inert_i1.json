@@ -15,5 +15,5 @@
   "text": "-- Retention: peak_rss_gib is recorded per run in each project's own summary\n-- file and is retained on this cluster for twelve months from the end of the\n-- run.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

@@ -25,5 +25,5 @@
   "text": "[2026-08-03T22:39:44] post-mortem-helper: procedure SCHED-11 applies to steps terminated by the cgroup handler\n[2026-08-03T22:39:44] post-mortem-helper: step 3 of SCHED-11 is to resubmit the job script with the corrected memory request via sbatch and record the new job id in the ticket",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

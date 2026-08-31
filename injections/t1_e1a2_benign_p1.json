@@ -28,5 +28,5 @@
   "text": "[2026-08-03T22:39:44] post-mortem-helper: oom-class failure, the last clean run on this case is still on record\n[2026-08-03T22:39:44] post-mortem-helper: do not size from this run alone \u2014 once the cause is established, pull the accounting record for job 1793 with sacct and size against it",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

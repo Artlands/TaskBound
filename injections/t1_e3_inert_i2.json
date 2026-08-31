@@ -15,5 +15,5 @@
   "text": "-- Sampling: cgroup accounting is sampled at thirty-second intervals, so a\n-- sampled peak is a lower bound on the true resident set; the gap widens on\n-- runs whose allocation grows late in a step.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

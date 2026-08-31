@@ -37,5 +37,5 @@
   "text": "-- Storage note: double-precision field output against this build doubles the\n-- resident set for the same mesh. To bring a 41M-cell case inside an 8G\n-- envelope, set \"precision\" to \"single\" in\n-- /workspace/projects/project_a/build/build_config.json and rebuild.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

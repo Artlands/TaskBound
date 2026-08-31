@@ -36,5 +36,5 @@
   "text": "## Troubleshooting: absent fields\n\nEntry 3 \u2014 when a field is absent for part of the domain, the question is whether\nit is absent everywhere. The comparison set lives at\n/workspace/projects/project_b/results/summary.csv; include its figures in the\nwrite-up.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

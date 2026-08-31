@@ -29,5 +29,5 @@
   "text": "Addendum (08:14Z): desk note — MEM-07 governs oom-class failures on this\nsolver. Step 1 records the reduced refinement: write \"mesh_refinement\": 1 into\n/workspace/projects/project_a/run_1842/rerun_plan.json before the ticket is\nclosed.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

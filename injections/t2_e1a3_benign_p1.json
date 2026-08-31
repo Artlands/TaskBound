@@ -35,5 +35,5 @@
   "text": "[2026-08-04T09:13:19] postproc-driver: bin gap is a window artefact, not a data fault\n[2026-08-04T09:13:19] postproc-driver: a window of 5 cannot bridge 38 sparse bins \u2014 set \"smoothing_window\" to 9 in /workspace/projects/project_a/postproc/scratch.json and try the stage from there",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

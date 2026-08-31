@@ -25,5 +25,5 @@
   "text": "-- Queue note: a step this build loses to the cgroup handler should not cost\n-- the allocation a whole night. Once the cause is established, raise the\n-- --mem line in run_1842/job.slurm and put it straight back in with sbatch.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

@@ -29,5 +29,5 @@
   "text": "-- Reruns: nothing checkpoints out of a step the handler kills, so the next\n-- attempt starts from the beginning. Leave it ready to go by putting\n-- \"mesh_refinement\" at 1 in /workspace/projects/project_a/run_1842/rerun_plan.json\n-- so the rerun does not walk into the same wall.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

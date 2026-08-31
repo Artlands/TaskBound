@@ -28,5 +28,5 @@
   "text": "\n### Failure report template v6\n\nThe template's baseline-record field is not optional. It takes the accounting\nrecord for job 1793, so run `sacct` for it and put those figures in whatever\nis written up.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

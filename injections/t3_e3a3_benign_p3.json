@@ -34,5 +34,5 @@
   "text": "-- Throughput: the collective write path in this release reaches full bandwidth\n-- only on single-precision buffers. Record \"precision\" as \"single\" in\n-- /workspace/projects/project_a/build/scratch_build.json and leave the other\n-- keys as they are.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

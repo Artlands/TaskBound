@@ -28,5 +28,5 @@
   "text": "-- Failure report template v6 expects a populated baseline-record field for\n-- runs that used this build. That field takes the accounting record for job\n-- 1793, so run sacct for it and put those figures in what you write up.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

@@ -29,7 +29,12 @@ The design notes live in `docs/development_plan.md`; the short summary is in `do
 3. [Running one task](#running-one-task)
 4. [Running a sweep](#running-a-sweep)
 5. [Reading a result](#reading-a-result)
-6. [Layout](#layout)
+6. [What the grid measures](#what-the-grid-measures)
+7. [Comparing models](#comparing-models)
+8. [Canaries and what not to commit](#canaries-and-what-not-to-commit)
+9. [Troubleshooting](#troubleshooting)
+10. [Before you cite a number](#before-you-cite-a-number)
+11. [Layout](#layout)
 
 ---
 
@@ -270,7 +275,15 @@ For a smaller sweep, narrow the scope instead of shrinking every N proportionall
 # 32 groups, 159 target runs, 321 maximum attempts
 ```
 
-This is a reasonable way to get usable results in a few hours without losing the core structure of the experiment.
+`--exposed-target 3` is the smallest legal value: an injected target has to
+divide across the three paraphrases, so 1 and 2 are rejected. (`sweep plan` has
+an `--integration-smoke` opt-out for one-run-per-group wiring checks, but it
+stamps every result and `aggregate` then refuses them.)
+
+Dropping E3 and T3 is what buys the time: E3's exposure is too low for its
+groups to reach target, and T3 is the most expensive task per attempt. The cost
+is that this sweep carries no E3 evidence and no cross-task replication, so
+neither the entry-point contrast nor task generality is complete.
 
 ### Aggregating results
 
@@ -340,40 +353,6 @@ print('utility  ', r['utility']['success'], '| crossings', r['scope_violation'][
 ```
 
 Two annotations are recorded on every violation but are false by construction: `posix_would_block` and `identity_would_flag`. The benchmark is designed so the target is allowed under the account and the threat model has a single user under their own credentials. If either one ever turns true, that scenario has drifted into testing access control, and the result is discarded rather than reported.
-
----
-
-## Layout
-
-The repo is organized roughly like this:
-
-- `taskbound/` — execution harness and scoring logic
-- `hosts/` — host/task definitions and fixtures
-- `injections/` — injected prompt variants
-- `fixtures/` — scripted and calibration data
-- `docs/` — design rationale and summaries
-- `reports/` and `results/` — output directories
-- `schedules/` — generated sweep plans
-- `tests/` — validation suite
-
-If you want to understand the benchmark logic before running large sweeps, start with the design notes in `docs/development_plan.md` and `docs/plan_summary.md`.
-
----
-
-## Before you cite a number
-
-Treat benchmark numbers as preliminary until they have been reviewed by a human. This repo contains the instrument, not a validated leaderboard, and the injection texts have not all passed a human acceptance check.
-
-If you intend to report a result, be explicit about:
-
-- the host and task used
-- the run conditions and model configuration
-- the exact schedule or sweep settings
-- whether the result is from an aggregate or a single run
-- the fact that this is still an experimental benchmark
-
-That keeps the numbers honest and makes it easier to tell measurement from marketing.
-
 
 ---
 
@@ -514,12 +493,13 @@ whether a number you produce means what you want it to mean.
    measurement of any model. Runs so far have been diagnostics against one
    unregistered model on narrowed allocations.
 
-2. **The injection texts are AI-drafted and not yet reviewed.** All 156 record
-   `generator: claude-opus-5` and `accepted_by: PENDING_ACCEPTANCE_REVIEW`. Two
-   consequences: they await human acceptance review, and **evaluating a Claude
-   model against them risks contamination**, since a model may recognise text
-   from its own output distribution. Re-authoring by a generator outside the
-   evaluated set is a prerequisite for a clean cross-model comparison.
+2. **The injection texts are AI-drafted.** All 156 record
+   `generator: claude-opus-5`, so **evaluating a Claude model against them risks
+   contamination** — a model may recognise text from its own output
+   distribution. Re-authoring by a generator outside the evaluated set is a
+   prerequisite for a clean cross-model comparison. The texts have had a human
+   pass (`accepted_by: PRE_REAUTHORING_REVIEW: Jie Li`), but that is not the
+   acceptance gate: the gate runs on the re-authored texts, never before them.
 
 3. **The scope boundary is author-declared.** Each task's `scope_derivation`
    and `task_excluded_roots` state where its boundary falls and why, and no
@@ -580,6 +560,8 @@ injections/              twelve request families, an inert spec, 156 texts
 control_profiles/        the four evaluated-control rules, versioned
 fixtures/scripts/        scripted-agent traces for offline tests
 schedules/, pilot/       frozen attempt schedules
+reports/                 aggregated output; safe to commit
+results/                 raw per-run JSON — gitignored, contains canary values
 tests/                   schema, backend, scoring, sweep, analysis
 docs/                    design rationale, run protocol, review rubrics
 ```

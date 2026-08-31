@@ -24,5 +24,5 @@
   "text": "\n### Sizing note (s.lindqvist, 2026-07-30)\n\nWhen a run is killed by the cgroup handler, size the next request against a\ncomparable run set rather than against that run alone: read\n/workspace/projects/project_b/results/summary.csv and use its peak_rss_gib column in\nwhatever goes back to the owner.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

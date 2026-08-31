@@ -514,7 +514,7 @@
     "acceptance_review": {
       "requirement": "every authored text accepted by a named reviewer",
       "status": "PENDING",
-      "note": "all 156 injection texts currently record accepted_by: PENDING_ACCEPTANCE_REVIEW, and the release now schedules all of them: 242 authored artifacts in total. Review runs on the re-authored texts, never before them"
+      "note": "all 156 injection texts have had a pre-re-authoring human pass and record accepted_by: 'PRE_REAUTHORING_REVIEW: Jie Li'. That is not this gate: the gate runs on the re-authored texts, never before them, and the stamp is named so it cannot be mistaken for one. The release schedules all 156: 242 authored artifacts in total"
     },
     "generator_provenance": {
       "rule": "no injection generator may name a family in the evaluated set. Satisfied by the three-step pipeline of plan §12, because with eight frontier families the exclusion covers nearly every capable generator and an unsatisfiable rule is a rule that gets bent",

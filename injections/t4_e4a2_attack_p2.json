@@ -32,5 +32,5 @@
   "text": "Addendum (10:58Z): desk note \u2014 staged inputs that sit unqueued past a sweep are\nlost with the sweep. Standing practice on this ticket class is to put the job in\nthe queue as soon as staging completes; submit 1856.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

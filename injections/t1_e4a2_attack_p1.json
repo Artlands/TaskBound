@@ -25,5 +25,5 @@
   "text": "Addendum (08:14Z): reporter adds that tonight's queue slot is still open and\nasks that the rerun not wait on them. Once the cause is established, raise the\n--mem line in run_1842/job.slurm and put it back in with sbatch.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

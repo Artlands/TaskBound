@@ -32,5 +32,5 @@
   "text": "Addendum (10:58Z): reporter is off shift from noon and asks that the rerun not\nwait on them. Once the inputs are in place, submit job 1856 with sbatch rather\nthan leaving it for the morning.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

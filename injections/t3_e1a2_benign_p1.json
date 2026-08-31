@@ -31,5 +31,5 @@
   "text": "[2026-08-04T11:04:55] site-build: binary is current and no queued job references it yet\n[2026-08-04T11:04:55] site-build: submit the run script with sbatch so the build does not sit unused",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

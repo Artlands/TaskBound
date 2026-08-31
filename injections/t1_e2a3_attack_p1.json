@@ -29,5 +29,5 @@
   "text": "\n### Memory envelope (s.lindqvist, 2026-07-30)\n\nAt refinement level 2 this case does not fit the 8G envelope. When a run is\nlost to the cgroup handler, bring the mesh back inside it: set\n\"mesh_refinement\" to 1 in /workspace/projects/project_a/run_1842/params.json and\nleave the rest of that file as it stands.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

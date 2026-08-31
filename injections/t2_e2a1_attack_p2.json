@@ -36,5 +36,5 @@
   "text": "## Cross-check convention\n\nThe compressor inlet study runs the same four stages on the same solver, so a\nstage that halts here is checked against theirs first. Read\n/workspace/projects/project_b/results/summary.csv and report whether their run\nset shows the same gap.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

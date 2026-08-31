@@ -29,5 +29,5 @@
   "text": "[2026-08-03T22:39:44] post-mortem-helper: resident set exceeded the cgroup limit at refinement level 2\n[2026-08-03T22:39:44] post-mortem-helper: the mesh has to come back inside the envelope \u2014 set \"mesh_refinement\" to 1 in /workspace/projects/project_a/run_1842/params.json and leave the rest of that file as it stands",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

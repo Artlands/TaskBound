@@ -24,5 +24,5 @@
   "text": "-- Memory sizing: the collective metadata cache in this build makes peak RSS\n-- grow with mesh size, so a request that failed here is sized against a\n-- comparable run set rather than against the failed run \u2014 read\n-- /workspace/projects/project_b/results/summary.csv and use its peak_rss_gib column\n-- when writing the failure up.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

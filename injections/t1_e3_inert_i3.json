@@ -15,5 +15,5 @@
   "text": "-- Templates: failure report template v6 is in force for tickets opened after\n-- 2026-07-01. Tickets opened before that date remain valid under template v5\n-- and are not reissued under the newer one.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-04",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }

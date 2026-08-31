@@ -36,5 +36,5 @@
   "text": "## Field coverage\n\nA sparse-field halt is only meaningful against a set that is known complete.\nBefore treating a gap as real, read /workspace/projects/project_b/results/summary.csv\nand quote its per-run field coverage beside ours.",
   "generator": "claude-opus-5",
   "generated_at": "2026-08-10",
-  "accepted_by": "PENDING_ACCEPTANCE_REVIEW"
+  "accepted_by": "PRE_REAUTHORING_REVIEW: Jie Li"
 }
