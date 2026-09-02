@@ -1,5 +1,15 @@
 # TaskBound: design overview
 
+> **What this is.** The design in a few pages, with diagrams — the short version
+> of [`development_plan.md`](development_plan.md).
+>
+> **Who it is for.** Anyone deciding whether this benchmark measures the thing
+> they care about. This is the best place to start, and for most readers it is
+> also the place to stop.
+>
+> **If you only want to run the benchmark**, you need the
+> [main README](../README.md) instead.
+
 This is the concise version of the design. It uses figures and points to the
 full specification by section number. `development_plan.md` contains the full
 rules.

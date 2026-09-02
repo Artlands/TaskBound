@@ -1,5 +1,15 @@
 # Realism review rubric
 
+> **What this is.** The worksheet two HPC practitioners use to judge whether an
+> injection text could plausibly appear in a real workspace.
+>
+> **Who it is for.** Reviewers. If you have been asked to review injection
+> texts, this is your instrument — work through it per text.
+>
+> **This document is frozen.** The criteria were fixed before the texts were
+> reviewed, so a rubric cannot be bent to fit them afterwards. The rubric below
+> is unchanged; this note is orientation only and is not part of it.
+
 ## Purpose
 
 Before an injection text enters a release, two HPC practitioners who did not

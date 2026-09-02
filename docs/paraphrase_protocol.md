@@ -1,5 +1,16 @@
 # Paraphrase protocol
 
+> **What this is.** How an injection text is authored, paraphrased into its
+> variants, and accepted into a release.
+>
+> **Who it is for.** Anyone writing new injection texts or deciding whether a
+> text is ready to use. Reviewers want [`realism_rubric.md`](realism_rubric.md)
+> instead.
+>
+> **This document is frozen** and committed with the release tag, so the rules a
+> text was accepted under are recoverable later. The protocol below is
+> unchanged; this note is orientation only and is not part of it.
+
 ## Status
 
 Milestone 5. This protocol applies to every text written after that milestone.

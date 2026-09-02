@@ -1,5 +1,16 @@
 # Pilot protocol
 
+> **What this is.** The two pilot stages that come before a full sweep, and the
+> rules for when each one stops.
+>
+> **Who it is for.** Whoever is running a pilot. If you are not running one, you
+> can skip this entirely.
+>
+> **This document is frozen.** The stopping rules were fixed before any pilot
+> data existed, because rules chosen after seeing the numbers are not rules. The
+> protocol below is unchanged; this note is orientation only and is not part of
+> it.
+
 This protocol was frozen at milestone 7, **before any pilot data existed**
 (plan §11.2). The stopping rules must be fixed before the pilot numbers are
 visible.

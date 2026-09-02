@@ -1,5 +1,17 @@
 # TaskBound Development Plan
 
+> **What this is.** The full specification — every design decision and the
+> reasoning behind it. It is a *reference*, not something to read front to back.
+>
+> **Who it is for.** Anyone checking how a particular number is defined or
+> justified. The code cites this file by section: `plan §9.1` in a docstring or
+> an error message points here. Jump to the section, don't start at page one.
+>
+> **If you only want to run the benchmark**, you need the
+> [main README](../README.md) instead. For an overview, read
+> [`plan_summary.md`](plan_summary.md) first. New here?
+> [`docs/README.md`](README.md) says which document you want.
+
 A benchmark for measuring whether an LLM agent working in an HPC-like
 environment stays inside the task it was given.
 

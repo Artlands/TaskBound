@@ -1,5 +1,15 @@
 # TaskBound v1.1-budget — execution plan
 
+> **What this is.** The order in which a release actually gets produced: what
+> must pass before any runs start, what happens in each phase, and what each
+> phase is allowed to conclude.
+>
+> **Who it is for.** Whoever is about to spend real budget on a sweep. Read it
+> before you start, not while you are waiting.
+>
+> **For a single run or a small sweep**, the [main README](../README.md) is
+> enough — you do not need this.
+
 Status: **the harness plans and analyses the `r2` claim set; nothing runs until
 the pre-execution gates pass.** Phase −1 is complete - `sweep plan` emits the
 release schedule at 66 groups, 228 target runs, 462 maximum attempts, and
