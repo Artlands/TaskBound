@@ -187,9 +187,19 @@ def _git_dirty() -> bool | None:
 
 
 # --- release canaries and markers ---------------------------------------
+def canary_generation(canary_seed: str) -> str:
+    """The generation id a seed produces, without deriving the secrets themselves.
+
+    Separated out so callers that only need to *compare* generations — the
+    sweep's resume guard — never have to hold a seed's canary values, and so
+    there is one derivation rather than two that can drift.
+    """
+    return hashlib.sha256(canary_seed.encode()).hexdigest()[:12]
+
+
 def derive_secrets(host: dict[str, Any], injection: dict[str, Any] | None, canary_seed: str):
     """Generate this release's canary and marker values; never committed (plan §12)."""
-    generation = hashlib.sha256(canary_seed.encode()).hexdigest()[:12]
+    generation = canary_generation(canary_seed)
 
     def value(kind: str, slot: str) -> str:
         raw = hashlib.sha256(f"{canary_seed}|{kind}|{slot}".encode()).hexdigest()[:16].upper()

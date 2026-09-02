@@ -9,7 +9,7 @@ import os
 
 import pytest
 
-from taskbound import aggregate, sweep
+from taskbound import aggregate, runner, sweep
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 HOST = os.path.join(ROOT, "hosts", "site_a")
@@ -448,6 +448,64 @@ def test_a_sweep_cannot_resume_under_another_model_configuration(tmp_path):
 
     with pytest.raises(SystemExit, match="distinct result directory"):
         sweep.execute(s, run_args(out, model="another-family", max_attempts=1))
+
+
+def test_a_sweep_cannot_resume_under_another_canary_seed(tmp_path):
+    """The seed decides what counts as a leak, so it cannot change mid-sweep.
+
+    `_agent_configuration` deliberately does not carry the seed — it is
+    serialised onto every result and a seed is a secret (plan §12) — so the
+    guard compares the generation id each run already records.
+    """
+    s = diagnostic_schedule(exposed_target=6, attempt_cap=12)
+    out = tmp_path / "out"
+    sweep.execute(s, run_args(out, canary_seed="seed-one", max_attempts=1))
+
+    with pytest.raises(SystemExit, match="canary generation"):
+        sweep.execute(s, run_args(out, canary_seed="seed-two", max_attempts=1))
+
+    generations = set()
+    for name in os.listdir(out):
+        if name.startswith("sweep_manifest"):
+            continue
+        with open(os.path.join(out, name), encoding="utf-8") as fh:
+            generations.add(json.load(fh)["canary_generation"])
+    assert generations == {runner.canary_generation("seed-one")}
+
+
+def test_resuming_under_the_same_canary_seed_is_allowed(tmp_path):
+    """The guard is on the generation, not on having been given a seed twice."""
+    s = diagnostic_schedule(exposed_target=3, attempt_cap=6)
+    out = tmp_path / "out"
+    sweep.execute(s, run_args(out, canary_seed="seed-one", max_attempts=2))
+    manifest = sweep.execute(s, run_args(out, canary_seed="seed-one"))
+    assert manifest["totals"]["attempted_total"] > 2
+
+
+def test_a_result_is_never_left_half_written(tmp_path):
+    """`_write` renames into place, so a reader sees no file or a whole one."""
+    out = tmp_path / "out"
+    out.mkdir()
+    sweep._write(str(out), "attempt_00", {"run_id": "r", "value": "x" * 50000})
+    written = sorted(os.listdir(out))
+    assert written == ["attempt_00.json"], "no .partial may survive a clean write"
+    with open(out / "attempt_00.json", encoding="utf-8") as fh:
+        assert json.load(fh)["run_id"] == "r"
+
+
+def test_a_truncated_result_names_itself_rather_than_raising_a_bare_decode_error(tmp_path):
+    """What a signal used to leave behind, and what the reader now says about it."""
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "attacked_t1_failed_job_E1A1_00.json").write_text(
+        '{"run_id": "r", "action_trace": [{"index": 0, "kind": "fs_re',
+        encoding="utf-8",
+    )
+    with pytest.raises(SystemExit, match="attacked_t1_failed_job_E1A1_00.json"):
+        sweep._resume(str(out), diagnostic_schedule())
+
+    with pytest.raises(SystemExit, match="attacked_t1_failed_job_E1A1_00.json"):
+        aggregate.load_frame(str(tmp_path))
 
 
 def test_every_result_records_the_attempt_it_came_from(tmp_path):

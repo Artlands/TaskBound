@@ -424,6 +424,32 @@ def execute(schedule: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
             f"{', '.join(prior)}; resuming it as {args.execution_mode!r} would "
             "mix execution models inside one schedule (plan §6.4, R2)"
         )
+
+    # The canary seed is the one input `_agent_configuration` cannot carry: it
+    # is serialised onto every result, and a seed is a secret (plan §12). The
+    # generation id it derives is already recorded per run, so compare that
+    # instead — the check is on the recorded field rather than on a copy inside
+    # the configuration, which is what makes it work on directories written
+    # before this guard existed.
+    #
+    # Without it a resume under a different `--canary-seed` is accepted
+    # silently, and the directory ends up spanning two generations. Canary
+    # values are substituted into the workspace at load time and define what
+    # counts as a leak, so `realization.leak` and the level-3 verdict derived
+    # from it are not comparable across generations.
+    expected_generation = runner.canary_generation(args.canary_seed)
+    prior_generations = sorted(
+        {r.get("canary_generation") for r in state["records"]} - {None}
+    )
+    if prior_generations and prior_generations != [expected_generation]:
+        raise SystemExit(
+            f"sweep {schedule['sweep_id']} already has runs under canary "
+            f"generation {', '.join(prior_generations)}; the seed passed here "
+            f"derives {expected_generation}. Resuming would split one results "
+            "directory across two canary generations, which are not comparable "
+            "on realization.leak (plan §12). Re-export the original seed, or "
+            "start a fresh results directory."
+        )
     prior_configurations = {
         json.dumps(
             (record.get("sweep") or {}).get("agent_configuration"),
@@ -597,8 +623,18 @@ def _resume(out_dir: str, schedule: dict[str, Any]) -> dict[str, Any]:
     counts: dict[str, dict[str, int]] = {}
     records = []
     for path in sorted(glob.glob(os.path.join(out_dir, "*.json"))):
-        with open(path, encoding="utf-8") as fh:
-            record = json.load(fh)
+        try:
+            with open(path, encoding="utf-8") as fh:
+                record = json.load(fh)
+        except json.JSONDecodeError as exc:
+            # Naming the file is the whole point: the caller has to delete it
+            # before the sweep can continue, and a bare JSONDecodeError does not
+            # say which of several hundred results is the problem.
+            raise SystemExit(
+                f"{path} is not valid JSON ({exc}). A result truncated by a "
+                "signal cannot be repaired; delete it and the attempt re-runs "
+                "(raw results are append-only)."
+            ) from exc
         sweep = record.get("sweep")
         if not sweep or sweep["sweep_id"] != schedule["sweep_id"]:
             continue
@@ -615,13 +651,32 @@ def _resume(out_dir: str, schedule: dict[str, Any]) -> dict[str, Any]:
     return {"done": done, "counts": counts, "records": records, "attempted": 0}
 
 
+PARTIAL_SUFFIX = ".partial"
+
+
 def _write(out_dir: str, attempt_id: str, record: dict[str, Any]) -> None:
+    """Write one result so a reader sees either no file or a complete one.
+
+    A result is ~80 KB of indented JSON, so the serialisation spans several
+    buffer flushes. A signal landing inside that window — which is how a sweep
+    gets paused — used to leave invalid JSON in the results directory, and both
+    `_resume` and `aggregate.load_frame` die on it, so the sweep could not be
+    resumed until the file was found and deleted by hand.
+
+    Serialising to a sibling and renaming makes the appearance of the final path
+    atomic. Raw results are append-only, so a `.partial` left behind by a kill
+    is always safe to discard: the attempt simply re-runs.
+    """
     path = os.path.join(out_dir, attempt_id + ".json")
     if os.path.exists(path):
         raise SystemExit(f"refusing to overwrite existing result {path}")
-    with open(path, "w", encoding="utf-8") as fh:
+    tmp = path + PARTIAL_SUFFIX
+    with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(record, fh, indent=2)
         fh.write("\n")
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, path)
 
 
 def _canonical_sha256(value: Any) -> str:

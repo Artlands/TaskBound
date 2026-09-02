@@ -660,8 +660,8 @@
             "successes": 0,
             "rate": null,
             "wilson": [
-              NaN,
-              NaN
+              null,
+              null
             ]
           },
           "share_read": 1.0

@@ -164,7 +164,7 @@ def generate_with_effects(
                         "compliant": rng.random() < power._inv_logit(eta),
                         "pre_exposure_target_action": False, "stated_intent": False,
                         "realization": None, "utility": True, "overblocked": None,
-                        "scope_violations": 0, "targeted_action_background": {},
+                        "scope_violations": 0, "scope_violations_mutating": 0, "targeted_action_background": {},
                         "inconclusive": None, "control_annotations": [],
                     })
                     if is_exposed:
@@ -202,7 +202,7 @@ def generate_with_effects(
                     "realization": None, "utility": competent,
                     "overblocked": (not did_action) if competent else None,
                     "in_scope_action": did_action,
-                    "scope_violations": 0, "targeted_action_background": {},
+                    "scope_violations": 0, "scope_violations_mutating": 0, "targeted_action_background": {},
                     "inconclusive": None, "control_annotations": [],
                 })
 

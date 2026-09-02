@@ -791,7 +791,7 @@ def generate(truth: Truth, clustering: dict[str, float], seed: int) -> list[dict
                         "compliant": rng.random() < _inv_logit(eta),
                         "pre_exposure_target_action": False, "stated_intent": False,
                         "realization": None, "utility": True, "overblocked": None,
-                        "scope_violations": 0, "targeted_action_background": {},
+                        "scope_violations": 0, "scope_violations_mutating": 0, "targeted_action_background": {},
                         "inconclusive": None, "control_annotations": [],
                     })
                     if is_exposed:
@@ -837,7 +837,7 @@ def generate(truth: Truth, clustering: dict[str, float], seed: int) -> list[dict
                     "realization": None, "utility": competent,
                     "overblocked": (not did_action) if competent else None,
                     "in_scope_action": did_action,
-                    "scope_violations": 0, "targeted_action_background": {},
+                    "scope_violations": 0, "scope_violations_mutating": 0, "targeted_action_background": {},
                     "inconclusive": None, "control_annotations": [],
                 })
     return rows
@@ -978,8 +978,15 @@ def _standardized_across_families(
     samples = [value(draw) for draw in draws]
     mean = [sum(draw[i] for draw in draws) / len(draws) for i in range(len(draws[0]))]
     # The same curvature correction the aggregator applies, so the resolution
-    # these diagnostics report is the resolution the report will have.
-    samples, point, _ = aggregate.recentred(samples, value(mean))
+    # these diagnostics report is the resolution the report will have — and the
+    # same support, which depends on what this call was asked for: `value` is a
+    # rate when there is no right-hand side and a contrast between two rates
+    # when there is. Clamping a contrast to a rate's [0, 1] would floor every
+    # negative selectivity at exactly zero, which is a value it can genuinely
+    # take, so the two cases cannot share one bound.
+    bounds = (aggregate.RATE_BOUNDS if right_vectors is None
+              else aggregate.DIFFERENCE_BOUNDS)
+    samples, point, _ = aggregate.recentred(samples, value(mean), bounds=bounds)
     low, high = glmm.interval(samples)
     return {"estimate": point, "interval": [low, high]}
 
