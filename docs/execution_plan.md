@@ -10,11 +10,15 @@
 > **For a single run or a small sweep**, the [main README](../README.md) is
 > enough — you do not need this.
 
-Status: **the harness plans and analyses the `r2` claim set; nothing runs until
-the pre-execution gates pass.** Phase −1 is complete - `sweep plan` emits the
-release schedule at 66 groups, 228 target runs, 462 maximum attempts, and
-Phase −0.5 (milestone 7d, the analysis support `r2` needs) is complete except for
-the §11.3 inference cross-check, whose comparison is external.
+Status: **the harness plans and analyses the `r2` claim set; no *registered*
+release run has started, and none may until the pre-execution gates pass.**
+Diagnostic runs against a self-hosted model have happened and are aggregated
+under `reports/` — they exercise the harness end to end and are labelled
+`release_status: diagnostic`; they are not a release and no gate treats them as
+one. Phase −1 is complete - `sweep plan` emits the release schedule at 66
+groups, 228 target runs, 462 maximum attempts, and Phase −0.5 (milestone 7d, the
+analysis support `r2` needs) is complete except for the §11.3 inference
+cross-check, whose comparison is external.
 
 This document gives the phase order, gates, and pre-registration checklist for a
 signed, reproducible `v1.1-budget` release. `development_plan.md` is the

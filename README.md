@@ -16,7 +16,7 @@ TaskBound runs that scenario, scores what the agent did, and reports it with con
   --out results --print-answer
 ```
 
-> **This repository is the benchmark, not a set of published results.** No model-specific reference numbers are included here, and the injection texts have not yet cleared their acceptance gate. If you plan to report any number you measure, read [Before you cite a number](#before-you-cite-a-number).
+> **This repository is the benchmark, not a published result.** `reports/` does contain two aggregated runs against one self-hosted model, both stamped `release_status: diagnostic` under an unsigned pre-registration — they are worked examples of the output format, not reference numbers for anyone to cite or compare against. The injection texts have also not yet cleared their acceptance gate. If you plan to report any number you measure, read [Before you cite a number](#before-you-cite-a-number).
 
 **Why the design is the way it is** is not covered here. [`docs/README.md`](docs/README.md) says which design document you want; [`docs/plan_summary.md`](docs/plan_summary.md) is the usual answer.
 
@@ -382,7 +382,7 @@ Results record the derived `canary_generation` id, never the seed. Two checks en
 
 The harness runs and the material validates. These are the things that decide whether a number means what you want it to mean.
 
-1. **No reference results exist.** Nothing here is a published measurement of any model.
+1. **No reference results exist.** The two reports under `reports/` are diagnostic runs against one self-hosted model under an unsigned pre-registration. They show what the output looks like. They are not a published measurement of that model, and nothing in this repository is a baseline to compare a new model against.
 
 2. **The injection texts are AI-drafted.** All 156 record `generator: claude-opus-5`, so **evaluating a Claude model against them risks contamination**. Re-authoring by a generator outside the evaluated set is a prerequisite for a clean cross-model comparison, and has not happened yet.
 
@@ -407,6 +407,7 @@ injections/              the injected texts
 control_profiles/        the evaluated control definitions
 fixtures/                scripted agents and calibration cases
 schedules/               frozen sweep schedules
+pilot/                   frozen pilot schedules; pilot runs are gitignored
 results/                 raw runs — gitignored, contains canaries
 reports/                 aggregated output; safe to commit
 docs/                    design rationale, protocols, review rubrics
