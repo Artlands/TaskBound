@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
-  "sweep_id": "sweep_b2f0f31679c7",
-  "created_at": "2026-08-30T23:05:35.683568+00:00",
+  "sweep_id": "sweep_53226843e67f",
+  "created_at": "2026-09-02T16:25:09.549514+00:00",
   "host": {
     "dir": "hosts/site_a",
     "id": "site_a",
@@ -46,9 +46,9 @@
         "injections/t1_e1a1_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "3faf1aca22897f2f",
-        "p2": "ada8e8a5da125716",
-        "p3": "6487556d125f0822"
+        "p1": "653c569c45f03940",
+        "p2": "1768fc5b878f6ccf",
+        "p3": "958c86915a98c960"
       },
       "paraphrases": [
         "p1",
@@ -70,9 +70,9 @@
         "injections/t1_e1a1_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "ef5353b9f902242f",
-        "p2": "d64f45e1052f930f",
-        "p3": "63a7917df4602ba0"
+        "p1": "e02c48329765a485",
+        "p2": "0692333b62498be6",
+        "p3": "22d7e252e328aea3"
       },
       "paraphrases": [
         "p1",
@@ -94,9 +94,9 @@
         "injections/t1_e1a2_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "d36001d43f554414",
-        "p2": "56fd3a5b9753f2b7",
-        "p3": "5d396dfea8972d05"
+        "p1": "30ab5bf596c626bc",
+        "p2": "765e279f67a650a9",
+        "p3": "3fe1c3505c413201"
       },
       "paraphrases": [
         "p1",
@@ -118,9 +118,9 @@
         "injections/t1_e1a2_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "1fafe0c3b82e3c44",
-        "p2": "29e365814fa4d61c",
-        "p3": "a9355912a42dacf0"
+        "p1": "4091906e0e1a7d32",
+        "p2": "3a49ca87a1813e59",
+        "p3": "1ce90be16bf767ab"
       },
       "paraphrases": [
         "p1",
@@ -142,9 +142,9 @@
         "injections/t1_e1a3_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "6d0134b2c4fdf3b0",
-        "p2": "ab83c2fea7ab470f",
-        "p3": "e38195c782d0b196"
+        "p1": "207007e907d7a3df",
+        "p2": "87c90544ccf21dae",
+        "p3": "5ac3a20574a59544"
       },
       "paraphrases": [
         "p1",
@@ -166,9 +166,9 @@
         "injections/t1_e1a3_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "e837fd53ade6e81e",
-        "p2": "8b8ea3d5e7d58f22",
-        "p3": "c165858c30656035"
+        "p1": "c7bbef32b5746947",
+        "p2": "5561c449b37f2aec",
+        "p3": "f83126945f1acd52"
       },
       "paraphrases": [
         "p1",
@@ -190,9 +190,9 @@
         "injections/t1_e1a4_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "9320f52525622c59",
-        "p2": "8572ca24f4b3ca09",
-        "p3": "c96d5ca69869797c"
+        "p1": "385b2f941740dc8a",
+        "p2": "c2b7c73b462d377a",
+        "p3": "f3403caba35ecfd7"
       },
       "paraphrases": [
         "p1",
@@ -214,9 +214,9 @@
         "injections/t1_e1a4_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "f4b6560e19ef8f96",
-        "p2": "2589ba285f7f7692",
-        "p3": "961cdf7766794fdb"
+        "p1": "edbb77363872a3fa",
+        "p2": "cf4b1fc8c1b90eae",
+        "p3": "0118f7f5c340dc55"
       },
       "paraphrases": [
         "p1",
@@ -238,9 +238,9 @@
         "injections/t1_e2a1_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "7eb87f710da78838",
-        "p2": "433606de54a99128",
-        "p3": "466d869f055b66db"
+        "p1": "2e3b09c10987676f",
+        "p2": "d2093a7148339160",
+        "p3": "7602f7bb6e28d147"
       },
       "paraphrases": [
         "p1",
@@ -262,9 +262,9 @@
         "injections/t1_e2a1_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "a5555cdafa29e737",
-        "p2": "04ad49ecbe0d21f3",
-        "p3": "cf03c9644b428c86"
+        "p1": "ebce6deb6ac2d10f",
+        "p2": "335c70d9e7ad947d",
+        "p3": "e5f5d0b3b67a9287"
       },
       "paraphrases": [
         "p1",
@@ -286,9 +286,9 @@
         "injections/t1_e2a2_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "2fd035e16e1f9249",
-        "p2": "661136d4b888e87a",
-        "p3": "913c6419b0575dc0"
+        "p1": "17ed4d9c25b3498d",
+        "p2": "24e384270439d2cc",
+        "p3": "3e78586cab725768"
       },
       "paraphrases": [
         "p1",
@@ -310,9 +310,9 @@
         "injections/t1_e2a2_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "1635acaa1a90644b",
-        "p2": "96ed49292da6c377",
-        "p3": "5e7d8d00695fd69f"
+        "p1": "afc4620fbed36799",
+        "p2": "198b0164902dac99",
+        "p3": "2aa627f9efc40ea9"
       },
       "paraphrases": [
         "p1",
@@ -334,9 +334,9 @@
         "injections/t1_e2a3_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "82eed84949aff96b",
-        "p2": "4558155e8324d783",
-        "p3": "1673f0898f896a62"
+        "p1": "874f64983b4c879c",
+        "p2": "c70cecbb9530e5e6",
+        "p3": "4ae4f61059a78e6d"
       },
       "paraphrases": [
         "p1",
@@ -358,9 +358,9 @@
         "injections/t1_e2a3_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "0a8091f562e30f2d",
-        "p2": "941caadca251dcfa",
-        "p3": "166b5980bd264d8d"
+        "p1": "72e4d2919719acce",
+        "p2": "a15435d59fa1615a",
+        "p3": "f268eede1c4bcb4a"
       },
       "paraphrases": [
         "p1",
@@ -382,9 +382,9 @@
         "injections/t1_e2a4_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "7f5b11bafa6a1fa3",
-        "p2": "3363763baf5c1c3a",
-        "p3": "d1294d5a5ce1dfd4"
+        "p1": "7cb877772a1a25eb",
+        "p2": "06adb93663cbcc7f",
+        "p3": "d562ab7d2d0ce927"
       },
       "paraphrases": [
         "p1",
@@ -406,9 +406,9 @@
         "injections/t1_e2a4_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "99985ea54098df9a",
-        "p2": "0c578dda2cf34669",
-        "p3": "c30e541ad412e265"
+        "p1": "322eafd0f2f55789",
+        "p2": "ce4863f1dde97e2d",
+        "p3": "348e8bff527ddcf1"
       },
       "paraphrases": [
         "p1",
@@ -430,9 +430,9 @@
         "injections/t1_e3a1_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "4e94343b3e6ce937",
-        "p2": "5b30ba22fbc4b9a1",
-        "p3": "c655a8bfc2759ea7"
+        "p1": "83bee4cc2c5999cc",
+        "p2": "08b703d63e8b6882",
+        "p3": "ccc5bbd12ab9f15d"
       },
       "paraphrases": [
         "p1",
@@ -454,9 +454,9 @@
         "injections/t1_e3a1_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "8995f898393b19eb",
-        "p2": "2cde0276224e3e6c",
-        "p3": "28f5eac68d3f774e"
+        "p1": "66e24cccaf09f170",
+        "p2": "15861eaee2199383",
+        "p3": "20ae575858fc751a"
       },
       "paraphrases": [
         "p1",
@@ -478,9 +478,9 @@
         "injections/t1_e3a2_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "6f268f151cd049f9",
-        "p2": "0d3831e87716af59",
-        "p3": "ed5a2ece7b9f6c3a"
+        "p1": "2abd12729781f34b",
+        "p2": "28fc56165d70aa70",
+        "p3": "d57ce06c3df5d9be"
       },
       "paraphrases": [
         "p1",
@@ -502,9 +502,9 @@
         "injections/t1_e3a2_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "d73369d760e46a16",
-        "p2": "236e0c006202abcb",
-        "p3": "72703c03638135ca"
+        "p1": "9ab5c21c586b6fc0",
+        "p2": "f2fc5d61801286fb",
+        "p3": "4376c3993cf47659"
       },
       "paraphrases": [
         "p1",
@@ -526,9 +526,9 @@
         "injections/t1_e3a3_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "8094daf3f51e6b6b",
-        "p2": "e6fcdf585705fce5",
-        "p3": "d95c34dae4d5e5b2"
+        "p1": "7b95f7ae90f8a48d",
+        "p2": "8c8dc45db172967a",
+        "p3": "c065163bc934e136"
       },
       "paraphrases": [
         "p1",
@@ -550,9 +550,9 @@
         "injections/t1_e3a3_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "9de87fd67e1dab8a",
-        "p2": "d9fe00b03a73cd83",
-        "p3": "31fe1fc27a32f447"
+        "p1": "d32b9c59f15b4c60",
+        "p2": "9af490bca3a8fbc3",
+        "p3": "747f65223d5bcc96"
       },
       "paraphrases": [
         "p1",
@@ -574,9 +574,9 @@
         "injections/t1_e3a4_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "fcbe9a16e8c98e1b",
-        "p2": "b454d86f0296a86a",
-        "p3": "ecec737d873dad32"
+        "p1": "da3c1f41553d1e9a",
+        "p2": "2994728513fa07bf",
+        "p3": "08f0c24ba23b16d5"
       },
       "paraphrases": [
         "p1",
@@ -598,9 +598,9 @@
         "injections/t1_e3a4_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "85fad8e8a6dee8d9",
-        "p2": "c5ac6582cf87ea25",
-        "p3": "7e0b2b07052c236b"
+        "p1": "df7b0e3353a1f7f5",
+        "p2": "08d3fd33e4f04b35",
+        "p3": "1586e5d5fba3d1c4"
       },
       "paraphrases": [
         "p1",
@@ -622,9 +622,9 @@
         "injections/t1_e4a1_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "3ec011e8d11d1f80",
-        "p2": "bd39d9815aeca8ed",
-        "p3": "2ab96a0d333eefc5"
+        "p1": "8a284de80f4ef222",
+        "p2": "e399c4320a908d99",
+        "p3": "b38fcbb131da0a93"
       },
       "paraphrases": [
         "p1",
@@ -646,9 +646,9 @@
         "injections/t1_e4a1_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "4d9899cedace0b9f",
-        "p2": "70868e0dd088de6e",
-        "p3": "5c71fdd6c54b72d5"
+        "p1": "374062eccea43771",
+        "p2": "5271deaa344d0262",
+        "p3": "f9b025882b486506"
       },
       "paraphrases": [
         "p1",
@@ -670,9 +670,9 @@
         "injections/t1_e4a2_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "343e417e60cad4f1",
-        "p2": "3d3a6406a7cc6419",
-        "p3": "25d3e11ed5548b22"
+        "p1": "1996e4932fb910ba",
+        "p2": "081e55a95b1027d9",
+        "p3": "f2a06b1f11ddfd22"
       },
       "paraphrases": [
         "p1",
@@ -694,9 +694,9 @@
         "injections/t1_e4a2_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "4166c691bc2b558a",
-        "p2": "266eec045770871b",
-        "p3": "c38dc563ce4d3ae0"
+        "p1": "6cdf3ed232a61e2e",
+        "p2": "76f6d6367f186e05",
+        "p3": "602e8bd1c0c96226"
       },
       "paraphrases": [
         "p1",
@@ -718,9 +718,9 @@
         "injections/t1_e4a3_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "6eba5e0163a5be1e",
-        "p2": "335549dbd1e84a03",
-        "p3": "a9c2cdfe49fb44e0"
+        "p1": "f829ef3589718c93",
+        "p2": "531b1a02b5c354a0",
+        "p3": "a182a5b08521f9fe"
       },
       "paraphrases": [
         "p1",
@@ -742,9 +742,9 @@
         "injections/t1_e4a3_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "6195c6298ccb73d4",
-        "p2": "006bf330be80e116",
-        "p3": "3fd47ded447a169e"
+        "p1": "24da4a8ecbdabcb9",
+        "p2": "60e9cbdec971d1bb",
+        "p3": "d3317732ad43444f"
       },
       "paraphrases": [
         "p1",
@@ -766,9 +766,9 @@
         "injections/t1_e4a4_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "e4859263b5f3e9e5",
-        "p2": "4226439e2849d3be",
-        "p3": "d8e11925a9649140"
+        "p1": "c45960a6936babaa",
+        "p2": "959222a3e1e927fd",
+        "p3": "0bcd5425f9f6343a"
       },
       "paraphrases": [
         "p1",
@@ -790,9 +790,9 @@
         "injections/t1_e4a4_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "052282812cbccba6",
-        "p2": "c86e3347faa17a65",
-        "p3": "b7b57371f969829b"
+        "p1": "12992005bdfeb3cf",
+        "p2": "7e21574223a4d6fc",
+        "p3": "c1b9790df8d56a32"
       },
       "paraphrases": [
         "p1",
@@ -814,9 +814,9 @@
         "injections/t1_e1_inert_i3.json"
       ],
       "text_hashes": {
-        "i1": "9e02af85a7ad8de0",
-        "i2": "1108168d287a7b0c",
-        "i3": "ba1d7a3fc30d1d0a"
+        "i1": "fe5158caa0d90a24",
+        "i2": "3df550ff7cde43f7",
+        "i3": "0ce66b0ee269cee3"
       },
       "paraphrases": [
         "i1",
@@ -838,9 +838,9 @@
         "injections/t1_e2_inert_i3.json"
       ],
       "text_hashes": {
-        "i1": "57ff37b7fae85eae",
-        "i2": "7369b46e0e5aa775",
-        "i3": "276b33e6dcb276c3"
+        "i1": "941d367369039204",
+        "i2": "c596c6cba7da74fd",
+        "i3": "6d75962345b9eed7"
       },
       "paraphrases": [
         "i1",
@@ -862,9 +862,9 @@
         "injections/t1_e3_inert_i3.json"
       ],
       "text_hashes": {
-        "i1": "83844b560072d71c",
-        "i2": "180e6d96f9f9e923",
-        "i3": "2f5183bedf4176e3"
+        "i1": "b757e09fb8f2a56e",
+        "i2": "826f0bb254dfebe9",
+        "i3": "b6e4464fc7e4f2eb"
       },
       "paraphrases": [
         "i1",
@@ -886,9 +886,9 @@
         "injections/t1_e4_inert_i3.json"
       ],
       "text_hashes": {
-        "i1": "34f4a05c38c27b9d",
-        "i2": "8a08434657d59096",
-        "i3": "5759572e5bb414a2"
+        "i1": "314659fe102821e7",
+        "i2": "64f52f9860303d1c",
+        "i3": "19abd458c14aecf3"
       },
       "paraphrases": [
         "i1",
@@ -970,9 +970,9 @@
         "injections/t2_e1a3_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "9a48c3a6eb6592e7",
-        "p2": "ec2de5019da3e2c8",
-        "p3": "f4d41cd1de056953"
+        "p1": "0759dd6635a2a619",
+        "p2": "bb56facefd689708",
+        "p3": "48e176387b660fe9"
       },
       "paraphrases": [
         "p1",
@@ -994,9 +994,9 @@
         "injections/t2_e1a3_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "132ff9b3ab7026cb",
-        "p2": "421cc5f064e2cadf",
-        "p3": "ffb814706586e54f"
+        "p1": "3b48823607c10dce",
+        "p2": "8f1d9394c76a3f83",
+        "p3": "e972b433a4d02d8b"
       },
       "paraphrases": [
         "p1",
@@ -1018,9 +1018,9 @@
         "injections/t2_e2a1_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "623e0c20b48855d0",
-        "p2": "a5054cd30beac152",
-        "p3": "5ad3a575ea73cb83"
+        "p1": "c70df0bf45b54e6e",
+        "p2": "44c54b1596941242",
+        "p3": "ad4e41b0df7938ca"
       },
       "paraphrases": [
         "p1",
@@ -1042,9 +1042,9 @@
         "injections/t2_e2a1_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "e963f82fa29208b7",
-        "p2": "d951e48f4d7929b0",
-        "p3": "939174c268ae0f47"
+        "p1": "3c8d989fbfab8d56",
+        "p2": "ea631bf04d41dd82",
+        "p3": "9dbc3074354f11eb"
       },
       "paraphrases": [
         "p1",
@@ -1102,9 +1102,9 @@
         "injections/t3_e1a2_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "8285a5d8026cdfc3",
-        "p2": "297d1ac7fe0d1839",
-        "p3": "238a8d9d7c55a892"
+        "p1": "3eff7c1972f5227c",
+        "p2": "aa68014f76423a15",
+        "p3": "6dc12a470cdd79dc"
       },
       "paraphrases": [
         "p1",
@@ -1126,9 +1126,9 @@
         "injections/t3_e1a2_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "fddb6c1da3e27bca",
-        "p2": "78c2df0cfa91dbe0",
-        "p3": "3f143113c2a60aec"
+        "p1": "e8a186e393c973df",
+        "p2": "87eca96a4868fea8",
+        "p3": "3826603b29434f71"
       },
       "paraphrases": [
         "p1",
@@ -1150,9 +1150,9 @@
         "injections/t3_e3a3_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "ce4e0b1ed3029dbc",
-        "p2": "2f37306026f90633",
-        "p3": "3a70896c31d08d12"
+        "p1": "013118941464e28e",
+        "p2": "c448be3267419fb5",
+        "p3": "8838883b03fa655f"
       },
       "paraphrases": [
         "p1",
@@ -1174,9 +1174,9 @@
         "injections/t3_e3a3_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "9179364ce15cbfe1",
-        "p2": "79fa78db51aaaf29",
-        "p3": "7845d33df22b768b"
+        "p1": "d40b7beb48d1ba56",
+        "p2": "fea8b6aa8fd49c1b",
+        "p3": "586a8c892f0367ce"
       },
       "paraphrases": [
         "p1",
@@ -1198,9 +1198,9 @@
         "injections/t4_e2a4_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "fb22695941731b8c",
-        "p2": "5e98e058e08c40cc",
-        "p3": "d18cbe6fa09e3b38"
+        "p1": "e1233c99cf11fb9b",
+        "p2": "f4ab7765e67061e0",
+        "p3": "3af0a459d1b16f05"
       },
       "paraphrases": [
         "p1",
@@ -1222,9 +1222,9 @@
         "injections/t4_e2a4_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "80c2182f2c20cc0b",
-        "p2": "3da425cc0a855296",
-        "p3": "85acb04dbae65a03"
+        "p1": "dc7b7a22591430f0",
+        "p2": "086c170e737b0074",
+        "p3": "f1480797437e1890"
       },
       "paraphrases": [
         "p1",
@@ -1246,9 +1246,9 @@
         "injections/t4_e4a2_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "06f5a9878eced8f8",
-        "p2": "6ca397ac0a5a69c8",
-        "p3": "8d4d9a631c841cb6"
+        "p1": "a229e676639742cf",
+        "p2": "40ae3e3a05638f3f",
+        "p3": "d402b52ed7045742"
       },
       "paraphrases": [
         "p1",
@@ -1270,9 +1270,9 @@
         "injections/t4_e4a2_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "eba8f5d33fae2b89",
-        "p2": "28ea5a0af2ca0ecb",
-        "p3": "4f025a0e378d136a"
+        "p1": "113a2172d8f9353d",
+        "p2": "093ab96ee0f3be47",
+        "p3": "77226ff0f077069a"
       },
       "paraphrases": [
         "p1",
@@ -1330,9 +1330,9 @@
         "injections/t5_e3a4_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "07259a0d4a776ee3",
-        "p2": "a7ed03abfd11bb5a",
-        "p3": "5db3984a5025e491"
+        "p1": "3f36f3784630b176",
+        "p2": "9432633deb1ce60f",
+        "p3": "9723a1afd8a9bede"
       },
       "paraphrases": [
         "p1",
@@ -1354,9 +1354,9 @@
         "injections/t5_e3a4_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "89be3fd72c11d2dd",
-        "p2": "253eccbf188ea45d",
-        "p3": "d7d0472c0be1087b"
+        "p1": "0718185a95f6884e",
+        "p2": "4127aa6dc83e9603",
+        "p3": "e8ce1a68e6982ee0"
       },
       "paraphrases": [
         "p1",
@@ -1378,9 +1378,9 @@
         "injections/t5_e4a1_attack_p3.json"
       ],
       "text_hashes": {
-        "p1": "b5460db56fb863c0",
-        "p2": "3948ff15d802f17a",
-        "p3": "7eba213c2408c54b"
+        "p1": "69783ae95ae75376",
+        "p2": "180df2345f077a58",
+        "p3": "df1535ebe1436d09"
       },
       "paraphrases": [
         "p1",
@@ -1402,9 +1402,9 @@
         "injections/t5_e4a1_benign_p3.json"
       ],
       "text_hashes": {
-        "p1": "dd99e616818cefc8",
-        "p2": "9b6fb0269d08938e",
-        "p3": "473bff97c3aad5e3"
+        "p1": "dfc96fc37894970b",
+        "p2": "f024f97548cb50b6",
+        "p3": "e64ebadd16ea0075"
       },
       "paraphrases": [
         "p1",
@@ -1477,7 +1477,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t1_e3a3_attack_p1.json",
-      "injection_hash": "8094daf3f51e6b6b",
+      "injection_hash": "7b95f7ae90f8a48d",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -1490,9 +1490,9 @@
         "p3": "injections/t1_e3a3_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "8094daf3f51e6b6b",
-        "p2": "e6fcdf585705fce5",
-        "p3": "d95c34dae4d5e5b2"
+        "p1": "7b95f7ae90f8a48d",
+        "p2": "8c8dc45db172967a",
+        "p3": "c065163bc934e136"
       },
       "index_in_group": 0,
       "block": 0,
@@ -1507,7 +1507,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t1_e3a3_attack_p2.json",
-      "injection_hash": "e6fcdf585705fce5",
+      "injection_hash": "8c8dc45db172967a",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -1520,9 +1520,9 @@
         "p1": "injections/t1_e3a3_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "e6fcdf585705fce5",
-        "p3": "d95c34dae4d5e5b2",
-        "p1": "8094daf3f51e6b6b"
+        "p2": "8c8dc45db172967a",
+        "p3": "c065163bc934e136",
+        "p1": "7b95f7ae90f8a48d"
       },
       "index_in_group": 1,
       "block": 0,
@@ -1537,7 +1537,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t1_e3a3_attack_p3.json",
-      "injection_hash": "d95c34dae4d5e5b2",
+      "injection_hash": "c065163bc934e136",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -1550,9 +1550,9 @@
         "p2": "injections/t1_e3a3_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "d95c34dae4d5e5b2",
-        "p1": "8094daf3f51e6b6b",
-        "p2": "e6fcdf585705fce5"
+        "p3": "c065163bc934e136",
+        "p1": "7b95f7ae90f8a48d",
+        "p2": "8c8dc45db172967a"
       },
       "index_in_group": 2,
       "block": 0,
@@ -1567,7 +1567,7 @@
       "cell": "E3A2",
       "near_miss_action": null,
       "injection": "injections/t1_e3a2_attack_p1.json",
-      "injection_hash": "6f268f151cd049f9",
+      "injection_hash": "2abd12729781f34b",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -1580,9 +1580,9 @@
         "p3": "injections/t1_e3a2_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "6f268f151cd049f9",
-        "p2": "0d3831e87716af59",
-        "p3": "ed5a2ece7b9f6c3a"
+        "p1": "2abd12729781f34b",
+        "p2": "28fc56165d70aa70",
+        "p3": "d57ce06c3df5d9be"
       },
       "index_in_group": 0,
       "block": 0,
@@ -1597,7 +1597,7 @@
       "cell": "E3A2",
       "near_miss_action": null,
       "injection": "injections/t1_e3a2_attack_p2.json",
-      "injection_hash": "0d3831e87716af59",
+      "injection_hash": "28fc56165d70aa70",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -1610,9 +1610,9 @@
         "p1": "injections/t1_e3a2_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "0d3831e87716af59",
-        "p3": "ed5a2ece7b9f6c3a",
-        "p1": "6f268f151cd049f9"
+        "p2": "28fc56165d70aa70",
+        "p3": "d57ce06c3df5d9be",
+        "p1": "2abd12729781f34b"
       },
       "index_in_group": 1,
       "block": 0,
@@ -1627,7 +1627,7 @@
       "cell": "E3A2",
       "near_miss_action": null,
       "injection": "injections/t1_e3a2_attack_p3.json",
-      "injection_hash": "ed5a2ece7b9f6c3a",
+      "injection_hash": "d57ce06c3df5d9be",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -1640,9 +1640,9 @@
         "p2": "injections/t1_e3a2_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "ed5a2ece7b9f6c3a",
-        "p1": "6f268f151cd049f9",
-        "p2": "0d3831e87716af59"
+        "p3": "d57ce06c3df5d9be",
+        "p1": "2abd12729781f34b",
+        "p2": "28fc56165d70aa70"
       },
       "index_in_group": 2,
       "block": 0,
@@ -1657,7 +1657,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t4_e2a4_benign_p1.json",
-      "injection_hash": "80c2182f2c20cc0b",
+      "injection_hash": "dc7b7a22591430f0",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -1670,9 +1670,9 @@
         "p3": "injections/t4_e2a4_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "80c2182f2c20cc0b",
-        "p2": "3da425cc0a855296",
-        "p3": "85acb04dbae65a03"
+        "p1": "dc7b7a22591430f0",
+        "p2": "086c170e737b0074",
+        "p3": "f1480797437e1890"
       },
       "index_in_group": 0,
       "block": 0,
@@ -1687,7 +1687,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t4_e2a4_benign_p2.json",
-      "injection_hash": "3da425cc0a855296",
+      "injection_hash": "086c170e737b0074",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -1700,9 +1700,9 @@
         "p1": "injections/t4_e2a4_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "3da425cc0a855296",
-        "p3": "85acb04dbae65a03",
-        "p1": "80c2182f2c20cc0b"
+        "p2": "086c170e737b0074",
+        "p3": "f1480797437e1890",
+        "p1": "dc7b7a22591430f0"
       },
       "index_in_group": 1,
       "block": 0,
@@ -1717,7 +1717,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t4_e2a4_benign_p3.json",
-      "injection_hash": "85acb04dbae65a03",
+      "injection_hash": "f1480797437e1890",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -1730,9 +1730,9 @@
         "p2": "injections/t4_e2a4_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "85acb04dbae65a03",
-        "p1": "80c2182f2c20cc0b",
-        "p2": "3da425cc0a855296"
+        "p3": "f1480797437e1890",
+        "p1": "dc7b7a22591430f0",
+        "p2": "086c170e737b0074"
       },
       "index_in_group": 2,
       "block": 0,
@@ -1747,7 +1747,7 @@
       "cell": "E2",
       "near_miss_action": null,
       "injection": "injections/t1_e2_inert_i1.json",
-      "injection_hash": "57ff37b7fae85eae",
+      "injection_hash": "941d367369039204",
       "paraphrase": "i1",
       "paraphrase_options": [
         "i1",
@@ -1760,9 +1760,9 @@
         "i3": "injections/t1_e2_inert_i3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i1": "57ff37b7fae85eae",
-        "i2": "7369b46e0e5aa775",
-        "i3": "276b33e6dcb276c3"
+        "i1": "941d367369039204",
+        "i2": "c596c6cba7da74fd",
+        "i3": "6d75962345b9eed7"
       },
       "index_in_group": 0,
       "block": 0,
@@ -1777,7 +1777,7 @@
       "cell": "E2",
       "near_miss_action": null,
       "injection": "injections/t1_e2_inert_i2.json",
-      "injection_hash": "7369b46e0e5aa775",
+      "injection_hash": "c596c6cba7da74fd",
       "paraphrase": "i2",
       "paraphrase_options": [
         "i2",
@@ -1790,9 +1790,9 @@
         "i1": "injections/t1_e2_inert_i1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i2": "7369b46e0e5aa775",
-        "i3": "276b33e6dcb276c3",
-        "i1": "57ff37b7fae85eae"
+        "i2": "c596c6cba7da74fd",
+        "i3": "6d75962345b9eed7",
+        "i1": "941d367369039204"
       },
       "index_in_group": 1,
       "block": 0,
@@ -1807,7 +1807,7 @@
       "cell": "E2",
       "near_miss_action": null,
       "injection": "injections/t1_e2_inert_i3.json",
-      "injection_hash": "276b33e6dcb276c3",
+      "injection_hash": "6d75962345b9eed7",
       "paraphrase": "i3",
       "paraphrase_options": [
         "i3",
@@ -1820,9 +1820,9 @@
         "i2": "injections/t1_e2_inert_i2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i3": "276b33e6dcb276c3",
-        "i1": "57ff37b7fae85eae",
-        "i2": "7369b46e0e5aa775"
+        "i3": "6d75962345b9eed7",
+        "i1": "941d367369039204",
+        "i2": "c596c6cba7da74fd"
       },
       "index_in_group": 2,
       "block": 0,
@@ -1837,7 +1837,7 @@
       "cell": "E2A3",
       "near_miss_action": null,
       "injection": "injections/t1_e2a3_attack_p1.json",
-      "injection_hash": "82eed84949aff96b",
+      "injection_hash": "874f64983b4c879c",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -1850,9 +1850,9 @@
         "p3": "injections/t1_e2a3_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "82eed84949aff96b",
-        "p2": "4558155e8324d783",
-        "p3": "1673f0898f896a62"
+        "p1": "874f64983b4c879c",
+        "p2": "c70cecbb9530e5e6",
+        "p3": "4ae4f61059a78e6d"
       },
       "index_in_group": 0,
       "block": 0,
@@ -1867,7 +1867,7 @@
       "cell": "E2A3",
       "near_miss_action": null,
       "injection": "injections/t1_e2a3_attack_p2.json",
-      "injection_hash": "4558155e8324d783",
+      "injection_hash": "c70cecbb9530e5e6",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -1880,9 +1880,9 @@
         "p1": "injections/t1_e2a3_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "4558155e8324d783",
-        "p3": "1673f0898f896a62",
-        "p1": "82eed84949aff96b"
+        "p2": "c70cecbb9530e5e6",
+        "p3": "4ae4f61059a78e6d",
+        "p1": "874f64983b4c879c"
       },
       "index_in_group": 1,
       "block": 0,
@@ -1897,7 +1897,7 @@
       "cell": "E2A3",
       "near_miss_action": null,
       "injection": "injections/t1_e2a3_attack_p3.json",
-      "injection_hash": "1673f0898f896a62",
+      "injection_hash": "4ae4f61059a78e6d",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -1910,9 +1910,9 @@
         "p2": "injections/t1_e2a3_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "1673f0898f896a62",
-        "p1": "82eed84949aff96b",
-        "p2": "4558155e8324d783"
+        "p3": "4ae4f61059a78e6d",
+        "p1": "874f64983b4c879c",
+        "p2": "c70cecbb9530e5e6"
       },
       "index_in_group": 2,
       "block": 0,
@@ -1927,7 +1927,7 @@
       "cell": "E4A3",
       "near_miss_action": null,
       "injection": "injections/t1_e4a3_attack_p1.json",
-      "injection_hash": "6eba5e0163a5be1e",
+      "injection_hash": "f829ef3589718c93",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -1940,9 +1940,9 @@
         "p3": "injections/t1_e4a3_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "6eba5e0163a5be1e",
-        "p2": "335549dbd1e84a03",
-        "p3": "a9c2cdfe49fb44e0"
+        "p1": "f829ef3589718c93",
+        "p2": "531b1a02b5c354a0",
+        "p3": "a182a5b08521f9fe"
       },
       "index_in_group": 0,
       "block": 0,
@@ -1957,7 +1957,7 @@
       "cell": "E4A3",
       "near_miss_action": null,
       "injection": "injections/t1_e4a3_attack_p2.json",
-      "injection_hash": "335549dbd1e84a03",
+      "injection_hash": "531b1a02b5c354a0",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -1970,9 +1970,9 @@
         "p1": "injections/t1_e4a3_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "335549dbd1e84a03",
-        "p3": "a9c2cdfe49fb44e0",
-        "p1": "6eba5e0163a5be1e"
+        "p2": "531b1a02b5c354a0",
+        "p3": "a182a5b08521f9fe",
+        "p1": "f829ef3589718c93"
       },
       "index_in_group": 1,
       "block": 0,
@@ -1987,7 +1987,7 @@
       "cell": "E4A3",
       "near_miss_action": null,
       "injection": "injections/t1_e4a3_attack_p3.json",
-      "injection_hash": "a9c2cdfe49fb44e0",
+      "injection_hash": "a182a5b08521f9fe",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -2000,9 +2000,9 @@
         "p2": "injections/t1_e4a3_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "a9c2cdfe49fb44e0",
-        "p1": "6eba5e0163a5be1e",
-        "p2": "335549dbd1e84a03"
+        "p3": "a182a5b08521f9fe",
+        "p1": "f829ef3589718c93",
+        "p2": "531b1a02b5c354a0"
       },
       "index_in_group": 2,
       "block": 0,
@@ -2017,7 +2017,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t2_e1a3_attack_p1.json",
-      "injection_hash": "9a48c3a6eb6592e7",
+      "injection_hash": "0759dd6635a2a619",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -2030,9 +2030,9 @@
         "p3": "injections/t2_e1a3_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "9a48c3a6eb6592e7",
-        "p2": "ec2de5019da3e2c8",
-        "p3": "f4d41cd1de056953"
+        "p1": "0759dd6635a2a619",
+        "p2": "bb56facefd689708",
+        "p3": "48e176387b660fe9"
       },
       "index_in_group": 0,
       "block": 0,
@@ -2047,7 +2047,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t2_e1a3_attack_p2.json",
-      "injection_hash": "ec2de5019da3e2c8",
+      "injection_hash": "bb56facefd689708",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -2060,9 +2060,9 @@
         "p1": "injections/t2_e1a3_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "ec2de5019da3e2c8",
-        "p3": "f4d41cd1de056953",
-        "p1": "9a48c3a6eb6592e7"
+        "p2": "bb56facefd689708",
+        "p3": "48e176387b660fe9",
+        "p1": "0759dd6635a2a619"
       },
       "index_in_group": 1,
       "block": 0,
@@ -2077,7 +2077,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t2_e1a3_attack_p3.json",
-      "injection_hash": "f4d41cd1de056953",
+      "injection_hash": "48e176387b660fe9",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -2090,9 +2090,9 @@
         "p2": "injections/t2_e1a3_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "f4d41cd1de056953",
-        "p1": "9a48c3a6eb6592e7",
-        "p2": "ec2de5019da3e2c8"
+        "p3": "48e176387b660fe9",
+        "p1": "0759dd6635a2a619",
+        "p2": "bb56facefd689708"
       },
       "index_in_group": 2,
       "block": 0,
@@ -2107,7 +2107,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t3_e3a3_benign_p1.json",
-      "injection_hash": "9179364ce15cbfe1",
+      "injection_hash": "d40b7beb48d1ba56",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -2120,9 +2120,9 @@
         "p3": "injections/t3_e3a3_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "9179364ce15cbfe1",
-        "p2": "79fa78db51aaaf29",
-        "p3": "7845d33df22b768b"
+        "p1": "d40b7beb48d1ba56",
+        "p2": "fea8b6aa8fd49c1b",
+        "p3": "586a8c892f0367ce"
       },
       "index_in_group": 0,
       "block": 0,
@@ -2137,7 +2137,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t3_e3a3_benign_p2.json",
-      "injection_hash": "79fa78db51aaaf29",
+      "injection_hash": "fea8b6aa8fd49c1b",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -2150,9 +2150,9 @@
         "p1": "injections/t3_e3a3_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "79fa78db51aaaf29",
-        "p3": "7845d33df22b768b",
-        "p1": "9179364ce15cbfe1"
+        "p2": "fea8b6aa8fd49c1b",
+        "p3": "586a8c892f0367ce",
+        "p1": "d40b7beb48d1ba56"
       },
       "index_in_group": 1,
       "block": 0,
@@ -2167,7 +2167,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t3_e3a3_benign_p3.json",
-      "injection_hash": "7845d33df22b768b",
+      "injection_hash": "586a8c892f0367ce",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -2180,9 +2180,9 @@
         "p2": "injections/t3_e3a3_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "7845d33df22b768b",
-        "p1": "9179364ce15cbfe1",
-        "p2": "79fa78db51aaaf29"
+        "p3": "586a8c892f0367ce",
+        "p1": "d40b7beb48d1ba56",
+        "p2": "fea8b6aa8fd49c1b"
       },
       "index_in_group": 2,
       "block": 0,
@@ -2197,7 +2197,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t1_e3a4_attack_p1.json",
-      "injection_hash": "fcbe9a16e8c98e1b",
+      "injection_hash": "da3c1f41553d1e9a",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -2210,9 +2210,9 @@
         "p3": "injections/t1_e3a4_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "fcbe9a16e8c98e1b",
-        "p2": "b454d86f0296a86a",
-        "p3": "ecec737d873dad32"
+        "p1": "da3c1f41553d1e9a",
+        "p2": "2994728513fa07bf",
+        "p3": "08f0c24ba23b16d5"
       },
       "index_in_group": 0,
       "block": 0,
@@ -2227,7 +2227,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t1_e3a4_attack_p2.json",
-      "injection_hash": "b454d86f0296a86a",
+      "injection_hash": "2994728513fa07bf",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -2240,9 +2240,9 @@
         "p1": "injections/t1_e3a4_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "b454d86f0296a86a",
-        "p3": "ecec737d873dad32",
-        "p1": "fcbe9a16e8c98e1b"
+        "p2": "2994728513fa07bf",
+        "p3": "08f0c24ba23b16d5",
+        "p1": "da3c1f41553d1e9a"
       },
       "index_in_group": 1,
       "block": 0,
@@ -2257,7 +2257,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t1_e3a4_attack_p3.json",
-      "injection_hash": "ecec737d873dad32",
+      "injection_hash": "08f0c24ba23b16d5",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -2270,9 +2270,9 @@
         "p2": "injections/t1_e3a4_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "ecec737d873dad32",
-        "p1": "fcbe9a16e8c98e1b",
-        "p2": "b454d86f0296a86a"
+        "p3": "08f0c24ba23b16d5",
+        "p1": "da3c1f41553d1e9a",
+        "p2": "2994728513fa07bf"
       },
       "index_in_group": 2,
       "block": 0,
@@ -2305,7 +2305,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t1_e2a1_attack_p1.json",
-      "injection_hash": "7eb87f710da78838",
+      "injection_hash": "2e3b09c10987676f",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -2318,9 +2318,9 @@
         "p3": "injections/t1_e2a1_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "7eb87f710da78838",
-        "p2": "433606de54a99128",
-        "p3": "466d869f055b66db"
+        "p1": "2e3b09c10987676f",
+        "p2": "d2093a7148339160",
+        "p3": "7602f7bb6e28d147"
       },
       "index_in_group": 0,
       "block": 0,
@@ -2335,7 +2335,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t1_e2a1_attack_p2.json",
-      "injection_hash": "433606de54a99128",
+      "injection_hash": "d2093a7148339160",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -2348,9 +2348,9 @@
         "p1": "injections/t1_e2a1_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "433606de54a99128",
-        "p3": "466d869f055b66db",
-        "p1": "7eb87f710da78838"
+        "p2": "d2093a7148339160",
+        "p3": "7602f7bb6e28d147",
+        "p1": "2e3b09c10987676f"
       },
       "index_in_group": 1,
       "block": 0,
@@ -2365,7 +2365,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t1_e2a1_attack_p3.json",
-      "injection_hash": "466d869f055b66db",
+      "injection_hash": "7602f7bb6e28d147",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -2378,9 +2378,9 @@
         "p2": "injections/t1_e2a1_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "466d869f055b66db",
-        "p1": "7eb87f710da78838",
-        "p2": "433606de54a99128"
+        "p3": "7602f7bb6e28d147",
+        "p1": "2e3b09c10987676f",
+        "p2": "d2093a7148339160"
       },
       "index_in_group": 2,
       "block": 0,
@@ -2395,7 +2395,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t2_e1a3_benign_p1.json",
-      "injection_hash": "132ff9b3ab7026cb",
+      "injection_hash": "3b48823607c10dce",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -2408,9 +2408,9 @@
         "p3": "injections/t2_e1a3_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "132ff9b3ab7026cb",
-        "p2": "421cc5f064e2cadf",
-        "p3": "ffb814706586e54f"
+        "p1": "3b48823607c10dce",
+        "p2": "8f1d9394c76a3f83",
+        "p3": "e972b433a4d02d8b"
       },
       "index_in_group": 0,
       "block": 0,
@@ -2425,7 +2425,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t2_e1a3_benign_p2.json",
-      "injection_hash": "421cc5f064e2cadf",
+      "injection_hash": "8f1d9394c76a3f83",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -2438,9 +2438,9 @@
         "p1": "injections/t2_e1a3_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "421cc5f064e2cadf",
-        "p3": "ffb814706586e54f",
-        "p1": "132ff9b3ab7026cb"
+        "p2": "8f1d9394c76a3f83",
+        "p3": "e972b433a4d02d8b",
+        "p1": "3b48823607c10dce"
       },
       "index_in_group": 1,
       "block": 0,
@@ -2455,7 +2455,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t2_e1a3_benign_p3.json",
-      "injection_hash": "ffb814706586e54f",
+      "injection_hash": "e972b433a4d02d8b",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -2468,9 +2468,9 @@
         "p2": "injections/t2_e1a3_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "ffb814706586e54f",
-        "p1": "132ff9b3ab7026cb",
-        "p2": "421cc5f064e2cadf"
+        "p3": "e972b433a4d02d8b",
+        "p1": "3b48823607c10dce",
+        "p2": "8f1d9394c76a3f83"
       },
       "index_in_group": 2,
       "block": 0,
@@ -2485,7 +2485,7 @@
       "cell": "E4A4",
       "near_miss_action": null,
       "injection": "injections/t1_e4a4_attack_p1.json",
-      "injection_hash": "e4859263b5f3e9e5",
+      "injection_hash": "c45960a6936babaa",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -2498,9 +2498,9 @@
         "p3": "injections/t1_e4a4_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "e4859263b5f3e9e5",
-        "p2": "4226439e2849d3be",
-        "p3": "d8e11925a9649140"
+        "p1": "c45960a6936babaa",
+        "p2": "959222a3e1e927fd",
+        "p3": "0bcd5425f9f6343a"
       },
       "index_in_group": 0,
       "block": 0,
@@ -2515,7 +2515,7 @@
       "cell": "E4A4",
       "near_miss_action": null,
       "injection": "injections/t1_e4a4_attack_p2.json",
-      "injection_hash": "4226439e2849d3be",
+      "injection_hash": "959222a3e1e927fd",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -2528,9 +2528,9 @@
         "p1": "injections/t1_e4a4_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "4226439e2849d3be",
-        "p3": "d8e11925a9649140",
-        "p1": "e4859263b5f3e9e5"
+        "p2": "959222a3e1e927fd",
+        "p3": "0bcd5425f9f6343a",
+        "p1": "c45960a6936babaa"
       },
       "index_in_group": 1,
       "block": 0,
@@ -2545,7 +2545,7 @@
       "cell": "E4A4",
       "near_miss_action": null,
       "injection": "injections/t1_e4a4_attack_p3.json",
-      "injection_hash": "d8e11925a9649140",
+      "injection_hash": "0bcd5425f9f6343a",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -2558,9 +2558,9 @@
         "p2": "injections/t1_e4a4_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "d8e11925a9649140",
-        "p1": "e4859263b5f3e9e5",
-        "p2": "4226439e2849d3be"
+        "p3": "0bcd5425f9f6343a",
+        "p1": "c45960a6936babaa",
+        "p2": "959222a3e1e927fd"
       },
       "index_in_group": 2,
       "block": 0,
@@ -2593,7 +2593,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t1_e4a2_benign_p1.json",
-      "injection_hash": "4166c691bc2b558a",
+      "injection_hash": "6cdf3ed232a61e2e",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -2606,9 +2606,9 @@
         "p3": "injections/t1_e4a2_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "4166c691bc2b558a",
-        "p2": "266eec045770871b",
-        "p3": "c38dc563ce4d3ae0"
+        "p1": "6cdf3ed232a61e2e",
+        "p2": "76f6d6367f186e05",
+        "p3": "602e8bd1c0c96226"
       },
       "index_in_group": 0,
       "block": 0,
@@ -2623,7 +2623,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t1_e4a2_benign_p2.json",
-      "injection_hash": "266eec045770871b",
+      "injection_hash": "76f6d6367f186e05",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -2636,9 +2636,9 @@
         "p1": "injections/t1_e4a2_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "266eec045770871b",
-        "p3": "c38dc563ce4d3ae0",
-        "p1": "4166c691bc2b558a"
+        "p2": "76f6d6367f186e05",
+        "p3": "602e8bd1c0c96226",
+        "p1": "6cdf3ed232a61e2e"
       },
       "index_in_group": 1,
       "block": 0,
@@ -2653,7 +2653,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t1_e4a2_benign_p3.json",
-      "injection_hash": "c38dc563ce4d3ae0",
+      "injection_hash": "602e8bd1c0c96226",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -2666,9 +2666,9 @@
         "p2": "injections/t1_e4a2_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "c38dc563ce4d3ae0",
-        "p1": "4166c691bc2b558a",
-        "p2": "266eec045770871b"
+        "p3": "602e8bd1c0c96226",
+        "p1": "6cdf3ed232a61e2e",
+        "p2": "76f6d6367f186e05"
       },
       "index_in_group": 2,
       "block": 0,
@@ -2683,7 +2683,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t2_e2a1_benign_p1.json",
-      "injection_hash": "e963f82fa29208b7",
+      "injection_hash": "3c8d989fbfab8d56",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -2696,9 +2696,9 @@
         "p3": "injections/t2_e2a1_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "e963f82fa29208b7",
-        "p2": "d951e48f4d7929b0",
-        "p3": "939174c268ae0f47"
+        "p1": "3c8d989fbfab8d56",
+        "p2": "ea631bf04d41dd82",
+        "p3": "9dbc3074354f11eb"
       },
       "index_in_group": 0,
       "block": 0,
@@ -2713,7 +2713,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t2_e2a1_benign_p2.json",
-      "injection_hash": "d951e48f4d7929b0",
+      "injection_hash": "ea631bf04d41dd82",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -2726,9 +2726,9 @@
         "p1": "injections/t2_e2a1_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "d951e48f4d7929b0",
-        "p3": "939174c268ae0f47",
-        "p1": "e963f82fa29208b7"
+        "p2": "ea631bf04d41dd82",
+        "p3": "9dbc3074354f11eb",
+        "p1": "3c8d989fbfab8d56"
       },
       "index_in_group": 1,
       "block": 0,
@@ -2743,7 +2743,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t2_e2a1_benign_p3.json",
-      "injection_hash": "939174c268ae0f47",
+      "injection_hash": "9dbc3074354f11eb",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -2756,9 +2756,9 @@
         "p2": "injections/t2_e2a1_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "939174c268ae0f47",
-        "p1": "e963f82fa29208b7",
-        "p2": "d951e48f4d7929b0"
+        "p3": "9dbc3074354f11eb",
+        "p1": "3c8d989fbfab8d56",
+        "p2": "ea631bf04d41dd82"
       },
       "index_in_group": 2,
       "block": 0,
@@ -2773,7 +2773,7 @@
       "cell": "E4A4",
       "near_miss_action": null,
       "injection": "injections/t1_e4a4_benign_p1.json",
-      "injection_hash": "052282812cbccba6",
+      "injection_hash": "12992005bdfeb3cf",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -2786,9 +2786,9 @@
         "p3": "injections/t1_e4a4_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "052282812cbccba6",
-        "p2": "c86e3347faa17a65",
-        "p3": "b7b57371f969829b"
+        "p1": "12992005bdfeb3cf",
+        "p2": "7e21574223a4d6fc",
+        "p3": "c1b9790df8d56a32"
       },
       "index_in_group": 0,
       "block": 0,
@@ -2803,7 +2803,7 @@
       "cell": "E4A4",
       "near_miss_action": null,
       "injection": "injections/t1_e4a4_benign_p2.json",
-      "injection_hash": "c86e3347faa17a65",
+      "injection_hash": "7e21574223a4d6fc",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -2816,9 +2816,9 @@
         "p1": "injections/t1_e4a4_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "c86e3347faa17a65",
-        "p3": "b7b57371f969829b",
-        "p1": "052282812cbccba6"
+        "p2": "7e21574223a4d6fc",
+        "p3": "c1b9790df8d56a32",
+        "p1": "12992005bdfeb3cf"
       },
       "index_in_group": 1,
       "block": 0,
@@ -2833,7 +2833,7 @@
       "cell": "E4A4",
       "near_miss_action": null,
       "injection": "injections/t1_e4a4_benign_p3.json",
-      "injection_hash": "b7b57371f969829b",
+      "injection_hash": "c1b9790df8d56a32",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -2846,9 +2846,9 @@
         "p2": "injections/t1_e4a4_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "b7b57371f969829b",
-        "p1": "052282812cbccba6",
-        "p2": "c86e3347faa17a65"
+        "p3": "c1b9790df8d56a32",
+        "p1": "12992005bdfeb3cf",
+        "p2": "7e21574223a4d6fc"
       },
       "index_in_group": 2,
       "block": 0,
@@ -2863,7 +2863,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t1_e1a2_attack_p1.json",
-      "injection_hash": "d36001d43f554414",
+      "injection_hash": "30ab5bf596c626bc",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -2876,9 +2876,9 @@
         "p3": "injections/t1_e1a2_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "d36001d43f554414",
-        "p2": "56fd3a5b9753f2b7",
-        "p3": "5d396dfea8972d05"
+        "p1": "30ab5bf596c626bc",
+        "p2": "765e279f67a650a9",
+        "p3": "3fe1c3505c413201"
       },
       "index_in_group": 0,
       "block": 0,
@@ -2893,7 +2893,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t1_e1a2_attack_p2.json",
-      "injection_hash": "56fd3a5b9753f2b7",
+      "injection_hash": "765e279f67a650a9",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -2906,9 +2906,9 @@
         "p1": "injections/t1_e1a2_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "56fd3a5b9753f2b7",
-        "p3": "5d396dfea8972d05",
-        "p1": "d36001d43f554414"
+        "p2": "765e279f67a650a9",
+        "p3": "3fe1c3505c413201",
+        "p1": "30ab5bf596c626bc"
       },
       "index_in_group": 1,
       "block": 0,
@@ -2923,7 +2923,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t1_e1a2_attack_p3.json",
-      "injection_hash": "5d396dfea8972d05",
+      "injection_hash": "3fe1c3505c413201",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -2936,9 +2936,9 @@
         "p2": "injections/t1_e1a2_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "5d396dfea8972d05",
-        "p1": "d36001d43f554414",
-        "p2": "56fd3a5b9753f2b7"
+        "p3": "3fe1c3505c413201",
+        "p1": "30ab5bf596c626bc",
+        "p2": "765e279f67a650a9"
       },
       "index_in_group": 2,
       "block": 0,
@@ -2989,7 +2989,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t1_e1a3_attack_p1.json",
-      "injection_hash": "6d0134b2c4fdf3b0",
+      "injection_hash": "207007e907d7a3df",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -3002,9 +3002,9 @@
         "p3": "injections/t1_e1a3_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "6d0134b2c4fdf3b0",
-        "p2": "ab83c2fea7ab470f",
-        "p3": "e38195c782d0b196"
+        "p1": "207007e907d7a3df",
+        "p2": "87c90544ccf21dae",
+        "p3": "5ac3a20574a59544"
       },
       "index_in_group": 0,
       "block": 0,
@@ -3019,7 +3019,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t1_e1a3_attack_p2.json",
-      "injection_hash": "ab83c2fea7ab470f",
+      "injection_hash": "87c90544ccf21dae",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -3032,9 +3032,9 @@
         "p1": "injections/t1_e1a3_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "ab83c2fea7ab470f",
-        "p3": "e38195c782d0b196",
-        "p1": "6d0134b2c4fdf3b0"
+        "p2": "87c90544ccf21dae",
+        "p3": "5ac3a20574a59544",
+        "p1": "207007e907d7a3df"
       },
       "index_in_group": 1,
       "block": 0,
@@ -3049,7 +3049,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t1_e1a3_attack_p3.json",
-      "injection_hash": "e38195c782d0b196",
+      "injection_hash": "5ac3a20574a59544",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -3062,9 +3062,9 @@
         "p2": "injections/t1_e1a3_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "e38195c782d0b196",
-        "p1": "6d0134b2c4fdf3b0",
-        "p2": "ab83c2fea7ab470f"
+        "p3": "5ac3a20574a59544",
+        "p1": "207007e907d7a3df",
+        "p2": "87c90544ccf21dae"
       },
       "index_in_group": 2,
       "block": 0,
@@ -3079,7 +3079,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t1_e2a1_benign_p1.json",
-      "injection_hash": "a5555cdafa29e737",
+      "injection_hash": "ebce6deb6ac2d10f",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -3092,9 +3092,9 @@
         "p3": "injections/t1_e2a1_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "a5555cdafa29e737",
-        "p2": "04ad49ecbe0d21f3",
-        "p3": "cf03c9644b428c86"
+        "p1": "ebce6deb6ac2d10f",
+        "p2": "335c70d9e7ad947d",
+        "p3": "e5f5d0b3b67a9287"
       },
       "index_in_group": 0,
       "block": 0,
@@ -3109,7 +3109,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t1_e2a1_benign_p2.json",
-      "injection_hash": "04ad49ecbe0d21f3",
+      "injection_hash": "335c70d9e7ad947d",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -3122,9 +3122,9 @@
         "p1": "injections/t1_e2a1_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "04ad49ecbe0d21f3",
-        "p3": "cf03c9644b428c86",
-        "p1": "a5555cdafa29e737"
+        "p2": "335c70d9e7ad947d",
+        "p3": "e5f5d0b3b67a9287",
+        "p1": "ebce6deb6ac2d10f"
       },
       "index_in_group": 1,
       "block": 0,
@@ -3139,7 +3139,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t1_e2a1_benign_p3.json",
-      "injection_hash": "cf03c9644b428c86",
+      "injection_hash": "e5f5d0b3b67a9287",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -3152,9 +3152,9 @@
         "p2": "injections/t1_e2a1_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "cf03c9644b428c86",
-        "p1": "a5555cdafa29e737",
-        "p2": "04ad49ecbe0d21f3"
+        "p3": "e5f5d0b3b67a9287",
+        "p1": "ebce6deb6ac2d10f",
+        "p2": "335c70d9e7ad947d"
       },
       "index_in_group": 2,
       "block": 0,
@@ -3169,7 +3169,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t3_e1a2_attack_p1.json",
-      "injection_hash": "8285a5d8026cdfc3",
+      "injection_hash": "3eff7c1972f5227c",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -3182,9 +3182,9 @@
         "p3": "injections/t3_e1a2_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "8285a5d8026cdfc3",
-        "p2": "297d1ac7fe0d1839",
-        "p3": "238a8d9d7c55a892"
+        "p1": "3eff7c1972f5227c",
+        "p2": "aa68014f76423a15",
+        "p3": "6dc12a470cdd79dc"
       },
       "index_in_group": 0,
       "block": 0,
@@ -3199,7 +3199,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t3_e1a2_attack_p2.json",
-      "injection_hash": "297d1ac7fe0d1839",
+      "injection_hash": "aa68014f76423a15",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -3212,9 +3212,9 @@
         "p1": "injections/t3_e1a2_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "297d1ac7fe0d1839",
-        "p3": "238a8d9d7c55a892",
-        "p1": "8285a5d8026cdfc3"
+        "p2": "aa68014f76423a15",
+        "p3": "6dc12a470cdd79dc",
+        "p1": "3eff7c1972f5227c"
       },
       "index_in_group": 1,
       "block": 0,
@@ -3229,7 +3229,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t3_e1a2_attack_p3.json",
-      "injection_hash": "238a8d9d7c55a892",
+      "injection_hash": "6dc12a470cdd79dc",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -3242,9 +3242,9 @@
         "p2": "injections/t3_e1a2_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "238a8d9d7c55a892",
-        "p1": "8285a5d8026cdfc3",
-        "p2": "297d1ac7fe0d1839"
+        "p3": "6dc12a470cdd79dc",
+        "p1": "3eff7c1972f5227c",
+        "p2": "aa68014f76423a15"
       },
       "index_in_group": 2,
       "block": 0,
@@ -3259,7 +3259,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t2_e2a1_attack_p1.json",
-      "injection_hash": "623e0c20b48855d0",
+      "injection_hash": "c70df0bf45b54e6e",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -3272,9 +3272,9 @@
         "p3": "injections/t2_e2a1_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "623e0c20b48855d0",
-        "p2": "a5054cd30beac152",
-        "p3": "5ad3a575ea73cb83"
+        "p1": "c70df0bf45b54e6e",
+        "p2": "44c54b1596941242",
+        "p3": "ad4e41b0df7938ca"
       },
       "index_in_group": 0,
       "block": 0,
@@ -3289,7 +3289,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t2_e2a1_attack_p2.json",
-      "injection_hash": "a5054cd30beac152",
+      "injection_hash": "44c54b1596941242",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -3302,9 +3302,9 @@
         "p1": "injections/t2_e2a1_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "a5054cd30beac152",
-        "p3": "5ad3a575ea73cb83",
-        "p1": "623e0c20b48855d0"
+        "p2": "44c54b1596941242",
+        "p3": "ad4e41b0df7938ca",
+        "p1": "c70df0bf45b54e6e"
       },
       "index_in_group": 1,
       "block": 0,
@@ -3319,7 +3319,7 @@
       "cell": "E2A1",
       "near_miss_action": null,
       "injection": "injections/t2_e2a1_attack_p3.json",
-      "injection_hash": "5ad3a575ea73cb83",
+      "injection_hash": "ad4e41b0df7938ca",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -3332,9 +3332,9 @@
         "p2": "injections/t2_e2a1_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "5ad3a575ea73cb83",
-        "p1": "623e0c20b48855d0",
-        "p2": "a5054cd30beac152"
+        "p3": "ad4e41b0df7938ca",
+        "p1": "c70df0bf45b54e6e",
+        "p2": "44c54b1596941242"
       },
       "index_in_group": 2,
       "block": 0,
@@ -3349,7 +3349,7 @@
       "cell": "E2A2",
       "near_miss_action": null,
       "injection": "injections/t1_e2a2_attack_p1.json",
-      "injection_hash": "2fd035e16e1f9249",
+      "injection_hash": "17ed4d9c25b3498d",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -3362,9 +3362,9 @@
         "p3": "injections/t1_e2a2_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "2fd035e16e1f9249",
-        "p2": "661136d4b888e87a",
-        "p3": "913c6419b0575dc0"
+        "p1": "17ed4d9c25b3498d",
+        "p2": "24e384270439d2cc",
+        "p3": "3e78586cab725768"
       },
       "index_in_group": 0,
       "block": 0,
@@ -3379,7 +3379,7 @@
       "cell": "E2A2",
       "near_miss_action": null,
       "injection": "injections/t1_e2a2_attack_p2.json",
-      "injection_hash": "661136d4b888e87a",
+      "injection_hash": "24e384270439d2cc",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -3392,9 +3392,9 @@
         "p1": "injections/t1_e2a2_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "661136d4b888e87a",
-        "p3": "913c6419b0575dc0",
-        "p1": "2fd035e16e1f9249"
+        "p2": "24e384270439d2cc",
+        "p3": "3e78586cab725768",
+        "p1": "17ed4d9c25b3498d"
       },
       "index_in_group": 1,
       "block": 0,
@@ -3409,7 +3409,7 @@
       "cell": "E2A2",
       "near_miss_action": null,
       "injection": "injections/t1_e2a2_attack_p3.json",
-      "injection_hash": "913c6419b0575dc0",
+      "injection_hash": "3e78586cab725768",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -3422,9 +3422,9 @@
         "p2": "injections/t1_e2a2_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "913c6419b0575dc0",
-        "p1": "2fd035e16e1f9249",
-        "p2": "661136d4b888e87a"
+        "p3": "3e78586cab725768",
+        "p1": "17ed4d9c25b3498d",
+        "p2": "24e384270439d2cc"
       },
       "index_in_group": 2,
       "block": 0,
@@ -3439,7 +3439,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t4_e2a4_attack_p1.json",
-      "injection_hash": "fb22695941731b8c",
+      "injection_hash": "e1233c99cf11fb9b",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -3452,9 +3452,9 @@
         "p3": "injections/t4_e2a4_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "fb22695941731b8c",
-        "p2": "5e98e058e08c40cc",
-        "p3": "d18cbe6fa09e3b38"
+        "p1": "e1233c99cf11fb9b",
+        "p2": "f4ab7765e67061e0",
+        "p3": "3af0a459d1b16f05"
       },
       "index_in_group": 0,
       "block": 0,
@@ -3469,7 +3469,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t4_e2a4_attack_p2.json",
-      "injection_hash": "5e98e058e08c40cc",
+      "injection_hash": "f4ab7765e67061e0",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -3482,9 +3482,9 @@
         "p1": "injections/t4_e2a4_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "5e98e058e08c40cc",
-        "p3": "d18cbe6fa09e3b38",
-        "p1": "fb22695941731b8c"
+        "p2": "f4ab7765e67061e0",
+        "p3": "3af0a459d1b16f05",
+        "p1": "e1233c99cf11fb9b"
       },
       "index_in_group": 1,
       "block": 0,
@@ -3499,7 +3499,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t4_e2a4_attack_p3.json",
-      "injection_hash": "d18cbe6fa09e3b38",
+      "injection_hash": "3af0a459d1b16f05",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -3512,9 +3512,9 @@
         "p2": "injections/t4_e2a4_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "d18cbe6fa09e3b38",
-        "p1": "fb22695941731b8c",
-        "p2": "5e98e058e08c40cc"
+        "p3": "3af0a459d1b16f05",
+        "p1": "e1233c99cf11fb9b",
+        "p2": "f4ab7765e67061e0"
       },
       "index_in_group": 2,
       "block": 0,
@@ -3529,7 +3529,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t1_e2a4_attack_p1.json",
-      "injection_hash": "7f5b11bafa6a1fa3",
+      "injection_hash": "7cb877772a1a25eb",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -3542,9 +3542,9 @@
         "p3": "injections/t1_e2a4_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "7f5b11bafa6a1fa3",
-        "p2": "3363763baf5c1c3a",
-        "p3": "d1294d5a5ce1dfd4"
+        "p1": "7cb877772a1a25eb",
+        "p2": "06adb93663cbcc7f",
+        "p3": "d562ab7d2d0ce927"
       },
       "index_in_group": 0,
       "block": 0,
@@ -3559,7 +3559,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t1_e2a4_attack_p2.json",
-      "injection_hash": "3363763baf5c1c3a",
+      "injection_hash": "06adb93663cbcc7f",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -3572,9 +3572,9 @@
         "p1": "injections/t1_e2a4_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "3363763baf5c1c3a",
-        "p3": "d1294d5a5ce1dfd4",
-        "p1": "7f5b11bafa6a1fa3"
+        "p2": "06adb93663cbcc7f",
+        "p3": "d562ab7d2d0ce927",
+        "p1": "7cb877772a1a25eb"
       },
       "index_in_group": 1,
       "block": 0,
@@ -3589,7 +3589,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t1_e2a4_attack_p3.json",
-      "injection_hash": "d1294d5a5ce1dfd4",
+      "injection_hash": "d562ab7d2d0ce927",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -3602,9 +3602,9 @@
         "p2": "injections/t1_e2a4_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "d1294d5a5ce1dfd4",
-        "p1": "7f5b11bafa6a1fa3",
-        "p2": "3363763baf5c1c3a"
+        "p3": "d562ab7d2d0ce927",
+        "p1": "7cb877772a1a25eb",
+        "p2": "06adb93663cbcc7f"
       },
       "index_in_group": 2,
       "block": 0,
@@ -3619,7 +3619,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t1_e1a2_benign_p1.json",
-      "injection_hash": "1fafe0c3b82e3c44",
+      "injection_hash": "4091906e0e1a7d32",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -3632,9 +3632,9 @@
         "p3": "injections/t1_e1a2_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "1fafe0c3b82e3c44",
-        "p2": "29e365814fa4d61c",
-        "p3": "a9355912a42dacf0"
+        "p1": "4091906e0e1a7d32",
+        "p2": "3a49ca87a1813e59",
+        "p3": "1ce90be16bf767ab"
       },
       "index_in_group": 0,
       "block": 0,
@@ -3649,7 +3649,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t1_e1a2_benign_p2.json",
-      "injection_hash": "29e365814fa4d61c",
+      "injection_hash": "3a49ca87a1813e59",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -3662,9 +3662,9 @@
         "p1": "injections/t1_e1a2_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "29e365814fa4d61c",
-        "p3": "a9355912a42dacf0",
-        "p1": "1fafe0c3b82e3c44"
+        "p2": "3a49ca87a1813e59",
+        "p3": "1ce90be16bf767ab",
+        "p1": "4091906e0e1a7d32"
       },
       "index_in_group": 1,
       "block": 0,
@@ -3679,7 +3679,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t1_e1a2_benign_p3.json",
-      "injection_hash": "a9355912a42dacf0",
+      "injection_hash": "1ce90be16bf767ab",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -3692,9 +3692,9 @@
         "p2": "injections/t1_e1a2_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "a9355912a42dacf0",
-        "p1": "1fafe0c3b82e3c44",
-        "p2": "29e365814fa4d61c"
+        "p3": "1ce90be16bf767ab",
+        "p1": "4091906e0e1a7d32",
+        "p2": "3a49ca87a1813e59"
       },
       "index_in_group": 2,
       "block": 0,
@@ -3727,7 +3727,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t3_e3a3_attack_p1.json",
-      "injection_hash": "ce4e0b1ed3029dbc",
+      "injection_hash": "013118941464e28e",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -3740,9 +3740,9 @@
         "p3": "injections/t3_e3a3_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "ce4e0b1ed3029dbc",
-        "p2": "2f37306026f90633",
-        "p3": "3a70896c31d08d12"
+        "p1": "013118941464e28e",
+        "p2": "c448be3267419fb5",
+        "p3": "8838883b03fa655f"
       },
       "index_in_group": 0,
       "block": 0,
@@ -3757,7 +3757,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t3_e3a3_attack_p2.json",
-      "injection_hash": "2f37306026f90633",
+      "injection_hash": "c448be3267419fb5",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -3770,9 +3770,9 @@
         "p1": "injections/t3_e3a3_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "2f37306026f90633",
-        "p3": "3a70896c31d08d12",
-        "p1": "ce4e0b1ed3029dbc"
+        "p2": "c448be3267419fb5",
+        "p3": "8838883b03fa655f",
+        "p1": "013118941464e28e"
       },
       "index_in_group": 1,
       "block": 0,
@@ -3787,7 +3787,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t3_e3a3_attack_p3.json",
-      "injection_hash": "3a70896c31d08d12",
+      "injection_hash": "8838883b03fa655f",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -3800,9 +3800,9 @@
         "p2": "injections/t3_e3a3_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "3a70896c31d08d12",
-        "p1": "ce4e0b1ed3029dbc",
-        "p2": "2f37306026f90633"
+        "p3": "8838883b03fa655f",
+        "p1": "013118941464e28e",
+        "p2": "c448be3267419fb5"
       },
       "index_in_group": 2,
       "block": 0,
@@ -3817,7 +3817,7 @@
       "cell": "E2A2",
       "near_miss_action": null,
       "injection": "injections/t1_e2a2_benign_p1.json",
-      "injection_hash": "1635acaa1a90644b",
+      "injection_hash": "afc4620fbed36799",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -3830,9 +3830,9 @@
         "p3": "injections/t1_e2a2_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "1635acaa1a90644b",
-        "p2": "96ed49292da6c377",
-        "p3": "5e7d8d00695fd69f"
+        "p1": "afc4620fbed36799",
+        "p2": "198b0164902dac99",
+        "p3": "2aa627f9efc40ea9"
       },
       "index_in_group": 0,
       "block": 0,
@@ -3847,7 +3847,7 @@
       "cell": "E2A2",
       "near_miss_action": null,
       "injection": "injections/t1_e2a2_benign_p2.json",
-      "injection_hash": "96ed49292da6c377",
+      "injection_hash": "198b0164902dac99",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -3860,9 +3860,9 @@
         "p1": "injections/t1_e2a2_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "96ed49292da6c377",
-        "p3": "5e7d8d00695fd69f",
-        "p1": "1635acaa1a90644b"
+        "p2": "198b0164902dac99",
+        "p3": "2aa627f9efc40ea9",
+        "p1": "afc4620fbed36799"
       },
       "index_in_group": 1,
       "block": 0,
@@ -3877,7 +3877,7 @@
       "cell": "E2A2",
       "near_miss_action": null,
       "injection": "injections/t1_e2a2_benign_p3.json",
-      "injection_hash": "5e7d8d00695fd69f",
+      "injection_hash": "2aa627f9efc40ea9",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -3890,9 +3890,9 @@
         "p2": "injections/t1_e2a2_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "5e7d8d00695fd69f",
-        "p1": "1635acaa1a90644b",
-        "p2": "96ed49292da6c377"
+        "p3": "2aa627f9efc40ea9",
+        "p1": "afc4620fbed36799",
+        "p2": "198b0164902dac99"
       },
       "index_in_group": 2,
       "block": 0,
@@ -3907,7 +3907,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t4_e4a2_attack_p1.json",
-      "injection_hash": "06f5a9878eced8f8",
+      "injection_hash": "a229e676639742cf",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -3920,9 +3920,9 @@
         "p3": "injections/t4_e4a2_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "06f5a9878eced8f8",
-        "p2": "6ca397ac0a5a69c8",
-        "p3": "8d4d9a631c841cb6"
+        "p1": "a229e676639742cf",
+        "p2": "40ae3e3a05638f3f",
+        "p3": "d402b52ed7045742"
       },
       "index_in_group": 0,
       "block": 0,
@@ -3937,7 +3937,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t4_e4a2_attack_p2.json",
-      "injection_hash": "6ca397ac0a5a69c8",
+      "injection_hash": "40ae3e3a05638f3f",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -3950,9 +3950,9 @@
         "p1": "injections/t4_e4a2_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "6ca397ac0a5a69c8",
-        "p3": "8d4d9a631c841cb6",
-        "p1": "06f5a9878eced8f8"
+        "p2": "40ae3e3a05638f3f",
+        "p3": "d402b52ed7045742",
+        "p1": "a229e676639742cf"
       },
       "index_in_group": 1,
       "block": 0,
@@ -3967,7 +3967,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t4_e4a2_attack_p3.json",
-      "injection_hash": "8d4d9a631c841cb6",
+      "injection_hash": "d402b52ed7045742",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -3980,9 +3980,9 @@
         "p2": "injections/t4_e4a2_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "8d4d9a631c841cb6",
-        "p1": "06f5a9878eced8f8",
-        "p2": "6ca397ac0a5a69c8"
+        "p3": "d402b52ed7045742",
+        "p1": "a229e676639742cf",
+        "p2": "40ae3e3a05638f3f"
       },
       "index_in_group": 2,
       "block": 0,
@@ -4051,7 +4051,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t5_e3a4_attack_p1.json",
-      "injection_hash": "07259a0d4a776ee3",
+      "injection_hash": "3f36f3784630b176",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -4064,9 +4064,9 @@
         "p3": "injections/t5_e3a4_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "07259a0d4a776ee3",
-        "p2": "a7ed03abfd11bb5a",
-        "p3": "5db3984a5025e491"
+        "p1": "3f36f3784630b176",
+        "p2": "9432633deb1ce60f",
+        "p3": "9723a1afd8a9bede"
       },
       "index_in_group": 0,
       "block": 0,
@@ -4081,7 +4081,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t5_e3a4_attack_p2.json",
-      "injection_hash": "a7ed03abfd11bb5a",
+      "injection_hash": "9432633deb1ce60f",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -4094,9 +4094,9 @@
         "p1": "injections/t5_e3a4_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "a7ed03abfd11bb5a",
-        "p3": "5db3984a5025e491",
-        "p1": "07259a0d4a776ee3"
+        "p2": "9432633deb1ce60f",
+        "p3": "9723a1afd8a9bede",
+        "p1": "3f36f3784630b176"
       },
       "index_in_group": 1,
       "block": 0,
@@ -4111,7 +4111,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t5_e3a4_attack_p3.json",
-      "injection_hash": "5db3984a5025e491",
+      "injection_hash": "9723a1afd8a9bede",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -4124,9 +4124,9 @@
         "p2": "injections/t5_e3a4_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "5db3984a5025e491",
-        "p1": "07259a0d4a776ee3",
-        "p2": "a7ed03abfd11bb5a"
+        "p3": "9723a1afd8a9bede",
+        "p1": "3f36f3784630b176",
+        "p2": "9432633deb1ce60f"
       },
       "index_in_group": 2,
       "block": 0,
@@ -4141,7 +4141,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t1_e2a4_benign_p1.json",
-      "injection_hash": "99985ea54098df9a",
+      "injection_hash": "322eafd0f2f55789",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -4154,9 +4154,9 @@
         "p3": "injections/t1_e2a4_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "99985ea54098df9a",
-        "p2": "0c578dda2cf34669",
-        "p3": "c30e541ad412e265"
+        "p1": "322eafd0f2f55789",
+        "p2": "ce4863f1dde97e2d",
+        "p3": "348e8bff527ddcf1"
       },
       "index_in_group": 0,
       "block": 0,
@@ -4171,7 +4171,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t1_e2a4_benign_p2.json",
-      "injection_hash": "0c578dda2cf34669",
+      "injection_hash": "ce4863f1dde97e2d",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -4184,9 +4184,9 @@
         "p1": "injections/t1_e2a4_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "0c578dda2cf34669",
-        "p3": "c30e541ad412e265",
-        "p1": "99985ea54098df9a"
+        "p2": "ce4863f1dde97e2d",
+        "p3": "348e8bff527ddcf1",
+        "p1": "322eafd0f2f55789"
       },
       "index_in_group": 1,
       "block": 0,
@@ -4201,7 +4201,7 @@
       "cell": "E2A4",
       "near_miss_action": null,
       "injection": "injections/t1_e2a4_benign_p3.json",
-      "injection_hash": "c30e541ad412e265",
+      "injection_hash": "348e8bff527ddcf1",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -4214,9 +4214,9 @@
         "p2": "injections/t1_e2a4_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "c30e541ad412e265",
-        "p1": "99985ea54098df9a",
-        "p2": "0c578dda2cf34669"
+        "p3": "348e8bff527ddcf1",
+        "p1": "322eafd0f2f55789",
+        "p2": "ce4863f1dde97e2d"
       },
       "index_in_group": 2,
       "block": 0,
@@ -4231,7 +4231,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t1_e1a3_benign_p1.json",
-      "injection_hash": "e837fd53ade6e81e",
+      "injection_hash": "c7bbef32b5746947",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -4244,9 +4244,9 @@
         "p3": "injections/t1_e1a3_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "e837fd53ade6e81e",
-        "p2": "8b8ea3d5e7d58f22",
-        "p3": "c165858c30656035"
+        "p1": "c7bbef32b5746947",
+        "p2": "5561c449b37f2aec",
+        "p3": "f83126945f1acd52"
       },
       "index_in_group": 0,
       "block": 0,
@@ -4261,7 +4261,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t1_e1a3_benign_p2.json",
-      "injection_hash": "8b8ea3d5e7d58f22",
+      "injection_hash": "5561c449b37f2aec",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -4274,9 +4274,9 @@
         "p1": "injections/t1_e1a3_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "8b8ea3d5e7d58f22",
-        "p3": "c165858c30656035",
-        "p1": "e837fd53ade6e81e"
+        "p2": "5561c449b37f2aec",
+        "p3": "f83126945f1acd52",
+        "p1": "c7bbef32b5746947"
       },
       "index_in_group": 1,
       "block": 0,
@@ -4291,7 +4291,7 @@
       "cell": "E1A3",
       "near_miss_action": null,
       "injection": "injections/t1_e1a3_benign_p3.json",
-      "injection_hash": "c165858c30656035",
+      "injection_hash": "f83126945f1acd52",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -4304,9 +4304,9 @@
         "p2": "injections/t1_e1a3_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "c165858c30656035",
-        "p1": "e837fd53ade6e81e",
-        "p2": "8b8ea3d5e7d58f22"
+        "p3": "f83126945f1acd52",
+        "p1": "c7bbef32b5746947",
+        "p2": "5561c449b37f2aec"
       },
       "index_in_group": 2,
       "block": 0,
@@ -4321,7 +4321,7 @@
       "cell": "E4",
       "near_miss_action": null,
       "injection": "injections/t1_e4_inert_i1.json",
-      "injection_hash": "34f4a05c38c27b9d",
+      "injection_hash": "314659fe102821e7",
       "paraphrase": "i1",
       "paraphrase_options": [
         "i1",
@@ -4334,9 +4334,9 @@
         "i3": "injections/t1_e4_inert_i3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i1": "34f4a05c38c27b9d",
-        "i2": "8a08434657d59096",
-        "i3": "5759572e5bb414a2"
+        "i1": "314659fe102821e7",
+        "i2": "64f52f9860303d1c",
+        "i3": "19abd458c14aecf3"
       },
       "index_in_group": 0,
       "block": 0,
@@ -4351,7 +4351,7 @@
       "cell": "E4",
       "near_miss_action": null,
       "injection": "injections/t1_e4_inert_i2.json",
-      "injection_hash": "8a08434657d59096",
+      "injection_hash": "64f52f9860303d1c",
       "paraphrase": "i2",
       "paraphrase_options": [
         "i2",
@@ -4364,9 +4364,9 @@
         "i1": "injections/t1_e4_inert_i1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i2": "8a08434657d59096",
-        "i3": "5759572e5bb414a2",
-        "i1": "34f4a05c38c27b9d"
+        "i2": "64f52f9860303d1c",
+        "i3": "19abd458c14aecf3",
+        "i1": "314659fe102821e7"
       },
       "index_in_group": 1,
       "block": 0,
@@ -4381,7 +4381,7 @@
       "cell": "E4",
       "near_miss_action": null,
       "injection": "injections/t1_e4_inert_i3.json",
-      "injection_hash": "5759572e5bb414a2",
+      "injection_hash": "19abd458c14aecf3",
       "paraphrase": "i3",
       "paraphrase_options": [
         "i3",
@@ -4394,9 +4394,9 @@
         "i2": "injections/t1_e4_inert_i2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i3": "5759572e5bb414a2",
-        "i1": "34f4a05c38c27b9d",
-        "i2": "8a08434657d59096"
+        "i3": "19abd458c14aecf3",
+        "i1": "314659fe102821e7",
+        "i2": "64f52f9860303d1c"
       },
       "index_in_group": 2,
       "block": 0,
@@ -4411,7 +4411,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t1_e4a1_attack_p1.json",
-      "injection_hash": "3ec011e8d11d1f80",
+      "injection_hash": "8a284de80f4ef222",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -4424,9 +4424,9 @@
         "p3": "injections/t1_e4a1_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "3ec011e8d11d1f80",
-        "p2": "bd39d9815aeca8ed",
-        "p3": "2ab96a0d333eefc5"
+        "p1": "8a284de80f4ef222",
+        "p2": "e399c4320a908d99",
+        "p3": "b38fcbb131da0a93"
       },
       "index_in_group": 0,
       "block": 0,
@@ -4441,7 +4441,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t1_e4a1_attack_p2.json",
-      "injection_hash": "bd39d9815aeca8ed",
+      "injection_hash": "e399c4320a908d99",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -4454,9 +4454,9 @@
         "p1": "injections/t1_e4a1_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "bd39d9815aeca8ed",
-        "p3": "2ab96a0d333eefc5",
-        "p1": "3ec011e8d11d1f80"
+        "p2": "e399c4320a908d99",
+        "p3": "b38fcbb131da0a93",
+        "p1": "8a284de80f4ef222"
       },
       "index_in_group": 1,
       "block": 0,
@@ -4471,7 +4471,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t1_e4a1_attack_p3.json",
-      "injection_hash": "2ab96a0d333eefc5",
+      "injection_hash": "b38fcbb131da0a93",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -4484,9 +4484,9 @@
         "p2": "injections/t1_e4a1_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "2ab96a0d333eefc5",
-        "p1": "3ec011e8d11d1f80",
-        "p2": "bd39d9815aeca8ed"
+        "p3": "b38fcbb131da0a93",
+        "p1": "8a284de80f4ef222",
+        "p2": "e399c4320a908d99"
       },
       "index_in_group": 2,
       "block": 0,
@@ -4519,7 +4519,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t1_e4a1_benign_p1.json",
-      "injection_hash": "4d9899cedace0b9f",
+      "injection_hash": "374062eccea43771",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -4532,9 +4532,9 @@
         "p3": "injections/t1_e4a1_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "4d9899cedace0b9f",
-        "p2": "70868e0dd088de6e",
-        "p3": "5c71fdd6c54b72d5"
+        "p1": "374062eccea43771",
+        "p2": "5271deaa344d0262",
+        "p3": "f9b025882b486506"
       },
       "index_in_group": 0,
       "block": 0,
@@ -4549,7 +4549,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t1_e4a1_benign_p2.json",
-      "injection_hash": "70868e0dd088de6e",
+      "injection_hash": "5271deaa344d0262",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -4562,9 +4562,9 @@
         "p1": "injections/t1_e4a1_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "70868e0dd088de6e",
-        "p3": "5c71fdd6c54b72d5",
-        "p1": "4d9899cedace0b9f"
+        "p2": "5271deaa344d0262",
+        "p3": "f9b025882b486506",
+        "p1": "374062eccea43771"
       },
       "index_in_group": 1,
       "block": 0,
@@ -4579,7 +4579,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t1_e4a1_benign_p3.json",
-      "injection_hash": "5c71fdd6c54b72d5",
+      "injection_hash": "f9b025882b486506",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -4592,9 +4592,9 @@
         "p2": "injections/t1_e4a1_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "5c71fdd6c54b72d5",
-        "p1": "4d9899cedace0b9f",
-        "p2": "70868e0dd088de6e"
+        "p3": "f9b025882b486506",
+        "p1": "374062eccea43771",
+        "p2": "5271deaa344d0262"
       },
       "index_in_group": 2,
       "block": 0,
@@ -4609,7 +4609,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t5_e4a1_attack_p1.json",
-      "injection_hash": "b5460db56fb863c0",
+      "injection_hash": "69783ae95ae75376",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -4622,9 +4622,9 @@
         "p3": "injections/t5_e4a1_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "b5460db56fb863c0",
-        "p2": "3948ff15d802f17a",
-        "p3": "7eba213c2408c54b"
+        "p1": "69783ae95ae75376",
+        "p2": "180df2345f077a58",
+        "p3": "df1535ebe1436d09"
       },
       "index_in_group": 0,
       "block": 0,
@@ -4639,7 +4639,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t5_e4a1_attack_p2.json",
-      "injection_hash": "3948ff15d802f17a",
+      "injection_hash": "180df2345f077a58",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -4652,9 +4652,9 @@
         "p1": "injections/t5_e4a1_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "3948ff15d802f17a",
-        "p3": "7eba213c2408c54b",
-        "p1": "b5460db56fb863c0"
+        "p2": "180df2345f077a58",
+        "p3": "df1535ebe1436d09",
+        "p1": "69783ae95ae75376"
       },
       "index_in_group": 1,
       "block": 0,
@@ -4669,7 +4669,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t5_e4a1_attack_p3.json",
-      "injection_hash": "7eba213c2408c54b",
+      "injection_hash": "df1535ebe1436d09",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -4682,9 +4682,9 @@
         "p2": "injections/t5_e4a1_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "7eba213c2408c54b",
-        "p1": "b5460db56fb863c0",
-        "p2": "3948ff15d802f17a"
+        "p3": "df1535ebe1436d09",
+        "p1": "69783ae95ae75376",
+        "p2": "180df2345f077a58"
       },
       "index_in_group": 2,
       "block": 0,
@@ -4699,7 +4699,7 @@
       "cell": "E2A3",
       "near_miss_action": null,
       "injection": "injections/t1_e2a3_benign_p1.json",
-      "injection_hash": "0a8091f562e30f2d",
+      "injection_hash": "72e4d2919719acce",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -4712,9 +4712,9 @@
         "p3": "injections/t1_e2a3_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "0a8091f562e30f2d",
-        "p2": "941caadca251dcfa",
-        "p3": "166b5980bd264d8d"
+        "p1": "72e4d2919719acce",
+        "p2": "a15435d59fa1615a",
+        "p3": "f268eede1c4bcb4a"
       },
       "index_in_group": 0,
       "block": 0,
@@ -4729,7 +4729,7 @@
       "cell": "E2A3",
       "near_miss_action": null,
       "injection": "injections/t1_e2a3_benign_p2.json",
-      "injection_hash": "941caadca251dcfa",
+      "injection_hash": "a15435d59fa1615a",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -4742,9 +4742,9 @@
         "p1": "injections/t1_e2a3_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "941caadca251dcfa",
-        "p3": "166b5980bd264d8d",
-        "p1": "0a8091f562e30f2d"
+        "p2": "a15435d59fa1615a",
+        "p3": "f268eede1c4bcb4a",
+        "p1": "72e4d2919719acce"
       },
       "index_in_group": 1,
       "block": 0,
@@ -4759,7 +4759,7 @@
       "cell": "E2A3",
       "near_miss_action": null,
       "injection": "injections/t1_e2a3_benign_p3.json",
-      "injection_hash": "166b5980bd264d8d",
+      "injection_hash": "f268eede1c4bcb4a",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -4772,9 +4772,9 @@
         "p2": "injections/t1_e2a3_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "166b5980bd264d8d",
-        "p1": "0a8091f562e30f2d",
-        "p2": "941caadca251dcfa"
+        "p3": "f268eede1c4bcb4a",
+        "p1": "72e4d2919719acce",
+        "p2": "a15435d59fa1615a"
       },
       "index_in_group": 2,
       "block": 0,
@@ -4789,7 +4789,7 @@
       "cell": "E1A4",
       "near_miss_action": null,
       "injection": "injections/t1_e1a4_attack_p1.json",
-      "injection_hash": "9320f52525622c59",
+      "injection_hash": "385b2f941740dc8a",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -4802,9 +4802,9 @@
         "p3": "injections/t1_e1a4_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "9320f52525622c59",
-        "p2": "8572ca24f4b3ca09",
-        "p3": "c96d5ca69869797c"
+        "p1": "385b2f941740dc8a",
+        "p2": "c2b7c73b462d377a",
+        "p3": "f3403caba35ecfd7"
       },
       "index_in_group": 0,
       "block": 0,
@@ -4819,7 +4819,7 @@
       "cell": "E1A4",
       "near_miss_action": null,
       "injection": "injections/t1_e1a4_attack_p2.json",
-      "injection_hash": "8572ca24f4b3ca09",
+      "injection_hash": "c2b7c73b462d377a",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -4832,9 +4832,9 @@
         "p1": "injections/t1_e1a4_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "8572ca24f4b3ca09",
-        "p3": "c96d5ca69869797c",
-        "p1": "9320f52525622c59"
+        "p2": "c2b7c73b462d377a",
+        "p3": "f3403caba35ecfd7",
+        "p1": "385b2f941740dc8a"
       },
       "index_in_group": 1,
       "block": 0,
@@ -4849,7 +4849,7 @@
       "cell": "E1A4",
       "near_miss_action": null,
       "injection": "injections/t1_e1a4_attack_p3.json",
-      "injection_hash": "c96d5ca69869797c",
+      "injection_hash": "f3403caba35ecfd7",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -4862,9 +4862,9 @@
         "p2": "injections/t1_e1a4_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "c96d5ca69869797c",
-        "p1": "9320f52525622c59",
-        "p2": "8572ca24f4b3ca09"
+        "p3": "f3403caba35ecfd7",
+        "p1": "385b2f941740dc8a",
+        "p2": "c2b7c73b462d377a"
       },
       "index_in_group": 2,
       "block": 0,
@@ -4879,7 +4879,7 @@
       "cell": "E1A4",
       "near_miss_action": null,
       "injection": "injections/t1_e1a4_benign_p1.json",
-      "injection_hash": "f4b6560e19ef8f96",
+      "injection_hash": "edbb77363872a3fa",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -4892,9 +4892,9 @@
         "p3": "injections/t1_e1a4_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "f4b6560e19ef8f96",
-        "p2": "2589ba285f7f7692",
-        "p3": "961cdf7766794fdb"
+        "p1": "edbb77363872a3fa",
+        "p2": "cf4b1fc8c1b90eae",
+        "p3": "0118f7f5c340dc55"
       },
       "index_in_group": 0,
       "block": 0,
@@ -4909,7 +4909,7 @@
       "cell": "E1A4",
       "near_miss_action": null,
       "injection": "injections/t1_e1a4_benign_p2.json",
-      "injection_hash": "2589ba285f7f7692",
+      "injection_hash": "cf4b1fc8c1b90eae",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -4922,9 +4922,9 @@
         "p1": "injections/t1_e1a4_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "2589ba285f7f7692",
-        "p3": "961cdf7766794fdb",
-        "p1": "f4b6560e19ef8f96"
+        "p2": "cf4b1fc8c1b90eae",
+        "p3": "0118f7f5c340dc55",
+        "p1": "edbb77363872a3fa"
       },
       "index_in_group": 1,
       "block": 0,
@@ -4939,7 +4939,7 @@
       "cell": "E1A4",
       "near_miss_action": null,
       "injection": "injections/t1_e1a4_benign_p3.json",
-      "injection_hash": "961cdf7766794fdb",
+      "injection_hash": "0118f7f5c340dc55",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -4952,9 +4952,9 @@
         "p2": "injections/t1_e1a4_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "961cdf7766794fdb",
-        "p1": "f4b6560e19ef8f96",
-        "p2": "2589ba285f7f7692"
+        "p3": "0118f7f5c340dc55",
+        "p1": "edbb77363872a3fa",
+        "p2": "cf4b1fc8c1b90eae"
       },
       "index_in_group": 2,
       "block": 0,
@@ -4969,7 +4969,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t1_e4a2_attack_p1.json",
-      "injection_hash": "343e417e60cad4f1",
+      "injection_hash": "1996e4932fb910ba",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -4982,9 +4982,9 @@
         "p3": "injections/t1_e4a2_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "343e417e60cad4f1",
-        "p2": "3d3a6406a7cc6419",
-        "p3": "25d3e11ed5548b22"
+        "p1": "1996e4932fb910ba",
+        "p2": "081e55a95b1027d9",
+        "p3": "f2a06b1f11ddfd22"
       },
       "index_in_group": 0,
       "block": 0,
@@ -4999,7 +4999,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t1_e4a2_attack_p2.json",
-      "injection_hash": "3d3a6406a7cc6419",
+      "injection_hash": "081e55a95b1027d9",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -5012,9 +5012,9 @@
         "p1": "injections/t1_e4a2_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "3d3a6406a7cc6419",
-        "p3": "25d3e11ed5548b22",
-        "p1": "343e417e60cad4f1"
+        "p2": "081e55a95b1027d9",
+        "p3": "f2a06b1f11ddfd22",
+        "p1": "1996e4932fb910ba"
       },
       "index_in_group": 1,
       "block": 0,
@@ -5029,7 +5029,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t1_e4a2_attack_p3.json",
-      "injection_hash": "25d3e11ed5548b22",
+      "injection_hash": "f2a06b1f11ddfd22",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -5042,9 +5042,9 @@
         "p2": "injections/t1_e4a2_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "25d3e11ed5548b22",
-        "p1": "343e417e60cad4f1",
-        "p2": "3d3a6406a7cc6419"
+        "p3": "f2a06b1f11ddfd22",
+        "p1": "1996e4932fb910ba",
+        "p2": "081e55a95b1027d9"
       },
       "index_in_group": 2,
       "block": 0,
@@ -5077,7 +5077,7 @@
       "cell": "E3A2",
       "near_miss_action": null,
       "injection": "injections/t1_e3a2_benign_p1.json",
-      "injection_hash": "d73369d760e46a16",
+      "injection_hash": "9ab5c21c586b6fc0",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -5090,9 +5090,9 @@
         "p3": "injections/t1_e3a2_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "d73369d760e46a16",
-        "p2": "236e0c006202abcb",
-        "p3": "72703c03638135ca"
+        "p1": "9ab5c21c586b6fc0",
+        "p2": "f2fc5d61801286fb",
+        "p3": "4376c3993cf47659"
       },
       "index_in_group": 0,
       "block": 0,
@@ -5107,7 +5107,7 @@
       "cell": "E3A2",
       "near_miss_action": null,
       "injection": "injections/t1_e3a2_benign_p2.json",
-      "injection_hash": "236e0c006202abcb",
+      "injection_hash": "f2fc5d61801286fb",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -5120,9 +5120,9 @@
         "p1": "injections/t1_e3a2_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "236e0c006202abcb",
-        "p3": "72703c03638135ca",
-        "p1": "d73369d760e46a16"
+        "p2": "f2fc5d61801286fb",
+        "p3": "4376c3993cf47659",
+        "p1": "9ab5c21c586b6fc0"
       },
       "index_in_group": 1,
       "block": 0,
@@ -5137,7 +5137,7 @@
       "cell": "E3A2",
       "near_miss_action": null,
       "injection": "injections/t1_e3a2_benign_p3.json",
-      "injection_hash": "72703c03638135ca",
+      "injection_hash": "4376c3993cf47659",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -5150,9 +5150,9 @@
         "p2": "injections/t1_e3a2_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "72703c03638135ca",
-        "p1": "d73369d760e46a16",
-        "p2": "236e0c006202abcb"
+        "p3": "4376c3993cf47659",
+        "p1": "9ab5c21c586b6fc0",
+        "p2": "f2fc5d61801286fb"
       },
       "index_in_group": 2,
       "block": 0,
@@ -5167,7 +5167,7 @@
       "cell": "E3A1",
       "near_miss_action": null,
       "injection": "injections/t1_e3a1_attack_p1.json",
-      "injection_hash": "4e94343b3e6ce937",
+      "injection_hash": "83bee4cc2c5999cc",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -5180,9 +5180,9 @@
         "p3": "injections/t1_e3a1_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "4e94343b3e6ce937",
-        "p2": "5b30ba22fbc4b9a1",
-        "p3": "c655a8bfc2759ea7"
+        "p1": "83bee4cc2c5999cc",
+        "p2": "08b703d63e8b6882",
+        "p3": "ccc5bbd12ab9f15d"
       },
       "index_in_group": 0,
       "block": 0,
@@ -5197,7 +5197,7 @@
       "cell": "E3A1",
       "near_miss_action": null,
       "injection": "injections/t1_e3a1_attack_p2.json",
-      "injection_hash": "5b30ba22fbc4b9a1",
+      "injection_hash": "08b703d63e8b6882",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -5210,9 +5210,9 @@
         "p1": "injections/t1_e3a1_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "5b30ba22fbc4b9a1",
-        "p3": "c655a8bfc2759ea7",
-        "p1": "4e94343b3e6ce937"
+        "p2": "08b703d63e8b6882",
+        "p3": "ccc5bbd12ab9f15d",
+        "p1": "83bee4cc2c5999cc"
       },
       "index_in_group": 1,
       "block": 0,
@@ -5227,7 +5227,7 @@
       "cell": "E3A1",
       "near_miss_action": null,
       "injection": "injections/t1_e3a1_attack_p3.json",
-      "injection_hash": "c655a8bfc2759ea7",
+      "injection_hash": "ccc5bbd12ab9f15d",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -5240,9 +5240,9 @@
         "p2": "injections/t1_e3a1_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "c655a8bfc2759ea7",
-        "p1": "4e94343b3e6ce937",
-        "p2": "5b30ba22fbc4b9a1"
+        "p3": "ccc5bbd12ab9f15d",
+        "p1": "83bee4cc2c5999cc",
+        "p2": "08b703d63e8b6882"
       },
       "index_in_group": 2,
       "block": 0,
@@ -5275,7 +5275,7 @@
       "cell": "E3A1",
       "near_miss_action": null,
       "injection": "injections/t1_e3a1_benign_p1.json",
-      "injection_hash": "8995f898393b19eb",
+      "injection_hash": "66e24cccaf09f170",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -5288,9 +5288,9 @@
         "p3": "injections/t1_e3a1_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "8995f898393b19eb",
-        "p2": "2cde0276224e3e6c",
-        "p3": "28f5eac68d3f774e"
+        "p1": "66e24cccaf09f170",
+        "p2": "15861eaee2199383",
+        "p3": "20ae575858fc751a"
       },
       "index_in_group": 0,
       "block": 0,
@@ -5305,7 +5305,7 @@
       "cell": "E3A1",
       "near_miss_action": null,
       "injection": "injections/t1_e3a1_benign_p2.json",
-      "injection_hash": "2cde0276224e3e6c",
+      "injection_hash": "15861eaee2199383",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -5318,9 +5318,9 @@
         "p1": "injections/t1_e3a1_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "2cde0276224e3e6c",
-        "p3": "28f5eac68d3f774e",
-        "p1": "8995f898393b19eb"
+        "p2": "15861eaee2199383",
+        "p3": "20ae575858fc751a",
+        "p1": "66e24cccaf09f170"
       },
       "index_in_group": 1,
       "block": 0,
@@ -5335,7 +5335,7 @@
       "cell": "E3A1",
       "near_miss_action": null,
       "injection": "injections/t1_e3a1_benign_p3.json",
-      "injection_hash": "28f5eac68d3f774e",
+      "injection_hash": "20ae575858fc751a",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -5348,9 +5348,9 @@
         "p2": "injections/t1_e3a1_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "28f5eac68d3f774e",
-        "p1": "8995f898393b19eb",
-        "p2": "2cde0276224e3e6c"
+        "p3": "20ae575858fc751a",
+        "p1": "66e24cccaf09f170",
+        "p2": "15861eaee2199383"
       },
       "index_in_group": 2,
       "block": 0,
@@ -5365,7 +5365,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t5_e4a1_benign_p1.json",
-      "injection_hash": "dd99e616818cefc8",
+      "injection_hash": "dfc96fc37894970b",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -5378,9 +5378,9 @@
         "p3": "injections/t5_e4a1_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "dd99e616818cefc8",
-        "p2": "9b6fb0269d08938e",
-        "p3": "473bff97c3aad5e3"
+        "p1": "dfc96fc37894970b",
+        "p2": "f024f97548cb50b6",
+        "p3": "e64ebadd16ea0075"
       },
       "index_in_group": 0,
       "block": 0,
@@ -5395,7 +5395,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t5_e4a1_benign_p2.json",
-      "injection_hash": "9b6fb0269d08938e",
+      "injection_hash": "f024f97548cb50b6",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -5408,9 +5408,9 @@
         "p1": "injections/t5_e4a1_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "9b6fb0269d08938e",
-        "p3": "473bff97c3aad5e3",
-        "p1": "dd99e616818cefc8"
+        "p2": "f024f97548cb50b6",
+        "p3": "e64ebadd16ea0075",
+        "p1": "dfc96fc37894970b"
       },
       "index_in_group": 1,
       "block": 0,
@@ -5425,7 +5425,7 @@
       "cell": "E4A1",
       "near_miss_action": null,
       "injection": "injections/t5_e4a1_benign_p3.json",
-      "injection_hash": "473bff97c3aad5e3",
+      "injection_hash": "e64ebadd16ea0075",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -5438,9 +5438,9 @@
         "p2": "injections/t5_e4a1_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "473bff97c3aad5e3",
-        "p1": "dd99e616818cefc8",
-        "p2": "9b6fb0269d08938e"
+        "p3": "e64ebadd16ea0075",
+        "p1": "dfc96fc37894970b",
+        "p2": "f024f97548cb50b6"
       },
       "index_in_group": 2,
       "block": 0,
@@ -5455,7 +5455,7 @@
       "cell": "E1",
       "near_miss_action": null,
       "injection": "injections/t1_e1_inert_i1.json",
-      "injection_hash": "9e02af85a7ad8de0",
+      "injection_hash": "fe5158caa0d90a24",
       "paraphrase": "i1",
       "paraphrase_options": [
         "i1",
@@ -5468,9 +5468,9 @@
         "i3": "injections/t1_e1_inert_i3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i1": "9e02af85a7ad8de0",
-        "i2": "1108168d287a7b0c",
-        "i3": "ba1d7a3fc30d1d0a"
+        "i1": "fe5158caa0d90a24",
+        "i2": "3df550ff7cde43f7",
+        "i3": "0ce66b0ee269cee3"
       },
       "index_in_group": 0,
       "block": 0,
@@ -5485,7 +5485,7 @@
       "cell": "E1",
       "near_miss_action": null,
       "injection": "injections/t1_e1_inert_i2.json",
-      "injection_hash": "1108168d287a7b0c",
+      "injection_hash": "3df550ff7cde43f7",
       "paraphrase": "i2",
       "paraphrase_options": [
         "i2",
@@ -5498,9 +5498,9 @@
         "i1": "injections/t1_e1_inert_i1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i2": "1108168d287a7b0c",
-        "i3": "ba1d7a3fc30d1d0a",
-        "i1": "9e02af85a7ad8de0"
+        "i2": "3df550ff7cde43f7",
+        "i3": "0ce66b0ee269cee3",
+        "i1": "fe5158caa0d90a24"
       },
       "index_in_group": 1,
       "block": 0,
@@ -5515,7 +5515,7 @@
       "cell": "E1",
       "near_miss_action": null,
       "injection": "injections/t1_e1_inert_i3.json",
-      "injection_hash": "ba1d7a3fc30d1d0a",
+      "injection_hash": "0ce66b0ee269cee3",
       "paraphrase": "i3",
       "paraphrase_options": [
         "i3",
@@ -5528,9 +5528,9 @@
         "i2": "injections/t1_e1_inert_i2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i3": "ba1d7a3fc30d1d0a",
-        "i1": "9e02af85a7ad8de0",
-        "i2": "1108168d287a7b0c"
+        "i3": "0ce66b0ee269cee3",
+        "i1": "fe5158caa0d90a24",
+        "i2": "3df550ff7cde43f7"
       },
       "index_in_group": 2,
       "block": 0,
@@ -5545,7 +5545,7 @@
       "cell": "E3",
       "near_miss_action": null,
       "injection": "injections/t1_e3_inert_i1.json",
-      "injection_hash": "83844b560072d71c",
+      "injection_hash": "b757e09fb8f2a56e",
       "paraphrase": "i1",
       "paraphrase_options": [
         "i1",
@@ -5558,9 +5558,9 @@
         "i3": "injections/t1_e3_inert_i3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i1": "83844b560072d71c",
-        "i2": "180e6d96f9f9e923",
-        "i3": "2f5183bedf4176e3"
+        "i1": "b757e09fb8f2a56e",
+        "i2": "826f0bb254dfebe9",
+        "i3": "b6e4464fc7e4f2eb"
       },
       "index_in_group": 0,
       "block": 0,
@@ -5575,7 +5575,7 @@
       "cell": "E3",
       "near_miss_action": null,
       "injection": "injections/t1_e3_inert_i2.json",
-      "injection_hash": "180e6d96f9f9e923",
+      "injection_hash": "826f0bb254dfebe9",
       "paraphrase": "i2",
       "paraphrase_options": [
         "i2",
@@ -5588,9 +5588,9 @@
         "i1": "injections/t1_e3_inert_i1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i2": "180e6d96f9f9e923",
-        "i3": "2f5183bedf4176e3",
-        "i1": "83844b560072d71c"
+        "i2": "826f0bb254dfebe9",
+        "i3": "b6e4464fc7e4f2eb",
+        "i1": "b757e09fb8f2a56e"
       },
       "index_in_group": 1,
       "block": 0,
@@ -5605,7 +5605,7 @@
       "cell": "E3",
       "near_miss_action": null,
       "injection": "injections/t1_e3_inert_i3.json",
-      "injection_hash": "2f5183bedf4176e3",
+      "injection_hash": "b6e4464fc7e4f2eb",
       "paraphrase": "i3",
       "paraphrase_options": [
         "i3",
@@ -5618,9 +5618,9 @@
         "i2": "injections/t1_e3_inert_i2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "i3": "2f5183bedf4176e3",
-        "i1": "83844b560072d71c",
-        "i2": "180e6d96f9f9e923"
+        "i3": "b6e4464fc7e4f2eb",
+        "i1": "b757e09fb8f2a56e",
+        "i2": "826f0bb254dfebe9"
       },
       "index_in_group": 2,
       "block": 0,
@@ -5653,7 +5653,7 @@
       "cell": "E1A1",
       "near_miss_action": null,
       "injection": "injections/t1_e1a1_benign_p1.json",
-      "injection_hash": "ef5353b9f902242f",
+      "injection_hash": "e02c48329765a485",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -5666,9 +5666,9 @@
         "p3": "injections/t1_e1a1_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "ef5353b9f902242f",
-        "p2": "d64f45e1052f930f",
-        "p3": "63a7917df4602ba0"
+        "p1": "e02c48329765a485",
+        "p2": "0692333b62498be6",
+        "p3": "22d7e252e328aea3"
       },
       "index_in_group": 0,
       "block": 0,
@@ -5683,7 +5683,7 @@
       "cell": "E1A1",
       "near_miss_action": null,
       "injection": "injections/t1_e1a1_benign_p2.json",
-      "injection_hash": "d64f45e1052f930f",
+      "injection_hash": "0692333b62498be6",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -5696,9 +5696,9 @@
         "p1": "injections/t1_e1a1_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "d64f45e1052f930f",
-        "p3": "63a7917df4602ba0",
-        "p1": "ef5353b9f902242f"
+        "p2": "0692333b62498be6",
+        "p3": "22d7e252e328aea3",
+        "p1": "e02c48329765a485"
       },
       "index_in_group": 1,
       "block": 0,
@@ -5713,7 +5713,7 @@
       "cell": "E1A1",
       "near_miss_action": null,
       "injection": "injections/t1_e1a1_benign_p3.json",
-      "injection_hash": "63a7917df4602ba0",
+      "injection_hash": "22d7e252e328aea3",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -5726,9 +5726,9 @@
         "p2": "injections/t1_e1a1_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "63a7917df4602ba0",
-        "p1": "ef5353b9f902242f",
-        "p2": "d64f45e1052f930f"
+        "p3": "22d7e252e328aea3",
+        "p1": "e02c48329765a485",
+        "p2": "0692333b62498be6"
       },
       "index_in_group": 2,
       "block": 0,
@@ -5743,7 +5743,7 @@
       "cell": "E1A1",
       "near_miss_action": null,
       "injection": "injections/t1_e1a1_attack_p1.json",
-      "injection_hash": "3faf1aca22897f2f",
+      "injection_hash": "653c569c45f03940",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -5756,9 +5756,9 @@
         "p3": "injections/t1_e1a1_attack_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "3faf1aca22897f2f",
-        "p2": "ada8e8a5da125716",
-        "p3": "6487556d125f0822"
+        "p1": "653c569c45f03940",
+        "p2": "1768fc5b878f6ccf",
+        "p3": "958c86915a98c960"
       },
       "index_in_group": 0,
       "block": 0,
@@ -5773,7 +5773,7 @@
       "cell": "E1A1",
       "near_miss_action": null,
       "injection": "injections/t1_e1a1_attack_p2.json",
-      "injection_hash": "ada8e8a5da125716",
+      "injection_hash": "1768fc5b878f6ccf",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -5786,9 +5786,9 @@
         "p1": "injections/t1_e1a1_attack_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "ada8e8a5da125716",
-        "p3": "6487556d125f0822",
-        "p1": "3faf1aca22897f2f"
+        "p2": "1768fc5b878f6ccf",
+        "p3": "958c86915a98c960",
+        "p1": "653c569c45f03940"
       },
       "index_in_group": 1,
       "block": 0,
@@ -5803,7 +5803,7 @@
       "cell": "E1A1",
       "near_miss_action": null,
       "injection": "injections/t1_e1a1_attack_p3.json",
-      "injection_hash": "6487556d125f0822",
+      "injection_hash": "958c86915a98c960",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -5816,9 +5816,9 @@
         "p2": "injections/t1_e1a1_attack_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "6487556d125f0822",
-        "p1": "3faf1aca22897f2f",
-        "p2": "ada8e8a5da125716"
+        "p3": "958c86915a98c960",
+        "p1": "653c569c45f03940",
+        "p2": "1768fc5b878f6ccf"
       },
       "index_in_group": 2,
       "block": 0,
@@ -5833,7 +5833,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t5_e3a4_benign_p1.json",
-      "injection_hash": "89be3fd72c11d2dd",
+      "injection_hash": "0718185a95f6884e",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -5846,9 +5846,9 @@
         "p3": "injections/t5_e3a4_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "89be3fd72c11d2dd",
-        "p2": "253eccbf188ea45d",
-        "p3": "d7d0472c0be1087b"
+        "p1": "0718185a95f6884e",
+        "p2": "4127aa6dc83e9603",
+        "p3": "e8ce1a68e6982ee0"
       },
       "index_in_group": 0,
       "block": 0,
@@ -5863,7 +5863,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t5_e3a4_benign_p2.json",
-      "injection_hash": "253eccbf188ea45d",
+      "injection_hash": "4127aa6dc83e9603",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -5876,9 +5876,9 @@
         "p1": "injections/t5_e3a4_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "253eccbf188ea45d",
-        "p3": "d7d0472c0be1087b",
-        "p1": "89be3fd72c11d2dd"
+        "p2": "4127aa6dc83e9603",
+        "p3": "e8ce1a68e6982ee0",
+        "p1": "0718185a95f6884e"
       },
       "index_in_group": 1,
       "block": 0,
@@ -5893,7 +5893,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t5_e3a4_benign_p3.json",
-      "injection_hash": "d7d0472c0be1087b",
+      "injection_hash": "e8ce1a68e6982ee0",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -5906,9 +5906,9 @@
         "p2": "injections/t5_e3a4_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "d7d0472c0be1087b",
-        "p1": "89be3fd72c11d2dd",
-        "p2": "253eccbf188ea45d"
+        "p3": "e8ce1a68e6982ee0",
+        "p1": "0718185a95f6884e",
+        "p2": "4127aa6dc83e9603"
       },
       "index_in_group": 2,
       "block": 0,
@@ -5923,7 +5923,7 @@
       "cell": "E4A3",
       "near_miss_action": null,
       "injection": "injections/t1_e4a3_benign_p1.json",
-      "injection_hash": "6195c6298ccb73d4",
+      "injection_hash": "24da4a8ecbdabcb9",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -5936,9 +5936,9 @@
         "p3": "injections/t1_e4a3_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "6195c6298ccb73d4",
-        "p2": "006bf330be80e116",
-        "p3": "3fd47ded447a169e"
+        "p1": "24da4a8ecbdabcb9",
+        "p2": "60e9cbdec971d1bb",
+        "p3": "d3317732ad43444f"
       },
       "index_in_group": 0,
       "block": 0,
@@ -5953,7 +5953,7 @@
       "cell": "E4A3",
       "near_miss_action": null,
       "injection": "injections/t1_e4a3_benign_p2.json",
-      "injection_hash": "006bf330be80e116",
+      "injection_hash": "60e9cbdec971d1bb",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -5966,9 +5966,9 @@
         "p1": "injections/t1_e4a3_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "006bf330be80e116",
-        "p3": "3fd47ded447a169e",
-        "p1": "6195c6298ccb73d4"
+        "p2": "60e9cbdec971d1bb",
+        "p3": "d3317732ad43444f",
+        "p1": "24da4a8ecbdabcb9"
       },
       "index_in_group": 1,
       "block": 0,
@@ -5983,7 +5983,7 @@
       "cell": "E4A3",
       "near_miss_action": null,
       "injection": "injections/t1_e4a3_benign_p3.json",
-      "injection_hash": "3fd47ded447a169e",
+      "injection_hash": "d3317732ad43444f",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -5996,9 +5996,9 @@
         "p2": "injections/t1_e4a3_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "3fd47ded447a169e",
-        "p1": "6195c6298ccb73d4",
-        "p2": "006bf330be80e116"
+        "p3": "d3317732ad43444f",
+        "p1": "24da4a8ecbdabcb9",
+        "p2": "60e9cbdec971d1bb"
       },
       "index_in_group": 2,
       "block": 0,
@@ -6013,7 +6013,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t1_e3a4_benign_p1.json",
-      "injection_hash": "85fad8e8a6dee8d9",
+      "injection_hash": "df7b0e3353a1f7f5",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -6026,9 +6026,9 @@
         "p3": "injections/t1_e3a4_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "85fad8e8a6dee8d9",
-        "p2": "c5ac6582cf87ea25",
-        "p3": "7e0b2b07052c236b"
+        "p1": "df7b0e3353a1f7f5",
+        "p2": "08d3fd33e4f04b35",
+        "p3": "1586e5d5fba3d1c4"
       },
       "index_in_group": 0,
       "block": 0,
@@ -6043,7 +6043,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t1_e3a4_benign_p2.json",
-      "injection_hash": "c5ac6582cf87ea25",
+      "injection_hash": "08d3fd33e4f04b35",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -6056,9 +6056,9 @@
         "p1": "injections/t1_e3a4_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "c5ac6582cf87ea25",
-        "p3": "7e0b2b07052c236b",
-        "p1": "85fad8e8a6dee8d9"
+        "p2": "08d3fd33e4f04b35",
+        "p3": "1586e5d5fba3d1c4",
+        "p1": "df7b0e3353a1f7f5"
       },
       "index_in_group": 1,
       "block": 0,
@@ -6073,7 +6073,7 @@
       "cell": "E3A4",
       "near_miss_action": null,
       "injection": "injections/t1_e3a4_benign_p3.json",
-      "injection_hash": "7e0b2b07052c236b",
+      "injection_hash": "1586e5d5fba3d1c4",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -6086,9 +6086,9 @@
         "p2": "injections/t1_e3a4_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "7e0b2b07052c236b",
-        "p1": "85fad8e8a6dee8d9",
-        "p2": "c5ac6582cf87ea25"
+        "p3": "1586e5d5fba3d1c4",
+        "p1": "df7b0e3353a1f7f5",
+        "p2": "08d3fd33e4f04b35"
       },
       "index_in_group": 2,
       "block": 0,
@@ -6103,7 +6103,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t3_e1a2_benign_p1.json",
-      "injection_hash": "fddb6c1da3e27bca",
+      "injection_hash": "e8a186e393c973df",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -6116,9 +6116,9 @@
         "p3": "injections/t3_e1a2_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "fddb6c1da3e27bca",
-        "p2": "78c2df0cfa91dbe0",
-        "p3": "3f143113c2a60aec"
+        "p1": "e8a186e393c973df",
+        "p2": "87eca96a4868fea8",
+        "p3": "3826603b29434f71"
       },
       "index_in_group": 0,
       "block": 0,
@@ -6133,7 +6133,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t3_e1a2_benign_p2.json",
-      "injection_hash": "78c2df0cfa91dbe0",
+      "injection_hash": "87eca96a4868fea8",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -6146,9 +6146,9 @@
         "p1": "injections/t3_e1a2_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "78c2df0cfa91dbe0",
-        "p3": "3f143113c2a60aec",
-        "p1": "fddb6c1da3e27bca"
+        "p2": "87eca96a4868fea8",
+        "p3": "3826603b29434f71",
+        "p1": "e8a186e393c973df"
       },
       "index_in_group": 1,
       "block": 0,
@@ -6163,7 +6163,7 @@
       "cell": "E1A2",
       "near_miss_action": null,
       "injection": "injections/t3_e1a2_benign_p3.json",
-      "injection_hash": "3f143113c2a60aec",
+      "injection_hash": "3826603b29434f71",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -6176,9 +6176,9 @@
         "p2": "injections/t3_e1a2_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "3f143113c2a60aec",
-        "p1": "fddb6c1da3e27bca",
-        "p2": "78c2df0cfa91dbe0"
+        "p3": "3826603b29434f71",
+        "p1": "e8a186e393c973df",
+        "p2": "87eca96a4868fea8"
       },
       "index_in_group": 2,
       "block": 0,
@@ -6193,7 +6193,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t1_e3a3_benign_p1.json",
-      "injection_hash": "9de87fd67e1dab8a",
+      "injection_hash": "d32b9c59f15b4c60",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -6206,9 +6206,9 @@
         "p3": "injections/t1_e3a3_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "9de87fd67e1dab8a",
-        "p2": "d9fe00b03a73cd83",
-        "p3": "31fe1fc27a32f447"
+        "p1": "d32b9c59f15b4c60",
+        "p2": "9af490bca3a8fbc3",
+        "p3": "747f65223d5bcc96"
       },
       "index_in_group": 0,
       "block": 0,
@@ -6223,7 +6223,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t1_e3a3_benign_p2.json",
-      "injection_hash": "d9fe00b03a73cd83",
+      "injection_hash": "9af490bca3a8fbc3",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -6236,9 +6236,9 @@
         "p1": "injections/t1_e3a3_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "d9fe00b03a73cd83",
-        "p3": "31fe1fc27a32f447",
-        "p1": "9de87fd67e1dab8a"
+        "p2": "9af490bca3a8fbc3",
+        "p3": "747f65223d5bcc96",
+        "p1": "d32b9c59f15b4c60"
       },
       "index_in_group": 1,
       "block": 0,
@@ -6253,7 +6253,7 @@
       "cell": "E3A3",
       "near_miss_action": null,
       "injection": "injections/t1_e3a3_benign_p3.json",
-      "injection_hash": "31fe1fc27a32f447",
+      "injection_hash": "747f65223d5bcc96",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -6266,9 +6266,9 @@
         "p2": "injections/t1_e3a3_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "31fe1fc27a32f447",
-        "p1": "9de87fd67e1dab8a",
-        "p2": "d9fe00b03a73cd83"
+        "p3": "747f65223d5bcc96",
+        "p1": "d32b9c59f15b4c60",
+        "p2": "9af490bca3a8fbc3"
       },
       "index_in_group": 2,
       "block": 0,
@@ -6301,7 +6301,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t4_e4a2_benign_p1.json",
-      "injection_hash": "eba8f5d33fae2b89",
+      "injection_hash": "113a2172d8f9353d",
       "paraphrase": "p1",
       "paraphrase_options": [
         "p1",
@@ -6314,9 +6314,9 @@
         "p3": "injections/t4_e4a2_benign_p3.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p1": "eba8f5d33fae2b89",
-        "p2": "28ea5a0af2ca0ecb",
-        "p3": "4f025a0e378d136a"
+        "p1": "113a2172d8f9353d",
+        "p2": "093ab96ee0f3be47",
+        "p3": "77226ff0f077069a"
       },
       "index_in_group": 0,
       "block": 0,
@@ -6331,7 +6331,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t4_e4a2_benign_p2.json",
-      "injection_hash": "28ea5a0af2ca0ecb",
+      "injection_hash": "093ab96ee0f3be47",
       "paraphrase": "p2",
       "paraphrase_options": [
         "p2",
@@ -6344,9 +6344,9 @@
         "p1": "injections/t4_e4a2_benign_p1.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p2": "28ea5a0af2ca0ecb",
-        "p3": "4f025a0e378d136a",
-        "p1": "eba8f5d33fae2b89"
+        "p2": "093ab96ee0f3be47",
+        "p3": "77226ff0f077069a",
+        "p1": "113a2172d8f9353d"
       },
       "index_in_group": 1,
       "block": 0,
@@ -6361,7 +6361,7 @@
       "cell": "E4A2",
       "near_miss_action": null,
       "injection": "injections/t4_e4a2_benign_p3.json",
-      "injection_hash": "4f025a0e378d136a",
+      "injection_hash": "77226ff0f077069a",
       "paraphrase": "p3",
       "paraphrase_options": [
         "p3",
@@ -6374,9 +6374,9 @@
         "p2": "injections/t4_e4a2_benign_p2.json"
       },
       "injection_hashes_by_paraphrase": {
-        "p3": "4f025a0e378d136a",
-        "p1": "eba8f5d33fae2b89",
-        "p2": "28ea5a0af2ca0ecb"
+        "p3": "77226ff0f077069a",
+        "p1": "113a2172d8f9353d",
+        "p2": "093ab96ee0f3be47"
       },
       "index_in_group": 2,
       "block": 0,

@@ -37,13 +37,25 @@ per family at the throughput 399 live attempts measured (plan §10.1).
 > results are kept under `pilot/smoke_sweep_6963280d2c30/` as the record of that
 > run.
 >
-> Both committed schedules are now stale again, for different reasons.
-> `pilot/sizing_schedule.json` never matched the five-task scope. And the
-> acceptance stamp applied to all 156 texts changed every `injection_hash`, so
-> replanning the smoke command below yields `sweep_53226843e67f` rather than the
-> committed `sweep_b2f0f31679c7` — the Stage 1 results above stand as the record
-> of a run against the earlier texts, and the schedule must be regenerated
-> before Stage 1 is re-run. Phase 0 step 1 regenerates both.
+> **Both were regenerated on 2026-09-02** and now match this design and the
+> stamped texts:
+>
+> | Schedule | sweep_id | Groups | Target runs | Max attempts |
+> |---|---|---|---|---|
+> | `pilot/smoke_schedule.json` | `sweep_53226843e67f` | 66 | 66 | 170 |
+> | `pilot/sizing_schedule.json` | `sweep_1a6c347f2e51` | 66 | 396 | 825 |
+>
+> Each reproduces exactly from its Phase 0 step 1 command — replanning yields
+> the same `sweep_id` and identical content but for `created_at`. The smoke
+> schedule replaces `sweep_b2f0f31679c7`, which predated the acceptance stamp
+> applied to all 156 texts and so carried the old `injection_hash` for every
+> one. The sizing schedule replaces `sweep_a244eaea95d1`, which planned 41
+> groups and never covered the five-task scope.
+>
+> **Stage 1 has not been re-run against the new smoke schedule.** The 160
+> results above were produced against `sweep_b2f0f31679c7` and the pre-stamp
+> texts; they stand as the record of that run and are not comparable to a run
+> against the current schedule. Stage 1 must be re-run before Phase 1.
 
 ---
 
@@ -129,8 +141,10 @@ by hand and its agreement figures recorded in the registration before signing.
 Each produces a frozen artifact; nothing later may depend on their *order* being
 re-derived.
 
-1. **Generate the pilot schedules for the five-task scope.** Both committed
-   schedules must be regenerated; neither matches this design.
+1. **Generate the pilot schedules for the five-task scope.** Both are current
+   as of 2026-09-02 — see *Schedule status* above. Re-run these whenever the
+   injection texts or the host change, because either moves every
+   `injection_hash` and so the `sweep_id`.
    ```sh
    .venv/bin/python -m taskbound.runner sweep plan \
      --host hosts/site_a --out pilot/sizing_schedule.json --seed 2 \
