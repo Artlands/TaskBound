@@ -482,6 +482,71 @@ def test_resuming_under_the_same_canary_seed_is_allowed(tmp_path):
     assert manifest["totals"]["attempted_total"] > 2
 
 
+def test_a_real_seed_can_be_given_without_putting_it_in_the_process_table(monkeypatch):
+    """`--canary-seed` is argv, and argv is world-readable through `ps`.
+
+    The release procedure already exports `TB_CANARY_SEED`; before this it then
+    expanded it into the command line, which handed the seed to every other user
+    on the node. Reading the variable directly is what makes the export enough.
+    """
+    monkeypatch.setenv(runner.CANARY_SEED_ENV, "seed-from-the-environment")
+    assert runner.resolve_canary_seed(None) == "seed-from-the-environment"
+
+
+def test_a_seed_from_the_environment_is_stripped(monkeypatch):
+    """`export TB_CANARY_SEED="$(< seedfile)"` keeps the file's trailing newline.
+
+    A seed that differs by whitespace derives a different generation, so the
+    sweep would refuse to resume its own directory over an invisible character.
+    The flag is deliberately *not* stripped: existing results directories must
+    keep deriving the generation their rows already carry.
+    """
+    monkeypatch.setenv(runner.CANARY_SEED_ENV, "  seed-one\n")
+    assert runner.resolve_canary_seed(None) == "seed-one"
+    assert runner.canary_generation(runner.resolve_canary_seed(None)) == \
+        runner.canary_generation("seed-one")
+
+
+def test_the_flag_still_wins_over_the_environment_but_says_so(monkeypatch, capsys):
+    """An explicit argument beats an ambient one; the warning is the whole point."""
+    monkeypatch.setenv(runner.CANARY_SEED_ENV, "seed-from-the-environment")
+    assert runner.resolve_canary_seed("seed-from-the-flag") == "seed-from-the-flag"
+    assert runner.CANARY_SEED_ENV in capsys.readouterr().err
+
+
+def test_an_empty_environment_seed_is_refused_rather_than_silently_public(monkeypatch):
+    """Falling back here would derive canaries anyone reading the repo can compute.
+
+    Someone who exported the variable believes they set a seed. The failure mode
+    of a silent default is a whole sweep whose leak detection is public
+    knowledge, which is not visible in any result.
+    """
+    monkeypatch.setenv(runner.CANARY_SEED_ENV, "   ")
+    with pytest.raises(SystemExit, match="set but empty"):
+        runner.resolve_canary_seed(None)
+
+
+def test_neither_flag_nor_environment_keeps_the_documented_default(monkeypatch):
+    monkeypatch.delenv(runner.CANARY_SEED_ENV, raising=False)
+    assert runner.resolve_canary_seed(None) == runner.DEFAULT_CANARY_SEED
+
+
+def test_the_sweep_cli_resolves_the_seed_before_the_sweep_sees_it(monkeypatch):
+    """The resolution sits in `runner.main`, so both entry points get it once."""
+    seen = {}
+
+    def capture(args):
+        seen["seed"] = args.canary_seed
+        return 0
+
+    monkeypatch.setattr(sweep, "main", capture)
+    monkeypatch.setenv(runner.CANARY_SEED_ENV, "seed-from-the-environment")
+    assert runner.main([
+        "sweep", "run", "--schedule", "unread.json", "--out", "unwritten",
+    ]) == 0
+    assert seen["seed"] == "seed-from-the-environment"
+
+
 def test_a_result_is_never_left_half_written(tmp_path):
     """`_write` renames into place, so a reader sees no file or a whole one."""
     out = tmp_path / "out"

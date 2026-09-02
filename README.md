@@ -201,7 +201,7 @@ Five tasks are available — `t1_failed_job`, `t2_postproc_repair`, `t3_build_an
 | `--near-miss-action` | — | Required for `near_miss`; `A1`–`A4` |
 | `--execution-mode` | `single_agent` | Use `two_agent` for benchmark runs |
 | `--seed` | `1` | Placement of the injected text within an admissible location |
-| `--canary-seed` | `dev-generation` | Derives the canary values |
+| `--canary-seed` | `$TB_CANARY_SEED`, else `dev-generation` | Derives the canary values. Prefer the variable: the flag is visible in `ps` |
 | `--agent` | `anthropic` | `anthropic`, `openai_compatible`, `scripted` |
 | `--model` | `claude-opus-5` | Any model ID the endpoint offers |
 | `--effort` | `high` | Anthropic only |
@@ -226,7 +226,6 @@ Then run it:
 .venv/bin/python -m taskbound.runner sweep run \
   --schedule schedules/full_seed1.json --out results/claude-opus-5 \
   --agent anthropic --model claude-opus-5 \
-  --canary-seed "$TB_CANARY_SEED" \
   --execution-mode two_agent --workers 6 --verbose \
   --spend-ceiling 250 --price-in 5 --price-cached 0.5 --price-out 25 \
   --price-date 2026-08-11
@@ -340,11 +339,13 @@ The report gives per-model numbers with intervals, printed in a fixed order. It 
 
 ## Canaries and what not to commit
 
-Canary values are generated per run from `--canary-seed` and substituted into the workspace at load time; the repo holds only placeholders. Use a seed you keep out of the repository:
+Canary values are generated per run from a seed and substituted into the workspace at load time; the repo holds only placeholders. Export a seed you keep out of the repository, and the runner reads it — nothing else is needed:
 
 ```sh
 export TB_CANARY_SEED="$(openssl rand -hex 16)"
 ```
+
+**Do not pass a real seed as `--canary-seed`.** Arguments are world-readable through `ps`, so the flag hands your seed to every other user on the machine, and the runner warns when you use it. It exists for scripted and throwaway runs. With neither the variable nor the flag set, runs use the public default seed `dev-generation`, whose canaries anyone reading the repo can compute.
 
 **Keep the seed.** It is the one input that cannot be reconstructed. Lose it and a results directory can still be aggregated but never extended — start a fresh directory instead.
 
@@ -369,7 +370,7 @@ Results record the derived `canary_generation` id, never the seed. Two checks en
 | 400 naming an unsupported parameter | You passed `--reasoning-effort` or `--temperature` to a server that rejects it. Both are omitted unless given |
 | `condition 'attacked' needs a 'attack' injection` | The `--injection` file's `kind` does not match `--condition` |
 | `refusing to overwrite existing result` | Raw results are append-only. Use a different `--out`, or delete the file deliberately |
-| `already has runs under canary generation ...` | The `--canary-seed` is not the one this directory started with. Re-export it, or start a fresh `--out` |
+| `already has runs under canary generation ...` | The seed is not the one this directory started with. Re-export `TB_CANARY_SEED`, or start a fresh `--out` |
 | `... is not valid JSON` on resume or aggregate | A result truncated by a signal. It cannot be repaired — delete it and the attempt re-runs |
 | `results mix canary generations inside one model family` | Two seeds reached one family. Aggregate each generation from its own directory |
 | `placement class ... has no admissible position` | The vehicle file changed and the declared line positions no longer resolve. A hard failure by design |

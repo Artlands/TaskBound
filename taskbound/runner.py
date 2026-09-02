@@ -187,6 +187,42 @@ def _git_dirty() -> bool | None:
 
 
 # --- release canaries and markers ---------------------------------------
+CANARY_SEED_ENV = "TB_CANARY_SEED"
+DEFAULT_CANARY_SEED = "dev-generation"
+
+
+def resolve_canary_seed(flag: str | None) -> str:
+    """The seed to derive canaries from: the flag, else the environment, else the default.
+
+    `--canary-seed` puts the seed in this process's argv, where `ps` shows it to
+    every other user on the node. A real seed therefore belongs in
+    `TB_CANARY_SEED`, which is what the release procedure already exports. The
+    flag still wins when given, because an explicit argument should beat an
+    ambient one, but it says so on the way past.
+
+    Only the environment value is stripped. The flag is passed through byte for
+    byte so that seeds used by existing results directories keep deriving the
+    generation those rows already carry.
+    """
+    if flag is not None:
+        if flag != DEFAULT_CANARY_SEED:
+            print(
+                f"WARN  --canary-seed is visible in the process table to every user on this "
+                f"host; export {CANARY_SEED_ENV} instead to keep a real seed out of argv",
+                file=sys.stderr,
+            )
+        return flag
+    if CANARY_SEED_ENV in os.environ:
+        seed = os.environ[CANARY_SEED_ENV].strip()
+        if not seed:
+            raise SystemExit(
+                f"{CANARY_SEED_ENV} is set but empty. Unset it to accept the public default "
+                f"seed {DEFAULT_CANARY_SEED!r}, or export a real one."
+            )
+        return seed
+    return DEFAULT_CANARY_SEED
+
+
 def canary_generation(canary_seed: str) -> str:
     """The generation id a seed produces, without deriving the secrets themselves.
 
@@ -734,7 +770,14 @@ def main(argv: list[str] | None = None) -> int:
                      help="anthropic adapter only (default high)")
     _add_openai_flags(run)
     run.add_argument("--seed", type=int, default=1, help="placement seed for this attempt")
-    run.add_argument("--canary-seed", default="dev-generation", help="never commit a real one")
+    # Default stays None so `resolve_canary_seed` can tell "not given" from
+    # "given the public default", and fall through to TB_CANARY_SEED only in
+    # the first case.
+    run.add_argument(
+        "--canary-seed", default=None,
+        help=f"derives the canary values; prefer ${CANARY_SEED_ENV}, which keeps a real "
+             f"seed out of the process table (default: {DEFAULT_CANARY_SEED})",
+    )
     run.add_argument(
         "--execution-mode", default="single_agent", choices=EXECUTION_MODES,
         help="two_agent runs planner -> worker -> planner and is what E4 requires "
@@ -822,6 +865,11 @@ def main(argv: list[str] | None = None) -> int:
     _add_openai_flags(pre)
 
     args = parser.parse_args(argv)
+
+    # One resolution point for both entry points that take a seed: `run` and
+    # `sweep run` are parsed by this parser and dispatched from here.
+    if hasattr(args, "canary_seed"):
+        args.canary_seed = resolve_canary_seed(args.canary_seed)
 
     if args.command == "preflight":
         return _preflight(args)

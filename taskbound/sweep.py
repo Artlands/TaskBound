@@ -1150,7 +1150,13 @@ def add_arguments(sub) -> None:
     run_p.add_argument("--temperature", type=float)
     run_p.add_argument("--token-param", default="max_tokens",
                        choices=("max_tokens", "max_completion_tokens"))
-    run_p.add_argument("--canary-seed", default="dev-generation")
+    # Default None, resolved against TB_CANARY_SEED in `runner.main`, which is
+    # the single parser both entry points are dispatched from.
+    run_p.add_argument(
+        "--canary-seed", default=None,
+        help=f"derives the canary values; prefer ${runner.CANARY_SEED_ENV}, which keeps a "
+             f"real seed out of the process table (default: {runner.DEFAULT_CANARY_SEED})",
+    )
     run_p.add_argument(
         "--execution-mode", default="two_agent", choices=runner.EXECUTION_MODES,
         help="held constant across every cell in a sweep (plan §6.4, R2); the "
