@@ -19,25 +19,85 @@ INJ = os.path.join(ROOT, "injections")
 SCRIPTS = os.path.join(ROOT, "fixtures", "scripts")
 
 
-def test_source_provenance_rejects_untracked_imports_but_allows_results(
-    tmp_path, monkeypatch
-):
-    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
-    tracked = tmp_path / "tracked.txt"
-    tracked.write_text("tracked\n")
-    subprocess.run(["git", "add", "tracked.txt"], cwd=tmp_path, check=True)
+def _fixture_repo(path):
+    """A committed, clean git checkout at `path`."""
+    subprocess.run(["git", "init", "-q"], cwd=path, check=True)
+    (path / "tracked.txt").write_text("tracked\n")
+    subprocess.run(["git", "add", "tracked.txt"], cwd=path, check=True)
     subprocess.run(
         ["git", "-c", "user.name=TaskBound", "-c", "user.email=test@example.invalid",
          "commit", "-qm", "fixture"],
-        cwd=tmp_path,
+        cwd=path,
         check=True,
     )
+    return path
+
+
+def test_source_provenance_rejects_untracked_imports_but_allows_results(
+    tmp_path, monkeypatch
+):
+    """A results file does not make a tree dirty; a shadowing module does.
+
+    `python -m` puts the working directory first on `sys.path`, so an untracked
+    `openai.py` there shadows the SDK and the run is no longer reproducible
+    from its commit -- even when the source tree of record is spotless. The
+    source tree is held fixed here so this asserts only the working-directory
+    half; `test_provenance_*` below covers the other one.
+    """
+    _fixture_repo(tmp_path)
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(runner, "_source_repo_root", lambda: str(tmp_path))
 
     (tmp_path / "results.json").write_text("{}\n")
     assert runner._git_dirty() is False
     (tmp_path / "openai.py").write_text("raise RuntimeError('shadowed')\n")
     assert runner._git_dirty() is True
+
+
+# --- provenance is bound to this package's checkout (BUG-008) -------------
+def test_provenance_ignores_the_working_directory(tmp_path, monkeypatch):
+    """`git rev-parse` answers about wherever it is asked. It must be asked
+    about the package, not about wherever the user happened to be standing."""
+    here = runner._git_commit(), runner._git_source_sha256()
+    monkeypatch.chdir(_fixture_repo(tmp_path))
+    assert (runner._git_commit(), runner._git_source_sha256()) == here
+
+
+def test_provenance_is_unknown_inside_an_unrelated_repository(tmp_path, monkeypatch):
+    """The failure this closes: unpack TaskBound inside someone else's
+    checkout, and every result records that checkout's HEAD and a hash of its
+    files -- both well-formed, both about a tree containing none of this code,
+    and `aggregate.validate_release_binding` only checks that they are
+    well-formed. Refusing to answer is the only honest option.
+    """
+    outer = _fixture_repo(tmp_path)
+    unpacked = outer / "TaskBound" / "taskbound"
+    unpacked.mkdir(parents=True)
+    (unpacked / "runner.py").write_text("# an unpacked copy, tracked by nobody\n")
+    monkeypatch.setattr(runner, "_PACKAGE_DIR", str(unpacked))
+
+    assert runner._source_repo_root() is None
+    assert runner._git_commit() == "unknown"
+    assert runner._git_source_sha256() == "unknown"
+
+
+def test_an_unknown_source_tree_cannot_earn_a_release_binding(tmp_path, monkeypatch):
+    """`"unknown"` is not a 40-hex commit or a 64-hex digest, so the binding
+    check rejects it. That is the property that makes returning it safe."""
+    from taskbound import aggregate
+
+    outer = _fixture_repo(tmp_path)
+    unpacked = outer / "TaskBound" / "taskbound"
+    unpacked.mkdir(parents=True)
+    (unpacked / "runner.py").write_text("#\n")
+    monkeypatch.setattr(runner, "_PACKAGE_DIR", str(unpacked))
+
+    digest_chars = set("0123456789abcdef")
+    commit = runner._git_commit()
+    source = runner._git_source_sha256()
+    assert not (len(commit) == 40 and not set(commit) - digest_chars)
+    assert not (len(source) == 64 and not set(source) - digest_chars)
+    assert hasattr(aggregate, "validate_release_binding")
 
 
 def run(tmp_path, *extra: str) -> dict:
@@ -194,7 +254,11 @@ def test_result_records_provenance_needed_to_reproduce(tmp_path):
                 "canary_generation", "host", "injection", "placement", "agent",
                 "action_trace"):
         assert record[key], key
-    assert isinstance(record["git_dirty"], bool)
+    # None is the honest answer outside a git checkout -- a source tarball, or
+    # a copy unpacked somewhere that is not this package's own repository
+    # (BUG-008). What must never happen is a confident answer from the wrong
+    # tree, which is what `test_provenance_*` below covers.
+    assert record["git_dirty"] is None or isinstance(record["git_dirty"], bool)
     assert record["placement"]["seed"] == 5
     assert record["agent"]["system_prompt_sha256"]
     assert record["agent"]["tool_schema_sha256"]

@@ -129,26 +129,70 @@ def _hash_dir(root: str) -> str:
     return digest.hexdigest()[:16]
 
 
+_PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _source_repo_root() -> str | None:
+    """The git checkout this package was imported from, or None.
+
+    Anchored to the package directory rather than the process working
+    directory, and confirmed to actually track this package. Both matter
+    (BUG-008). `git rev-parse` walks *up* from wherever it is asked, so an
+    unpacked TaskBound sitting inside an unrelated repository would otherwise
+    resolve to that repository -- and every result would then record a commit
+    id and source hash belonging to a tree that contains none of this code,
+    while still passing `aggregate.validate_release_binding`, which only checks
+    that the two are well-formed digests.
+
+    Returning None where provenance cannot be established is the point: the
+    binding check rejects `"unknown"`, so a run that cannot say what it came
+    from is refused a release binding rather than given a false one.
+    """
+    try:
+        root = subprocess.check_output(
+            ["git", "-C", _PACKAGE_DIR, "rev-parse", "--show-toplevel"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+    if not root:
+        return None
+    # Tracked, not merely contained: an unpacked copy inside someone else's
+    # checkout is contained by it and has nothing to do with it.
+    marker = os.path.relpath(os.path.join(_PACKAGE_DIR, "runner.py"), root)
+    try:
+        tracked = subprocess.check_output(
+            ["git", "-C", root, "ls-files", "--error-unmatch", "-z", "--", marker],
+            stderr=subprocess.DEVNULL,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+    return root if tracked.strip(b"\0") else None
+
+
 def _git_commit() -> str:
+    root = _source_repo_root()
+    if root is None:
+        return "unknown"
     try:
         return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL
+            ["git", "-C", root, "rev-parse", "HEAD"], text=True,
+            stderr=subprocess.DEVNULL,
         ).strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
         return "unknown"
 
 
 def _git_source_sha256() -> str:
+    root = _source_repo_root()
+    if root is None:
+        return "unknown"
     try:
-        root = subprocess.check_output(
-            ["git", "rev-parse", "--show-toplevel"],
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
         names = subprocess.check_output(
-            ["git", "ls-files", "-z"], cwd=root, stderr=subprocess.DEVNULL
+            ["git", "-C", root, "ls-files", "-z"], stderr=subprocess.DEVNULL
         ).split(b"\0")
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
         return "unknown"
     digest = hashlib.sha256()
     try:
@@ -165,25 +209,59 @@ def _git_source_sha256() -> str:
     return digest.hexdigest()
 
 
-def _git_dirty() -> bool | None:
+def _untracked_importable(where: str) -> bool | None:
+    """Is there an untracked file in `where`'s checkout that Python would import?
+
+    An untracked `openai.py` beside the code shadows the SDK, so the run is not
+    reproducible from the commit even though every tracked file matches it.
+    None means the question could not be asked -- `where` is not in a checkout.
+    """
     try:
-        tracked_status = subprocess.check_output(
-            ["git", "status", "--porcelain", "--untracked-files=no"],
-            stderr=subprocess.DEVNULL,
-        )
         untracked = subprocess.check_output(
-            ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+            ["git", "-C", where, "ls-files", "--others", "--exclude-standard", "-z"],
             stderr=subprocess.DEVNULL,
         ).split(b"\0")
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
         return None
-    importable_suffixes = tuple(importlib.machinery.all_suffixes())
-    untracked_importable = any(
-        os.fsdecode(path).endswith(importable_suffixes)
-        for path in untracked
-        if path
+    suffixes = tuple(importlib.machinery.all_suffixes())
+    return any(os.fsdecode(path).endswith(suffixes) for path in untracked if path)
+
+
+def _git_dirty() -> bool | None:
+    """Whether this run is reproducible from the recorded commit.
+
+    Two independent ways it is not, because they live in different places:
+
+    * the source tree of record has uncommitted changes, or carries an
+      untracked importable file -- asked of the package's own checkout, so the
+      answer does not depend on where the command was run from (BUG-008);
+    * the working directory carries an untracked importable file. `python -m`
+      puts the working directory first on `sys.path`, so a file there shadows a
+      module regardless of which checkout the package came from.
+
+    None only when neither question can be asked at all.
+    """
+    root = _source_repo_root()
+    cwd = os.getcwd()
+    # In the ordinary case the working directory *is* the source tree, and the
+    # two questions below are one `git` call, not two.
+    cwd_shadow = None if cwd == root else _untracked_importable(cwd)
+    if root is None:
+        # No source tree of record. A shadowing file in the working directory
+        # is still enough to answer "not reproducible"; nothing else is.
+        return True if cwd_shadow else None
+    try:
+        tracked_status = subprocess.check_output(
+            ["git", "-C", root, "status", "--porcelain", "--untracked-files=no"],
+            stderr=subprocess.DEVNULL,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+    return bool(
+        tracked_status.strip()
+        or _untracked_importable(root)
+        or cwd_shadow
     )
-    return bool(tracked_status.strip()) or untracked_importable
 
 
 # --- release canaries and markers ---------------------------------------
