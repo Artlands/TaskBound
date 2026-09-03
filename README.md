@@ -7,7 +7,7 @@ An agent is asked to diagnose a failed HPC job. Somewhere in the material it rea
 TaskBound runs that scenario, scores what the agent did, and reports it with confidence intervals. It also runs a control in which the *user* asks for the same action directly, so a low compliance rate can be told apart from an agent that simply refuses everything.
 
 ```sh
-.venv/bin/pip install anthropic openai pytest
+python3 -m venv .venv && .venv/bin/pip install -e '.[all]'
 .venv/bin/python -m taskbound.runner preflight --model claude-opus-5
 .venv/bin/python -m taskbound.runner run \
   --host hosts/site_a --task t1_failed_job --condition attacked \
@@ -34,35 +34,46 @@ TaskBound runs that scenario, scores what the agent did, and reports it with con
 8. [Troubleshooting](#troubleshooting)
 9. [Before you cite a number](#before-you-cite-a-number)
 10. [Layout](#layout)
+11. [License](#license)
+12. [Contributing](#contributing)
 
 ---
 
 ## Install
 
-The repo includes a virtual environment at `.venv` (Python 3.14). The commands below call it directly, so they do not depend on which shell you are in.
+Python 3.10 or newer. Clone, make a virtual environment, and install:
 
 ```sh
-.venv/bin/pip install anthropic openai pytest
+git clone https://github.com/Artlands/TaskBound.git
+cd TaskBound
+python3 -m venv .venv
+.venv/bin/pip install -e '.[all]'
 ```
 
-Install only what you need:
+Every command in this README calls `.venv/bin/python` directly, so none of them depend on having activated the environment.
 
-- `anthropic` — the Claude adapter
-- `openai` — OpenAI-compatible endpoints
-- `pytest` — the test suite
+**The harness itself is standard-library only.** `[all]` pulls in both adapters and the test runner; install only the extra you need instead:
 
-The harness itself is standard-library only. Offline runs need nothing beyond the adapter you use.
+| Extra | Pulls in | For |
+|---|---|---|
+| `.[anthropic]` | `anthropic` | the Claude adapter |
+| `.[openai]` | `openai` | OpenAI-compatible endpoints, including vLLM and Ollama |
+| `.[test]` | `pytest` | the test suite |
+| `.` | nothing | `validate`, `power`, `coverage`, `aggregate`, and `scripted` runs |
+
+Installing also puts a `taskbound` command on the path, so `.venv/bin/taskbound validate` is the same thing as the module form used throughout this README.
 
 Check the installation:
 
 ```sh
-.venv/bin/python -m taskbound.runner validate    # fast
-.venv/bin/python -m pytest -q                    # ~33 minutes
+.venv/bin/python -m taskbound.runner validate    # under a second
+.venv/bin/python -m pytest -q -m "not slow"      # 290 tests, ~6 minutes
+.venv/bin/python -m pytest -q                    # 438 tests, ~34 minutes
 ```
 
 `validate` is the quick check: injection targets, task manifests, policy definitions, canary behavior, cell and paraphrase coverage, placement classes, and calibration fixtures. Run it after any change to the benchmark material.
 
-The full test suite takes about half an hour, most of it statistical simulation in `tests/test_power.py`. To check one area quickly, narrow it:
+The full suite takes about half an hour. Two files carry the `slow` marker and account for 28 minutes of it: `tests/test_power.py` (the gate's own simulations) and `tests/test_analysis.py` (43 tests, each fitting a GLMM). `-m "not slow"` runs the other 290 in about six minutes and is the check to run before sending a patch. To check one area, narrow it further:
 
 ```sh
 .venv/bin/python -m pytest tests/test_oracle.py -q
@@ -362,7 +373,7 @@ Results record the derived `canary_generation` id, never the seed. Two checks en
 | `Could not resolve authentication method` | No credential source. `export ANTHROPIC_API_KEY=...` or `ant auth login`, then `preflight` |
 | `FAILED: ... invalid x-api-key` | Key wrong or revoked. An `ant` profile will not help while `ANTHROPIC_API_KEY` is set — `unset` it |
 | `preflight` 404 on the model | The account cannot reach that model id. Try `--model claude-sonnet-5` |
-| `the anthropic SDK is not installed` | `.venv/bin/pip install anthropic` (or `openai`) |
+| `the anthropic SDK is not installed` | `.venv/bin/pip install -e '.[anthropic]'` (or `'.[openai]'`) |
 | `could not reach the endpoint ... Check --base-url` | Wrong URL, port, or the server is down. Most endpoints want the path to end in `/v1` |
 | `OPENAI_API_KEY is not set and no --base-url was given` | Export the key, point `--api-key-env` at the variable you use, or give a `--base-url` for a keyless local server |
 | `model 'x' is not offered by this endpoint` | Preflight lists what the server has. Self-hosted servers usually want the full repo path |
@@ -412,7 +423,10 @@ pilot/                   frozen pilot schedules; pilot runs are gitignored
 results/                 raw runs — gitignored, contains canaries
 reports/                 aggregated output; safe to commit
 docs/                    design rationale, protocols, review rubrics
+position-paper/          the position paper this benchmark accompanies
 tests/                   the test suite
+pyproject.toml           dependencies, extras, and the `taskbound` command
+.github/workflows/       CI: validate, the fast tests, the simulation tier
 ```
 
 | Document | What it covers |
@@ -425,3 +439,43 @@ tests/                   the test suite
 | [`docs/realism_rubric.md`](docs/realism_rubric.md) | the practitioner realism review instrument |
 | [`docs/paraphrase_protocol.md`](docs/paraphrase_protocol.md) | how injection texts are authored and accepted |
 | [`docs/bugs/`](docs/bugs/) | known defects, with repros and fixes |
+
+---
+
+## License
+
+Apache-2.0. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
+
+The same license covers the harness and the benchmark material — the host
+workspace, the injected texts, and the control profiles — so a fork may
+re-author the texts, which [point 2 above](#before-you-cite-a-number) says is a
+prerequisite for a clean cross-model comparison.
+
+## Contributing
+
+Issues and pull requests are welcome. Before sending one:
+
+```sh
+.venv/bin/python -m taskbound.runner validate
+.venv/bin/python -m pytest -q -m "not slow"
+```
+
+CI runs both on every pull request, and the `slow` simulation tier on top.
+
+A few things about this repository that are not obvious:
+
+- **Changing benchmark material is a bigger change than changing code.** A new
+  injection text, a moved placement line, or a widened policy changes what past
+  results mean. `validate` catches the mechanical part; the rest is
+  [`docs/paraphrase_protocol.md`](docs/paraphrase_protocol.md).
+- **The protocol documents in `docs/` were frozen before the data they govern.**
+  Do not edit `pilot_protocol.md`, `paraphrase_protocol.md` or
+  `realism_rubric.md` for style — see the note at the end of
+  [`docs/README.md`](docs/README.md).
+- **Section numbers in `docs/development_plan.md` are an API.** The code cites
+  them in about forty-five places. Add sections; do not renumber them.
+- **Never commit a results directory.** Raw results contain canary values in
+  their action traces. `results/` is gitignored for that reason.
+- **If you find a defect, a write-up in [`docs/bugs/`](docs/bugs/) with a
+  runnable repro is worth as much as the fix**, particularly the section on why
+  the test suite did not catch it.

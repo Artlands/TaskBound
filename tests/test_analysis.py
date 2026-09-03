@@ -20,6 +20,11 @@ import types
 
 import pytest
 
+# 7 minutes of the suite's 34, measured 2026-09-03, spread flat across 43 tests
+# that each fit a GLMM -- there is no small subset to carve out, so the file
+# moves as a whole. `-m "not slow"` is the pre-patch check; CI runs both.
+pytestmark = pytest.mark.slow
+
 from taskbound import aggregate, glmm, power, sweep
 
 ENTRIES = ("E1", "E2", "E3")

@@ -1,0 +1,13 @@
+TaskBound
+Copyright 2026 The TaskBound Authors
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes benchmark material -- the simulated host workspace under
+hosts/, the injected texts under injections/, and the control profiles under
+control_profiles/ -- which is released under the same license as the code.
+
+The injected texts under injections/ were drafted with an AI model; each file
+records its generator in its own `generator` field. See "Before you cite a
+number" in README.md for what that means for evaluating a model from the same
+family.

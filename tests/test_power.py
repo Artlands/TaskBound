@@ -14,6 +14,10 @@ import os
 
 import pytest
 
+# 21 minutes of the suite's 34, measured 2026-09-03. Every test here runs the
+# gate's own simulation. `-m "not slow"` is the pre-patch check; CI runs both.
+pytestmark = pytest.mark.slow
+
 from taskbound import glmm, power, sweep
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

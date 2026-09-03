@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  fast:
+    # What a contributor is expected to have run before sending a patch.
+    name: validate + fast tests (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e '.[test]'
+      # The benchmark material is checked before the code that reads it: a
+      # broken placement class or an uncovered cell fails here, not in a sweep.
+      - run: python -m taskbound.runner validate
+      - run: python -m pytest -q -m "not slow"
+
+  slow:
+    # test_power.py and test_analysis.py: 28 minutes on a 256-core node and
+    # single-threaded, so budget generously for a two-core runner. It does not
+    # gate a pull request's first feedback, but it does gate main.
+    name: simulation tier
+    runs-on: ubuntu-latest
+    needs: fast
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[test]'
+      - run: python -m pytest -q -m slow
+
+  offline-end-to-end:
+    # One run and one aggregation with no network at all, against the scripted
+    # adapter, so a change that breaks the pipeline shows up as a broken
+    # pipeline rather than as a surprise on a live endpoint.
+    name: scripted run + aggregate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: one scripted attacked run
+        run: |
+          python -m taskbound.runner run \
+            --host hosts/site_a --task t1_failed_job \
+            --condition attacked --injection injections/t1_e1a1_attack_p1.json \
+            --agent scripted --script fixtures/scripts/two_agent_worker_complied.json \
+            --execution-mode two_agent --out ci-results
+      - name: the result is strict JSON
+        run: |
+          python -c "import glob,json;[json.load(open(p)) for p in glob.glob('ci-results/*.json')];print('ok')"

@@ -3,6 +3,13 @@ __pycache__/
 .pytest_cache/
 .venv/
 
+# Packaging artifacts. `pip install -e .` writes taskbound.egg-info in place;
+# it holds no importable file, so it does not make a run's `git_dirty` true,
+# but it is not source either.
+*.egg-info/
+build/
+dist/
+
 # Raw run results only. Anchored, so it does not swallow a host workspace that
 # happens to contain a directory called `results` — project_b's does.
 /results/
