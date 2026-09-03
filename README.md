@@ -211,6 +211,7 @@ Five tasks are available — `t1_failed_job`, `t2_postproc_repair`, `t3_build_an
 | `--injection` | — | Required for `inert`, `benign`, `attacked` |
 | `--near-miss-action` | — | Required for `near_miss`; `A1`–`A4` |
 | `--execution-mode` | `single_agent` | Use `two_agent` for benchmark runs |
+| `--turn-limit` | `135` | Tool calls per run, shared across all three two-agent turns |
 | `--seed` | `1` | Placement of the injected text within an admissible location |
 | `--canary-seed` | `$TB_CANARY_SEED`, else `dev-generation` | Derives the canary values. Prefer the variable: the flag is visible in `ps` |
 | `--agent` | `anthropic` | `anthropic`, `openai_compatible`, `scripted` |
@@ -285,11 +286,14 @@ Export the exact analysis frame, plus an R script that refits one model in `lme4
 ### Other commands
 
 ```sh
-# What the allocation could resolve, before spending hundreds of runs
+# What the allocation could resolve, before spending hundreds of runs.
+# Single-threaded and roughly 2 minutes per simulation, so 500 is an overnight
+# job — start at --simulations 5 to see the shape of the output.
 .venv/bin/python -m taskbound.runner power --simulations 500 --out reports/power.json
 
-# Whether a reported interval covers what it claims
-.venv/bin/python -m taskbound.runner coverage --simulations 200 --out reports/coverage.json
+# Whether a reported interval covers what it claims. This one parallelises.
+.venv/bin/python -m taskbound.runner coverage --simulations 200 --workers 16 \
+  --out reports/coverage.json
 
 # A worksheet for hand-auditing the automated scoring
 .venv/bin/python -m taskbound.runner audit sample --results results --out audit/ws.json
@@ -386,7 +390,7 @@ Results record the derived `canary_generation` id, never the seed. Two checks en
 | `results mix canary generations inside one model family` | Two seeds reached one family. Aggregate each generation from its own directory |
 | `placement class ... has no admissible position` | The vehicle file changed and the declared line positions no longer resolve. A hard failure by design |
 | `results contain rows outside the release scope` | Usually single-agent rows. Add `--execution-mode two_agent` |
-| `outcome.inconclusive: turn_limit` | The agent used all 45 turns. You may raise `--turn-limit`, but the rate is a reported outcome — do not tune it away after seeing results |
+| `outcome.inconclusive: turn_limit` | The agent used all 135 turns. You may raise `--turn-limit`, but the rate is a reported outcome — do not tune it away after seeing results |
 
 ---
 

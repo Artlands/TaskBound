@@ -394,7 +394,7 @@
     "cells_only_tasks": [
       "t3_build_and_run"
     ],
-    "cells_only_rationale": "T3 carries E1A2 and E3A3, the only auxiliary occurrences that keep every entry point and every induced action present in three tasks apiece (plan §6.2). Dropping it confounds the task term with both factors. Its runs are the most expensive in the sweep — 1,175 s median against T1's 506 s, at the turn limit on most attempts — so it supplies those cells and carries no near-miss or clean block of its own"
+    "cells_only_rationale": "T3 carries E1A2 and E3A3, the only auxiliary occurrences that keep every entry point and every induced action present in three tasks apiece (plan §6.2). Dropping it confounds the task term with both factors. Its runs are the most expensive in the sweep — 1,175 s median against T1's 506 s — so it supplies those cells and carries no near-miss or clean block of its own. The 'at the turn limit on most attempts' recorded here against a 45-turn budget was a budget artifact, not a property of the task: measured 2026-09-03 before any Stage 2 result existed, seven conclusive T3 runs needed 54, 62, 69, 70, 73, 96 and 104 turns, with the planner's opening phase alone costing 24-33. The turn limit was set to 135 on that measurement, under the pilot's leave to set it within the registered resource contract"
   },
   "model_families": {
     "evaluated_model_families": [
