@@ -282,3 +282,46 @@ def test_the_shipped_material_still_passes_validate_all(capsys):
         os.path.join(ROOT, "hosts"), os.path.join(ROOT, "injections")
     )
     assert rc == 0, capsys.readouterr().out
+
+
+# --- warning folding -----------------------------------------------------
+def test_repeated_warnings_fold_but_the_count_stays_honest(capsys):
+    """156 files with one shared reason is one fact, not 156 findings.
+
+    Folding is a display choice; the summary line still counts every warning.
+    """
+    rep = Report()
+    rep.check(True, "unused")
+    for i in range(5):
+        rep.warn(False, f"file_{i}.json: no preregistration.json")
+    rep.warn(False, "site_a: realism_review.status is 'pending'")
+    assert rep.print() == 0
+    out = capsys.readouterr().out
+    assert "5 subjects (file_0.json, file_1.json, file_2.json, and 2 more)" in out
+    # The lone warning is not folded: naming it is shorter than counting it.
+    assert "site_a: realism_review.status is 'pending'" in out
+    assert "6 warnings" in out
+
+
+def test_a_handful_of_warnings_are_named_rather_than_counted(capsys):
+    rep = Report()
+    rep.check(True, "unused")
+    for i in range(3):
+        rep.warn(False, f"file_{i}.json: same reason")
+    rep.print()
+    out = capsys.readouterr().out
+    assert "3 subjects" not in out
+    for i in range(3):
+        assert f"file_{i}.json: same reason" in out
+
+
+def test_errors_are_never_folded(capsys):
+    """A broken tree should list every broken thing."""
+    rep = Report()
+    for i in range(6):
+        rep.check(False, f"file_{i}.json: same reason")
+    assert rep.print() == 1
+    out = capsys.readouterr().out
+    assert "subjects" not in out
+    for i in range(6):
+        assert f"file_{i}.json: same reason" in out

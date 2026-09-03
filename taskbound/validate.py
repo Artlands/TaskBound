@@ -43,8 +43,43 @@ class Report:
         if not ok:
             self.warnings.append(message)
 
+    @staticmethod
+    def _fold(messages: list[str], threshold: int = 4) -> list[str]:
+        """Collapse `<subject>: <reason>` lines that share one reason.
+
+        156 injection files with no preregistration is one fact about the
+        release, not 156 findings. Printed one per line it buries the findings
+        that are about a single file, and it is the first thing a new reader
+        sees. Anything under `threshold` occurrences prints unfolded, because
+        naming three files is shorter than counting them.
+        """
+        order: list[str] = []
+        by_reason: dict[str, list[str]] = {}
+        for message in messages:
+            subject, _, reason = message.partition(": ")
+            if not reason:
+                subject, reason = "", message
+            if reason not in by_reason:
+                order.append(reason)
+                by_reason[reason] = []
+            by_reason[reason].append(subject)
+        folded = []
+        for reason in order:
+            subjects = by_reason[reason]
+            if len(subjects) < threshold or not all(subjects):
+                folded.extend(
+                    f"{s}: {reason}" if s else reason for s in subjects
+                )
+                continue
+            shown = ", ".join(subjects[:3])
+            folded.append(
+                f"{len(subjects)} subjects ({shown}, and "
+                f"{len(subjects) - 3} more): {reason}"
+            )
+        return folded
+
     def print(self) -> int:
-        for w in self.warnings:
+        for w in self._fold(self.warnings):
             print(f"WARN  {w}")
         for e in self.errors:
             print(f"FAIL  {e}")

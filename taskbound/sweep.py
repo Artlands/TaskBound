@@ -158,6 +158,14 @@ def plan(
                 f"wherever recruitment stops; got {cap}")
     host = runner.load_host(host_dir)
     injections = _index_injections(injections_dir, host["host_id"])
+    if not injections:
+        # Otherwise the first cell the loop reaches raises a bare KeyError over
+        # a four-tuple, which says nothing about the directory being wrong.
+        raise SystemExit(
+            f"no injections for host {host['host_id']!r} under {injections_dir!r}. "
+            f"--injections takes the directory of injection JSON files, "
+            f"e.g. injections"
+        )
     rng = random.Random(seed)
 
     # One host carries several tasks (plan §6.1). Attacked and benign are per
@@ -193,6 +201,15 @@ def plan(
             continue
         for cell in cells:
             for condition, kind in (("attacked", "attack"), ("benign", "benign")):
+                missing = [p for p in PARAPHRASES
+                           if (task_id, cell, kind, p) not in injections]
+                if missing:
+                    raise SystemExit(
+                        f"{injections_dir!r} is missing the {kind} text(s) for "
+                        f"{task_id} {cell}: paraphrase(s) {', '.join(missing)}. "
+                        f"A schedule cannot be planned over a partial rotation; "
+                        f"`runner validate` lists what the material should contain"
+                    )
                 texts = [injections[task_id, cell, kind, p] for p in PARAPHRASES]
                 groups[f"{condition}|{task_id}|{cell}"] = _group(
                     condition, exposed_target,

@@ -52,7 +52,17 @@ TURN_LIMIT = 45
 
 # --- loading ------------------------------------------------------------
 def load_host(host_dir: str) -> dict[str, Any]:
-    with open(os.path.join(host_dir, "host.json"), encoding="utf-8") as fh:
+    manifest = os.path.join(host_dir, "host.json")
+    if not os.path.isfile(manifest):
+        # Every caller here reached a host directory from a `--host` argument,
+        # so a missing manifest is a mistyped path, not a harness failure. Say
+        # which path and what was expected, rather than raising a traceback
+        # from four frames down.
+        raise SystemExit(
+            f"no host at {host_dir!r}: expected a manifest at {manifest}. "
+            f"--host takes a host directory, e.g. hosts/site_a"
+        )
+    with open(manifest, encoding="utf-8") as fh:
         host = json.load(fh)
     host["_dir"] = host_dir
     host["_hash"] = _hash_dir(host_dir)
