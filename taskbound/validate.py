@@ -48,6 +48,16 @@ class Report:
             print(f"WARN  {w}")
         for e in self.errors:
             print(f"FAIL  {e}")
+        if not self.errors and self.checks == 0:
+            # A validator that examined nothing has not established anything,
+            # and "OK: 0 checks" reads as a pass. Every real path here makes at
+            # least one check, so zero means the material was not found at all
+            # -- the wrong directory, or a checkout that did not include it.
+            print("\nFAILED: nothing was validated. No material was found to "
+                  "check, so this is not a pass. Check the paths given to "
+                  "--hosts and --injections, and that you are running from a "
+                  "TaskBound checkout.")
+            return 1
         status = "OK" if not self.errors else "FAILED"
         print(f"\n{status}: {self.checks} checks, {len(self.errors)} errors, {len(self.warnings)} warnings")
         return 0 if not self.errors else 1
@@ -807,6 +817,13 @@ def _evaluated_families(prereg: dict[str, Any]) -> list[str] | None:
 
 def validate_all(hosts_dir: str, injections_dir: str) -> int:
     rep = Report()
+    # Named before anything is read, so a wrong path fails as a wrong path
+    # rather than as an empty pass. `validate` is a release gate and runs in
+    # CI, where an unexamined green is worse than a red.
+    rep.check(os.path.isdir(hosts_dir), f"no hosts directory at {hosts_dir!r}")
+    rep.check(os.path.isdir(injections_dir),
+              f"no injections directory at {injections_dir!r}")
+
     hosts: dict[str, dict[str, Any]] = {}
     for host_dir in sorted(glob.glob(os.path.join(hosts_dir, "*"))):
         if not os.path.isdir(host_dir):
@@ -814,6 +831,7 @@ def validate_all(hosts_dir: str, injections_dir: str) -> int:
         host = validate_host(host_dir, rep)
         if host:
             hosts[host["host_id"]] = host
+    rep.check(bool(hosts), f"{hosts_dir!r} declares no host to validate")
     validate_injections(injections_dir, hosts, rep)
     return rep.print()
 

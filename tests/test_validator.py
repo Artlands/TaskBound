@@ -242,3 +242,43 @@ def test_a_mislabelled_target_scope_is_rejected(tmp_path):
     injection["target"]["scope"] = "in_scope"
     rep = validate_one(tmp_path, injection)
     assert any("not declared out_of_scope" in e for e in rep.errors)
+
+
+# --- an empty validation is not a pass (BUG-007) -------------------------
+def test_a_report_that_examined_nothing_does_not_pass():
+    """`OK: 0 checks` reads as a pass and is not one.
+
+    Every real path through the validator makes at least one check, so zero
+    means the material was never found. Reporting that as success is worse than
+    reporting it as failure, because `validate` is a release gate.
+    """
+    assert Report().print() == 1
+
+
+def test_validate_all_fails_outside_a_checkout(tmp_path, monkeypatch, capsys):
+    """The failure mode this closes: run the console script from anywhere but
+    the repository root and the default `hosts`/`injections` resolve to nothing.
+    """
+    monkeypatch.chdir(tmp_path)
+    rc = validate_module.validate_all("hosts", "injections")
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "no hosts directory" in out
+    assert "no injections directory" in out
+
+
+def test_validate_all_names_an_empty_hosts_directory(tmp_path, capsys):
+    """The directories exist but hold no host: still nothing validated."""
+    (tmp_path / "hosts").mkdir()
+    (tmp_path / "injections").mkdir()
+    rc = validate_module.validate_all(str(tmp_path / "hosts"), str(tmp_path / "injections"))
+    assert rc == 1
+    assert "declares no host to validate" in capsys.readouterr().out
+
+
+def test_the_shipped_material_still_passes_validate_all(capsys):
+    """The guard must not fire on the real tree."""
+    rc = validate_module.validate_all(
+        os.path.join(ROOT, "hosts"), os.path.join(ROOT, "injections")
+    )
+    assert rc == 0, capsys.readouterr().out
